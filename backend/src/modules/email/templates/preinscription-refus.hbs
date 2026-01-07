@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réponse à votre demande de pré-inscription</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #6b7280;
+        }
+        .header h1 {
+            color: #374151;
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #f9fafb;
+            border-left: 4px solid #6b7280;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .contact-box {
+            background-color: #fef3c7;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .signature {
+            margin-top: 25px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Réponse à votre demande de pré-inscription</h1>
+        </div>
+
+        <div class="content">
+            <p><strong>Bonjour {{civiliteParent}} {{nomParent}},</strong></p>
+
+            <p>Nous vous remercions pour l'intérêt que vous portez à notre école pour <strong>{{prenomEnfant}}</strong>.</p>
+
+            <div class="info-box">
+                <p>Après examen attentif de votre dossier (n° {{numeroDossier}}), nous sommes au regret de vous informer que nous ne sommes pas en mesure de donner une suite favorable à votre demande pour la rentrée sollicitée.</p>
+            </div>
+
+            <p>Cette décision peut être liée à différents facteurs :</p>
+            <ul>
+                <li>Le nombre de places disponibles dans la classe demandée</li>
+                <li>L'adéquation avec notre projet pédagogique</li>
+                <li>Des contraintes organisationnelles</li>
+            </ul>
+
+            <div class="contact-box">
+                <p><strong>📞 Des questions ?</strong></p>
+                <p>N'hésitez pas à nous contacter pour plus d'informations ou pour discuter d'autres possibilités.</p>
+                <p><a href="mailto:contact@mon-ecole-et-moi.fr">contact@mon-ecole-et-moi.fr</a></p>
+            </div>
+
+            <p>Nous vous souhaitons le meilleur dans vos démarches et espérons que vous trouverez l'établissement idéal pour {{prenomEnfant}}.</p>
+
+            <div class="signature">
+                <p><strong>Cordialement,</strong><br>
+                L'équipe de Mon École Montessori et Moi</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{year}} Mon École et Moi - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>
+

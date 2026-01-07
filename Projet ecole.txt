@@ -1,0 +1,27 @@
+Audrey
+10 ans association mon école et moi
+exel au début
+application rapide bug
+école futé ne convient pas
+gros soucis 
+inscription, après validation du dossier, facture, commander repas périscolaire
+fratrie
+commande à l'année
+
+Fondamentale :
+inscription (valider les inscription, ou refus)
+mail automatique
+identifier une date de démarrage
+prendre rendez vous
+frais en fonction du revenue
+tableau avec le déroulé de la semaine repas
+liste déroulante enfant pas inscrit repas
+facturation
+classe verte sortie…
+rajouter des articles à la facture
+parent accès aux factures
+exporter les factures
+lier avec la banque
+ou dossier xml envoyer à la banque
+réunion en général 13h30
+Lundi Mardi

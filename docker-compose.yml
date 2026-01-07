@@ -1,0 +1,88 @@
+services:
+  app:
+    build:
+      context: .
+      target: app
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/var/www
+      - storage:/var/www/storage
+      - bootstrap_cache:/var/www/bootstrap/cache
+    networks:
+      - app
+    expose:
+      - "9000"
+
+  web:
+    build:
+      context: .
+      target: web
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - storage:/var/www/storage
+      - bootstrap_cache:/var/www/bootstrap/cache
+    networks:
+      - app
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: mon_ecole_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password123
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test:
+        ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_USER: admin
+      PMA_PASSWORD: password123
+    ports:
+      - "8081:80"
+    networks:
+      - app
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # Interface web
+      - "1025:1025" # SMTP
+    networks:
+      - app
+
+volumes:
+  db_data:
+  storage:
+  bootstrap_cache:
+
+networks:
+  app:
+    driver: bridge

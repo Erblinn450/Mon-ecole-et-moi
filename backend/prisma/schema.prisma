@@ -1,0 +1,519 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUM TYPES
+// ============================================
+
+enum Role {
+  PARENT
+  ADMIN
+  EDUCATEUR
+}
+
+enum StatutPreinscription {
+  EN_ATTENTE
+  DEJA_CONTACTE
+  VALIDE
+  REFUSE
+  ANNULE
+}
+
+enum StatutInscription {
+  EN_COURS
+  ACTIVE
+  TERMINEE
+  ANNULEE
+}
+
+enum Classe {
+  MATERNELLE
+  ELEMENTAIRE
+  COLLEGE
+}
+
+enum SituationFamiliale {
+  MARIES
+  PACSES
+  UNION_LIBRE
+  SEPARES
+  DIVORCES
+  FAMILLE_MONOPARENTALE
+  AUTRE
+}
+
+enum TypeRepas {
+  MIDI
+  GOUTER
+}
+
+enum StatutFacture {
+  EN_ATTENTE
+  ENVOYEE
+  PAYEE
+  PARTIELLE
+  EN_RETARD
+  ANNULEE
+}
+
+enum TypeFacture {
+  MENSUELLE
+  PONCTUELLE
+  AVOIR
+}
+
+// ============================================
+// USER & AUTH
+// ============================================
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique
+  password            String
+  name                String
+  nom                 String?
+  prenom              String?
+  dateNaissance       DateTime? @map("date_naissance")
+  adresse             String?
+  telephone           String?
+  role                Role      @default(PARENT)
+  actif               Boolean   @default(true)
+  premiereConnexion   Boolean   @default(true) @map("premiere_connexion")
+  emailVerifiedAt     DateTime? @map("email_verified_at")
+  rememberToken       String?   @map("remember_token")
+  deletedAt           DateTime? @map("deleted_at")  // Soft delete
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  enfantsParent1      Enfant[]           @relation("Parent1")
+  enfantsParent2      Enfant[]           @relation("Parent2")
+  signatureReglements SignatureReglement[]
+  sessions            Session[]
+  factures            Facture[]
+  pdfOuvertures       PdfOuverture[]
+  inscriptions        Inscription[]
+
+  // INDEX pour performances
+  @@index([role])                       // Filtrer par rôle (PARENT, ADMIN...)
+  @@index([actif])                      // Filtrer actifs/inactifs
+  @@index([deletedAt])                  // Soft delete queries
+  @@map("users")
+}
+
+model Session {
+  id           String   @id
+  userId       Int      @map("user_id")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  payload      String
+  lastActivity Int      @map("last_activity")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])                     // Sessions d'un utilisateur
+  @@map("sessions")
+}
+
+// ============================================
+// PREINSCRIPTIONS
+// ============================================
+
+model Preinscription {
+  id                    Int                   @id @default(autoincrement())
+  numeroDossier         String                @unique @map("numero_dossier")
+  
+  // Enfant
+  nomEnfant             String                @map("nom_enfant")
+  prenomEnfant          String                @map("prenom_enfant")
+  dateNaissance         DateTime              @map("date_naissance")
+  lieuNaissance         String?               @map("lieu_naissance")
+  nationalite           String?
+  allergies             String?
+  classeSouhaitee       Classe                @map("classe_souhaitee")
+  etablissementPrecedent String?              @map("etablissement_precedent")
+  classeActuelle        String?               @map("classe_actuelle")
+  
+  // Parent 1
+  civiliteParent        String?               @map("civilite_parent")
+  nomParent             String                @map("nom_parent")
+  prenomParent          String                @map("prenom_parent")
+  emailParent           String                @map("email_parent")
+  telephoneParent       String                @map("telephone_parent")
+  lienParente           String?               @map("lien_parente")
+  adresseParent         String?               @map("adresse_parent")
+  professionParent      String?               @map("profession_parent")
+  
+  // Parent 2 (optionnel)
+  civiliteParent2       String?               @map("civilite_parent2")
+  nomParent2            String?               @map("nom_parent2")
+  prenomParent2         String?               @map("prenom_parent2")
+  emailParent2          String?               @map("email_parent2")
+  telephoneParent2      String?               @map("telephone_parent2")
+  lienParente2          String?               @map("lien_parente2")
+  adresseParent2        String?               @map("adresse_parent2")
+  professionParent2     String?               @map("profession_parent2")
+  
+  // Dates et statut
+  dateIntegration       DateTime?             @map("date_integration")
+  dateDemande           DateTime              @default(now()) @map("date_demande")
+  statut                StatutPreinscription  @default(EN_ATTENTE)
+  compteCree            Boolean               @default(false) @map("compte_cree")
+  commentaireRefus      String?               @map("commentaire_refus")
+  
+  // Vérification email
+  emailVerifie          Boolean               @default(false) @map("email_verifie")
+  tokenVerification     String?               @unique @map("token_verification")
+  tokenExpiresAt        DateTime?             @map("token_expires_at")
+  
+  // Informations complémentaires
+  situationFamiliale    SituationFamiliale?   @map("situation_familiale")
+  situationAutre        String?               @map("situation_autre")
+  decouverte            String?
+  pedagogieMontessori   String?               @map("pedagogie_montessori")
+  difficultes           String?
+  
+  createdAt             DateTime              @default(now()) @map("created_at")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+
+  // Relations
+  enfants               Enfant[]
+
+  // INDEX pour performances
+  @@index([statut])                    // Filtrer par statut (EN_ATTENTE, VALIDE...)
+  @@index([emailParent])               // Recherche par email parent
+  @@index([dateDemande])               // Tri par date
+  @@map("preinscriptions")
+}
+
+// ============================================
+// ENFANTS
+// ============================================
+
+model Enfant {
+  id                  Int       @id @default(autoincrement()) @map("id_enfant")
+  nom                 String
+  prenom              String
+  dateNaissance       DateTime? @map("date_naissance")
+  lieuNaissance       String?   @map("lieu_naissance")
+  classe              Classe?
+  parent1Id           Int       @map("id_parent1")
+  parent2Id           Int?      @map("id_parent2")
+  preinscriptionId    Int?      @map("preinscription_id")
+  deletedAt           DateTime? @map("deleted_at")  // Soft delete
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  parent1             User                  @relation("Parent1", fields: [parent1Id], references: [id], onDelete: Cascade)
+  parent2             User?                 @relation("Parent2", fields: [parent2Id], references: [id], onDelete: Cascade)
+  preinscription      Preinscription?       @relation(fields: [preinscriptionId], references: [id])
+  inscriptions        Inscription[]
+  repas               Repas[]
+  periscolaires       Periscolaire[]
+  justificatifs       Justificatif[]
+  signatureReglements SignatureReglement[]
+  pdfOuvertures       PdfOuverture[]
+
+  // INDEX pour performances
+  @@index([classe])                     // Filtrer par classe
+  @@index([parent1Id])                  // Enfants d'un parent
+  @@index([preinscriptionId])           // Retrouver l'enfant d'une préinscription
+  @@index([deletedAt])                  // Soft delete queries
+  @@map("enfants")
+}
+
+// ============================================
+// INSCRIPTIONS
+// ============================================
+
+model Inscription {
+  id               Int               @id @default(autoincrement()) @map("id_inscription")
+  enfantId         Int               @map("id_enfant")
+  parentId         Int?              @map("id_parent")
+  dateInscription  DateTime          @map("date_inscription")
+  statut           StatutInscription
+  commentaires     String?
+  anneeScolaire    String            @map("annee_scolaire")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  enfant           Enfant            @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  parent           User?             @relation(fields: [parentId], references: [id], onDelete: SetNull)
+
+  // INDEX pour performances
+  @@index([enfantId])
+  @@index([parentId])
+  @@index([anneeScolaire])              // Inscriptions par année
+  @@index([statut])                     // Inscriptions actives
+  @@map("inscriptions")
+}
+
+// ============================================
+// REPAS
+// ============================================
+
+model Repas {
+  id        Int       @id @default(autoincrement()) @map("id_repas")
+  enfantId  Int       @map("id_enfant")
+  dateRepas DateTime  @map("date_repas")
+  type      TypeRepas
+  valide    Boolean?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  enfant    Enfant    @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+
+  // CONTRAINTE : un enfant ne peut pas commander 2x le même repas
+  @@unique([enfantId, dateRepas, type])
+  // INDEX pour performances
+  @@index([dateRepas])                  // "Qui mange le 15 janvier ?"
+  @@index([enfantId, dateRepas])        // Repas d'un enfant sur une période
+  @@map("repas")
+}
+
+// ============================================
+// PERISCOLAIRE
+// ============================================
+
+model Periscolaire {
+  id               Int      @id @default(autoincrement()) @map("id_periscolaire")
+  enfantId         Int      @map("id_enfant")
+  datePeriscolaire DateTime @map("date_periscolaire")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  enfant           Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+
+  // CONTRAINTE : un enfant ne peut pas s'inscrire 2x le même jour
+  @@unique([enfantId, datePeriscolaire])
+  // INDEX pour performances
+  @@index([datePeriscolaire])           // "Qui est en périscolaire aujourd'hui ?"
+  @@index([enfantId, datePeriscolaire]) // Périscolaires d'un enfant sur une période
+  @@map("periscolaires")
+}
+
+// ============================================
+// JUSTIFICATIFS
+// ============================================
+
+model JustificatifAttendu {
+  id           Int            @id @default(autoincrement()) @map("id_type")
+  nom          String
+  description  String?
+  obligatoire  Boolean?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  justificatifs Justificatif[]
+
+  @@map("justificatifs_attendus")
+}
+
+model Justificatif {
+  id          Int      @id @default(autoincrement()) @map("id_justificatif")
+  enfantId    Int      @map("id_enfant")
+  typeId      Int      @map("id_type")
+  fichierUrl  String   @map("fichier_url")
+  valide      Boolean?
+  dateDepot   DateTime? @map("date_depot")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  enfant      Enfant              @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  type        JustificatifAttendu @relation(fields: [typeId], references: [id], onDelete: Cascade)
+
+  // INDEX pour performances
+  @@index([enfantId])                   // Documents d'un enfant
+  @@index([valide])                     // Documents en attente de validation
+  @@index([enfantId, typeId])           // Un enfant a-t-il fourni ce type de doc ?
+  @@map("justificatifs")
+}
+
+// ============================================
+// SIGNATURE REGLEMENT
+// ============================================
+
+model SignatureReglement {
+  id                          Int       @id @default(autoincrement())
+  enfantId                    Int       @map("enfant_id")
+  parentId                    Int       @map("parent_id")
+  parentName                  String    @map("parent_name")
+  parentEmail                 String    @map("parent_email")
+  enfantName                  String    @map("enfant_name")
+  parentDateSignature         DateTime? @map("parent_date_signature")
+  enfantDateSignature         DateTime? @map("enfant_date_signature")
+  parentAccepte               Boolean   @default(false) @map("parent_accepte")
+  enfantAccepte               Boolean   @default(false) @map("enfant_accepte")
+  parentSignatureElectronique String?   @map("parent_signature_electronique")
+  enfantSignatureElectronique String?   @map("enfant_signature_electronique")
+  parentIpAdresse             String?   @map("parent_ip_adresse")
+  enfantIpAdresse             String?   @map("enfant_ip_adresse")
+  notes                       String?
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  enfant                      Enfant    @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  parent                      User      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  // CONTRAINTE : un seul règlement signé par enfant
+  @@unique([enfantId])
+  // INDEX pour performances
+  @@index([parentId])
+  @@index([parentAccepte])
+  @@map("signature_reglements")
+}
+
+// ============================================
+// PDF OUVERTURES (tracking)
+// ============================================
+
+model PdfOuverture {
+  id        Int      @id @default(autoincrement())
+  enfantId  Int      @map("enfant_id")
+  parentId  Int      @map("parent_id")
+  pdfType   String   @map("pdf_type")
+  openedAt  DateTime @default(now()) @map("opened_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  enfant    Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  parent    User     @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  // INDEX pour performances
+  @@index([enfantId])
+  @@index([parentId])
+  @@map("pdf_ouvertures")
+}
+
+// ============================================
+// FACTURATION (à développer)
+// ============================================
+
+model Facture {
+  id              Int           @id @default(autoincrement()) @map("id_facture")
+  numero          String        @unique
+  parentId        Int           @map("parent_id")
+  montantTotal    Decimal       @map("montant_total") @db.Decimal(10, 2)
+  montantPaye     Decimal       @default(0) @map("montant_paye") @db.Decimal(10, 2)
+  dateEmission    DateTime      @map("date_emission")
+  dateEcheance    DateTime      @map("date_echeance")
+  statut          StatutFacture @default(EN_ATTENTE)
+  type            TypeFacture   // MENSUELLE, PONCTUELLE, AVOIR
+  periode         String?       // "2025-01" pour mensuelle
+  description     String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  parent          User             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  lignes          LigneFacture[]
+
+  // INDEX pour performances
+  @@index([parentId])                   // Factures d'un parent
+  @@index([statut])                     // Factures en attente, payées...
+  @@index([dateEcheance])               // Factures en retard
+  @@index([periode])                    // Factures d'un mois
+  @@map("factures")
+}
+
+model LigneFacture {
+  id          Int      @id @default(autoincrement())
+  factureId   Int      @map("facture_id")
+  description String
+  quantite    Int      @default(1)
+  prixUnit    Decimal  @map("prix_unit") @db.Decimal(10, 2)
+  montant     Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  facture     Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
+
+  // INDEX pour performances
+  @@index([factureId])                  // Lignes d'une facture
+  @@map("lignes_factures")
+}
+
+// ============================================
+// CALENDRIER SCOLAIRE
+// ============================================
+
+model CalendrierScolaire {
+  id          Int      @id @default(autoincrement())
+  dateDebut   DateTime @map("date_debut")
+  dateFin     DateTime @map("date_fin")
+  type        String   // VACANCES, FERIE, PONT
+  libelle     String
+  anneeScolaire String @map("annee_scolaire")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // INDEX pour performances
+  @@index([anneeScolaire])              // Calendrier d'une année
+  @@index([dateDebut, dateFin])         // Périodes qui chevauchent une date
+  @@index([type])                       // Tous les fériés, toutes les vacances...
+  @@map("calendrier_scolaire")
+}
+
+// ============================================
+// CACHE & JOBS (système)
+// ============================================
+
+model Cache {
+  key        String   @id
+  value      String
+  expiration Int
+
+  @@map("cache")
+}
+
+model CacheLock {
+  key        String   @id
+  owner      String
+  expiration Int
+
+  @@map("cache_locks")
+}
+
+model Job {
+  id          BigInt   @id @default(autoincrement())
+  queue       String
+  payload     String
+  attempts    Int      @default(0)
+  reservedAt  Int?     @map("reserved_at")
+  availableAt Int      @map("available_at")
+  createdAt   Int      @map("created_at")
+
+  @@index([queue])
+  @@map("jobs")
+}
+
+model FailedJob {
+  id         BigInt   @id @default(autoincrement())
+  uuid       String   @unique
+  connection String
+  queue      String
+  payload    String
+  exception  String
+  failedAt   DateTime @default(now()) @map("failed_at")
+
+  @@map("failed_jobs")
+}
+
