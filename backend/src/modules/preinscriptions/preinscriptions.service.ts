@@ -363,7 +363,6 @@ export class PreinscriptionsService {
           role: Role.PARENT,
           actif: true,
           premiereConnexion: true,
-          preinscriptionId: preinscription.id,
         },
       });
     }

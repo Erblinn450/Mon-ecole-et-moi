@@ -10,7 +10,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
@@ -27,8 +27,8 @@ export class AuthService {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
-    const payload = { 
-      sub: user.id, 
+    const payload = {
+      sub: user.id,
       email: user.email,
       role: user.role,
     };
@@ -49,16 +49,16 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    
+
     const user = await this.usersService.create({
       ...registerDto,
       password: hashedPassword,
     });
 
     const { password: _, ...result } = user;
-    
-    const payload = { 
-      sub: user.id, 
+
+    const payload = {
+      sub: user.id,
       email: user.email,
       role: user.role,
     };
@@ -97,9 +97,14 @@ export class AuthService {
 
     // Hasher et mettre à jour
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.usersService.updatePassword(userId, hashedPassword);
+    const updatedUser = await this.usersService.updatePassword(userId, hashedPassword);
 
-    return { message: 'Mot de passe changé avec succès' };
+    console.log(`[AUTH] Mot de passe changé pour user ${userId}, premiereConnexion = ${updatedUser.premiereConnexion}`);
+
+    return {
+      message: 'Mot de passe changé avec succès',
+      premiereConnexion: updatedUser.premiereConnexion,
+    };
   }
 }
 

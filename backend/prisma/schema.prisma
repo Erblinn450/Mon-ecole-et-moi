@@ -71,6 +71,13 @@ enum TypeFacture {
   AVOIR
 }
 
+enum TypeEvenementCalendrier {
+  VACANCES
+  FERIE
+  PONT
+  JOURNEE_SPECIALE
+}
+
 // ============================================
 // USER & AUTH
 // ============================================
@@ -106,6 +113,7 @@ model User {
   // INDEX pour performances
   @@index([role])                       // Filtrer par rôle (PARENT, ADMIN...)
   @@index([actif])                      // Filtrer actifs/inactifs
+  @@index([role, actif])                // Requêtes fréquentes: parents actifs
   @@index([deletedAt])                  // Soft delete queries
   @@map("users")
 }
@@ -400,6 +408,7 @@ model PdfOuverture {
   // INDEX pour performances
   @@index([enfantId])
   @@index([parentId])
+  @@index([openedAt])                   // Pour purger les anciennes entrées
   @@map("pdf_ouvertures")
 }
 
@@ -430,6 +439,7 @@ model Facture {
   @@index([parentId])                   // Factures d'un parent
   @@index([statut])                     // Factures en attente, payées...
   @@index([dateEcheance])               // Factures en retard
+  @@index([statut, dateEcheance])       // Factures en retard à relancer
   @@index([periode])                    // Factures d'un mois
   @@map("factures")
 }
@@ -456,14 +466,14 @@ model LigneFacture {
 // ============================================
 
 model CalendrierScolaire {
-  id          Int      @id @default(autoincrement())
-  dateDebut   DateTime @map("date_debut")
-  dateFin     DateTime @map("date_fin")
-  type        String   // VACANCES, FERIE, PONT
-  libelle     String
-  anneeScolaire String @map("annee_scolaire")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            Int                     @id @default(autoincrement())
+  dateDebut     DateTime                @map("date_debut")
+  dateFin       DateTime                @map("date_fin")
+  type          TypeEvenementCalendrier // Enum au lieu de String
+  libelle       String
+  anneeScolaire String                  @map("annee_scolaire")
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
 
   // INDEX pour performances
   @@index([anneeScolaire])              // Calendrier d'une année
@@ -473,47 +483,7 @@ model CalendrierScolaire {
 }
 
 // ============================================
-// CACHE & JOBS (système)
+// NOTE: Tables Cache, CacheLock, Job, FailedJob supprimées
+// (vestiges de Laravel, non utilisées avec NestJS)
 // ============================================
-
-model Cache {
-  key        String   @id
-  value      String
-  expiration Int
-
-  @@map("cache")
-}
-
-model CacheLock {
-  key        String   @id
-  owner      String
-  expiration Int
-
-  @@map("cache_locks")
-}
-
-model Job {
-  id          BigInt   @id @default(autoincrement())
-  queue       String
-  payload     String
-  attempts    Int      @default(0)
-  reservedAt  Int?     @map("reserved_at")
-  availableAt Int      @map("available_at")
-  createdAt   Int      @map("created_at")
-
-  @@index([queue])
-  @@map("jobs")
-}
-
-model FailedJob {
-  id         BigInt   @id @default(autoincrement())
-  uuid       String   @unique
-  connection String
-  queue      String
-  payload    String
-  exception  String
-  failedAt   DateTime @default(now()) @map("failed_at")
-
-  @@map("failed_jobs")
-}
 

@@ -72,14 +72,16 @@ export default function ChangerMotDePassePage() {
         throw new Error(data.message || "Erreur lors du changement de mot de passe");
       }
 
-      // IMPORTANT: Mettre à jour le localStorage pour marquer que le mot de passe a été changé
+      // IMPORTANT: Mettre à jour le localStorage avec la valeur retournée par le backend
       const userStr = localStorage.getItem("user");
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          user.premiereConnexion = false;
-          user.premiere_connexion = false; // Au cas où les deux formats sont utilisés
+          // Utiliser la valeur du backend si disponible, sinon mettre à false
+          user.premiereConnexion = data.premiereConnexion ?? false;
+          user.premiere_connexion = data.premiereConnexion ?? false;
           localStorage.setItem("user", JSON.stringify(user));
+          console.log("[FRONTEND] localStorage mis à jour, premiereConnexion =", user.premiereConnexion);
         } catch {
           // Ignorer
         }
