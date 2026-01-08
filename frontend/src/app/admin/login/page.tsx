@@ -22,19 +22,19 @@ export default function AdminLoginPage() {
 
     try {
       const response = await authApi.login({ email, password });
-      
+
       // Vérifier que c'est bien un admin
       if (response.user.role !== Role.ADMIN) {
         setError("Accès refusé. Ce compte n'est pas administrateur.");
         return;
       }
-      
+
       // Stocker les infos de session admin
       localStorage.setItem("admin_token", response.access_token);
       localStorage.setItem("auth_token", response.access_token);
       localStorage.setItem("user", JSON.stringify(response.user));
       sessionStorage.setItem("admin_logged", "true");
-      
+
       // Rediriger vers le dashboard admin
       router.push("/admin/dashboard");
     } catch (err) {
@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
 
   // Pré-remplir avec les identifiants admin de test
   const fillTestCredentials = () => {
-    setEmail("admin2@ecole.fr");
+    setEmail("admin@ecole.fr");
     setPassword("admin123");
   };
 
@@ -70,8 +70,8 @@ export default function AdminLoginPage() {
               <h1 className="text-lg md:text-xl font-bold text-gray-800 text-center">
                 Espace Administration
               </h1>
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="text-sm text-violet-600 hover:text-violet-700 flex items-center gap-1"
               >
                 <ArrowLeft size={14} /> Accueil
@@ -125,7 +125,7 @@ export default function AdminLoginPage() {
                   onClick={fillTestCredentials}
                   className="w-full py-2 px-4 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg font-medium text-sm transition-colors"
                 >
-                  Remplir avec admin2@ecole.fr
+                  Remplir avec admin@ecole.fr
                 </button>
               </div>
 

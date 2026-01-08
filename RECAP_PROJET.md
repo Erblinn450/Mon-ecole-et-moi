@@ -242,7 +242,7 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 | Module | État | Prévu |
 |--------|------|-------|
 | Dashboard parent | 50% | S2 janvier |
-| Interface admin | 30% | S4 janvier |
+| Interface admin | 60% | S4 janvier |
 | Upload justificatifs | En cours | S3 janvier |
 
 ### ⏸️ Désactivés (frontend fait, backend commenté)
@@ -340,6 +340,52 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Jeudi 8 janvier 2026
+
+**Durée :** ~10h (Session IA Intensive)
+
+**✅ Réalisé :**
+1. **Restauration Design "Nature" Premium** : 
+   - Réintégration totale de la landing page (version haute fidélité).
+   - Utilisation de l'image réelle de la classe avec les enfants.
+   - Design organique avec blobs animés (Framer Motion).
+2. **Optimisation Visuelle (Pixel Perfect)** :
+   - Ajustement de l'opacité de l'image de fond (60%) pour plus de visibilité.
+   - Ajout d'un dégradé vertical bas d'image pour une transition invisible vers le blanc.
+   - Refonte totale du Footer : Thème "Dark Emerald" (#061C16) avec navigation complète.
+   - Animation d'entrée progressive (Zoom + Fade) pour le Hero.
+3. **Stabilisation Base de Données & Infra** :
+   - Restauration du seed complet (utilisateurs, enfants, préinscriptions de test).
+   - Fix des identifiants admin : `admin@ecole.fr` / `admin123`.
+   - Script `start-dev.sh` optimisé avec gestion des conflits de ports (3001).
+4. **Optimisation Formulaire Préinscription** :
+   - Ajout du champ `classeActuelle` et gestion de la situation familiale "Autre".
+   - Synchronisation totale avec le schéma Prisma.
+5. **SEO & Peaufinage** :
+   - Métadonnées enrichies dans `layout.tsx`.
+   - Liens de navigation du footer fonctionnels vers les espaces Admin/Parent.
+
+**📁 Fichiers modifiés :**
+- `frontend/src/app/page.tsx` (Major redesign)
+- `frontend/src/app/layout.tsx` (SEO)
+- `frontend/src/app/(public)/preinscription/page.tsx` (Fields)
+- `frontend/src/app/admin/login/page.tsx` (Credentials fix)
+- `backend/prisma/schema.prisma` (Audit)
+- `start-dev.sh` (Optimisation)
+
+**🐛 Bugs corrigés :**
+- Accès admin impossible (mot de passe non haché / seed manquant).
+- Conflit de port 3001 bloquant le démarrage.
+- Coupure nette (ligne blanche) en bas de l'image hero.
+- Liens "mort" dans le footer.
+
+**⏭️ Prochaines étapes :**
+- [ ] Finaliser l'UI du Dashboard Admin (Dossiers en attente).
+- [ ] Implémenter le module Facturation (Priorité Février).
+- [ ] Tester le flux complet d'inscription en conditions réelles.
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -377,6 +423,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 8 janvier 2026  
+**Dernière mise à jour :** 8 janvier 2026 (19h30)  
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)  
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

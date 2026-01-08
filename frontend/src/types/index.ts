@@ -113,6 +113,8 @@ export interface CreatePreinscriptionRequest {
   decouverte?: string;
   pedagogieMontessori?: string;
   difficultes?: string;
+  classeActuelle?: string;
+  situationAutre?: string;
 }
 
 export interface Preinscription {
@@ -160,6 +162,7 @@ export interface Preinscription {
   decouverte?: string;
   pedagogieMontessori?: string;
   difficultes?: string;
+  situationAutre?: string;
 
   createdAt: string;
   updatedAt: string;

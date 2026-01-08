@@ -16,18 +16,18 @@ declare global {
  * @returns { executeRecaptcha, isLoaded, error }
  */
 export function useRecaptcha(action: string = 'submit') {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
+  // Mode développement: reCAPTCHA complètement désactivé
+  const [isLoaded, setIsLoaded] = useState(!siteKey);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Si pas de clé configurée, ne pas charger reCAPTCHA (mode développement)
+    // Si pas de clé configurée, ne rien faire (mode développement)
     if (!siteKey) {
-      console.log('reCAPTCHA désactivé: NEXT_PUBLIC_RECAPTCHA_SITE_KEY non configurée');
-      setIsLoaded(true);
       return;
     }
+
 
     // Vérifier si le script est déjà chargé
     if (window.grecaptcha) {

@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { 
-  FileText, 
-  User, 
-  Users, 
-  GraduationCap, 
-  MessageSquare, 
+import {
+  FileText,
+  User,
+  Users,
+  GraduationCap,
+  MessageSquare,
   Check,
   Plus,
   Trash2,
@@ -32,10 +32,12 @@ const CLASSE_MAPPING: Record<string, Classe> = {
 
 // Classes disponibles à l'école (multi-âges Montessori)
 const CLASSES = [
-  { group: "Classes multi-âges Montessori", options: [
-    { value: "MATERNELLE", label: "Maternelle (3-6 ans)" },
-    { value: "ELEMENTAIRE", label: "Élémentaire (6-12 ans, CP au CM2)" },
-  ]},
+  {
+    group: "Classes multi-âges Montessori", options: [
+      { value: "MATERNELLE", label: "Maternelle (3-6 ans)" },
+      { value: "ELEMENTAIRE", label: "Élémentaire (6-12 ans, CP au CM2)" },
+    ]
+  },
 ];
 
 const SITUATIONS_FAMILIALES = [
@@ -65,10 +67,10 @@ export default function PreinscriptionPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [numeroDossier, setNumeroDossier] = useState("");
   const [error, setError] = useState("");
-  
+
   // reCAPTCHA v3 (désactivé si pas de clé configurée)
   const { executeRecaptcha, isLoaded: recaptchaLoaded } = useRecaptcha('preinscription');
-  
+
   // Informations enfant
   const [nomEnfant, setNomEnfant] = useState("");
   const [prenomEnfant, setPrenomEnfant] = useState("");
@@ -76,20 +78,22 @@ export default function PreinscriptionPage() {
   const [lieuNaissance, setLieuNaissance] = useState("");
   const [nationalite, setNationalite] = useState("");
   const [allergies, setAllergies] = useState("");
-  
+
   // Scolarité
   const [classeSouhaitee, setClasseSouhaitee] = useState("");
   const [etablissementPrecedent, setEtablissementPrecedent] = useState("");
   const [dateIntegration, setDateIntegration] = useState("");
-  
+
   // Responsables
   const [responsables, setResponsables] = useState<Responsable[]>([
     { civilite: "", nom: "", prenom: "", lienParente: "", email: "", telephone: "", adresse: "", profession: "" }
   ]);
-  
+
   // Informations complémentaires
   const [situationFamiliale, setSituationFamiliale] = useState<SituationFamiliale | "">("");
-  
+  const [situationAutre, setSituationAutre] = useState("");
+  const [classeActuelle, setClasseActuelle] = useState("");
+
   // Questions importantes
   const [decouverte, setDecouverte] = useState("");
   const [pedagogieMontessori, setPedagogieMontessori] = useState("");
@@ -136,6 +140,8 @@ export default function PreinscriptionPage() {
       profession: "Ingénieur"
     }]);
     setSituationFamiliale(SituationFamiliale.MARIES);
+    setSituationAutre("");
+    setClasseActuelle("Grande Section");
     setDecouverte("Recommandation d'amis");
     setPedagogieMontessori("Nous apprécions l'autonomie et le respect du rythme de l'enfant.");
     setDifficultes("Aucune difficulté particulière à signaler.");
@@ -149,7 +155,7 @@ export default function PreinscriptionPage() {
     try {
       // Obtenir le token reCAPTCHA (null si désactivé)
       const recaptchaToken = await executeRecaptcha();
-      
+
       const data: CreatePreinscriptionRequest & { recaptchaToken?: string } = {
         // Enfant
         nomEnfant,
@@ -186,10 +192,12 @@ export default function PreinscriptionPage() {
 
         // Informations complémentaires
         situationFamiliale: situationFamiliale || undefined,
+        situationAutre: situationFamiliale === SituationFamiliale.AUTRE ? situationAutre : undefined,
+        classeActuelle: classeActuelle || undefined,
         decouverte: decouverte || undefined,
         pedagogieMontessori: pedagogieMontessori || undefined,
         difficultes: difficultes || undefined,
-        
+
         // Token reCAPTCHA (null si désactivé en dev)
         ...(recaptchaToken && { recaptchaToken }),
       };
@@ -215,7 +223,7 @@ export default function PreinscriptionPage() {
             Préinscription envoyée !
           </h1>
           <p className="text-gray-600 mb-6">
-            Votre demande a été enregistrée avec succès. 
+            Votre demande a été enregistrée avec succès.
             Nous vous contacterons prochainement.
           </p>
           <div className="bg-emerald-50 rounded-xl p-4 mb-6">
@@ -390,15 +398,27 @@ export default function PreinscriptionPage() {
                 </div>
               </div>
               {!isPSSelected && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Établissement précédent</label>
-                  <input
-                    type="text"
-                    value={etablissementPrecedent}
-                    onChange={(e) => setEtablissementPrecedent(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                    placeholder="Nom de l'école précédente..."
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Établissement précédent</label>
+                    <input
+                      type="text"
+                      value={etablissementPrecedent}
+                      onChange={(e) => setEtablissementPrecedent(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      placeholder="Nom de l'école précédente..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Classe actuelle</label>
+                    <input
+                      type="text"
+                      value={classeActuelle}
+                      onChange={(e) => setClasseActuelle(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      placeholder="Ex: Grande Section, CP..."
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -536,17 +556,32 @@ export default function PreinscriptionPage() {
               </h2>
             </div>
             <div className="p-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Situation</label>
-                <select
-                  value={situationFamiliale}
-                  onChange={(e) => setSituationFamiliale(e.target.value as SituationFamiliale)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                >
-                  {SITUATIONS_FAMILIALES.map(sit => (
-                    <option key={sit.value} value={sit.value}>{sit.label}</option>
-                  ))}
-                </select>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Situation</label>
+                  <select
+                    value={situationFamiliale}
+                    onChange={(e) => setSituationFamiliale(e.target.value as SituationFamiliale)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  >
+                    {SITUATIONS_FAMILIALES.map(sit => (
+                      <option key={sit.value} value={sit.value}>{sit.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {situationFamiliale === SituationFamiliale.AUTRE && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Précisez la situation</label>
+                    <input
+                      type="text"
+                      required
+                      value={situationAutre}
+                      onChange={(e) => setSituationAutre(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      placeholder="Votre situation..."
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -602,7 +637,7 @@ export default function PreinscriptionPage() {
                 <p className="text-sm text-gray-600 mb-4">
                   Voici un récapitulatif des tarifs pour l&apos;année scolaire :
                 </p>
-                
+
                 <div className="space-y-4">
                   {/* Frais d'inscription */}
                   <div className="flex justify-between items-center pb-3 border-b border-gray-200">
@@ -653,7 +688,7 @@ export default function PreinscriptionPage() {
 
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 text-center">
-                    📍 {ECOLE_INFO.adresse.rue}, {ECOLE_INFO.adresse.codePostal} {ECOLE_INFO.adresse.ville}<br/>
+                    📍 {ECOLE_INFO.adresse.rue}, {ECOLE_INFO.adresse.codePostal} {ECOLE_INFO.adresse.ville}<br />
                     📞 {ECOLE_INFO.contact.telephone} | ✉️ {ECOLE_INFO.contact.email}
                   </p>
                 </div>
@@ -685,7 +720,7 @@ export default function PreinscriptionPage() {
                 </>
               )}
             </button>
-            
+
             {/* Indicateur reCAPTCHA */}
             {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
               <div className="flex items-center gap-2 text-xs text-gray-400">
