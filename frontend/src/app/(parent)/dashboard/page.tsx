@@ -5,12 +5,12 @@ import Link from "next/link";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useEnfants } from "@/hooks/useEnfants";
-import { 
-  UtensilsCrossed, 
-  Palette, 
-  UserPlus, 
-  RefreshCw, 
-  FolderOpen, 
+import {
+  UtensilsCrossed,
+  Palette,
+  UserPlus,
+  RefreshCw,
+  FolderOpen,
   Users,
   Calendar,
   TrendingUp,
@@ -55,7 +55,7 @@ export default function DashboardParentPage() {
   useEffect(() => {
     const checkSignatures = async () => {
       if (enfants.length === 0) return;
-      
+
       const token = localStorage.getItem("auth_token");
       if (!token) return;
 
@@ -66,7 +66,7 @@ export default function DashboardParentPage() {
           const response = await fetch(`${API_URL}/signatures/status/${enfant.id}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             if (!data.signed) {
@@ -116,7 +116,7 @@ export default function DashboardParentPage() {
             <rect width="100" height="100" fill="url(#dots)" />
           </svg>
         </div>
-        
+
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
@@ -144,14 +144,14 @@ export default function DashboardParentPage() {
                 Action requise : Finaliser l&apos;inscription
               </h3>
               <p className="text-amber-100 mb-4">
-                {inscriptionsNonFinalisees.length === 1 
+                {inscriptionsNonFinalisees.length === 1
                   ? `L'inscription de ${inscriptionsNonFinalisees[0].enfantNom} n'est pas encore finalisée.`
                   : `${inscriptionsNonFinalisees.length} inscriptions ne sont pas encore finalisées.`
                 }
                 {" "}Veuillez signer le règlement intérieur pour compléter l&apos;inscription.
               </p>
               <Link
-                href={inscriptionsNonFinalisees.length === 1 
+                href={inscriptionsNonFinalisees.length === 1
                   ? `/finaliser-inscription?enfantId=${inscriptionsNonFinalisees[0].enfantId}`
                   : "/finaliser-inscription"
                 }
@@ -187,7 +187,15 @@ export default function DashboardParentPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500 font-medium">Année scolaire</p>
-              <p className="text-lg font-semibold text-gray-900">2024-2025</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {(() => {
+                  const now = new Date();
+                  const year = now.getFullYear();
+                  const month = now.getMonth();
+                  // Si après août (rentrée), nouvelle année scolaire
+                  return month >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+                })()}
+              </p>
             </div>
           </div>
         </div>

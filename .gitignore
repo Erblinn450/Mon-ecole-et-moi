@@ -110,6 +110,3 @@ dist/
 
 # Prisma
 .env.local
-
-# Archive (pour les anciennes migrations Laravel)
-/archive/

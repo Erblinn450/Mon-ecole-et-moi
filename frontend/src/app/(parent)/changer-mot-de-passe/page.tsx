@@ -81,7 +81,6 @@ export default function ChangerMotDePassePage() {
           user.premiereConnexion = data.premiereConnexion ?? false;
           user.premiere_connexion = data.premiereConnexion ?? false;
           localStorage.setItem("user", JSON.stringify(user));
-          console.log("[FRONTEND] localStorage mis à jour, premiereConnexion =", user.premiereConnexion);
         } catch {
           // Ignorer
         }

@@ -1,0 +1,100 @@
+# Docker Compose pour NestJS + Next.js + PostgreSQL
+# 
+# Usage:
+#   docker compose -f docker-compose.nestjs.yml up -d
+#
+# Services:
+#   - postgres: Base de données PostgreSQL 16
+#   - mailhog: Serveur SMTP de test (dev)
+#   - backend: API NestJS (à construire)
+#   - frontend: App Next.js (à construire)
+
+services:
+  # ============================================
+  # Base de données PostgreSQL
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: monecole-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: monecole
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monecole
+
+  # ============================================
+  # MailHog - Serveur SMTP de test
+  # ============================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: monecole-mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025"   # Interface web
+      - "1025:1025"   # SMTP
+    networks:
+      - monecole
+
+  # ============================================
+  # Prisma Studio (optionnel, pour dev)
+  # ============================================
+  # Pour lancer Prisma Studio manuellement:
+  # cd backend && npx prisma studio
+
+  # ============================================
+  # Backend NestJS (à construire pour production)
+  # ============================================
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: monecole-backend
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/monecole?schema=public
+  #     JWT_SECRET: ${JWT_SECRET}
+  #     FRONTEND_URL: http://localhost:3000
+  #   ports:
+  #     - "3001:3001"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - monecole
+
+  # ============================================
+  # Frontend Next.js (à construire pour production)
+  # ============================================
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: monecole-frontend
+  #   restart: unless-stopped
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: http://localhost:3001/api
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - monecole
+
+volumes:
+  postgres_data:
+
+networks:
+  monecole:
+    driver: bridge
