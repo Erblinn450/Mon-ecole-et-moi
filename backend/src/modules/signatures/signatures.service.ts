@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class SignaturesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Obtenir le statut de signature pour un enfant OU une préinscription
@@ -147,7 +147,7 @@ export class SignaturesService {
     });
 
     if (existingSignature?.parentAccepte) {
-      return { 
+      return {
         message: 'Le règlement a déjà été signé',
         signature: existingSignature,
       };
@@ -190,9 +190,10 @@ export class SignaturesService {
     const enfantsSansSignature = await this.prisma.enfant.findMany({
       where: {
         classe: { not: null },
-        signatureReglements: {
-          none: { parentAccepte: true },
-        },
+        OR: [
+          { signatureReglements: null },
+          { signatureReglements: { parentAccepte: false } }
+        ],
       },
       include: {
         parent1: { select: { id: true, name: true, email: true } },

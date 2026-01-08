@@ -332,6 +332,9 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 - Le flag `premiereConnexion` ne passait pas à `false`
 - Dépendances lourdes inutiles dans le frontend
 - Documentation obsolète qui induisait en erreur
+- **Validation Backend** : Correction de l'erreur `property classeActuelle should not exist`. Synchronisation du DTO et du Service backend avec les nouveaux champs du formulaire.
+- **Build TypeScript** : Correction d'erreurs dans `SignaturesService` et `PreinscriptionsService` qui empêchaient la compilation (relations 1-to-1 traitées à tort comme des tableaux).
+- **Dashboard Admin** : Correction d'un crash frontend (`TypeError: null is not an object`) causé par une incohérence de type sur `signatureReglements` (objet vs tableau).
 
 **⏭️ Prochaines étapes :**
 - [ ] 📂 Upload des justificatifs (Carnet de santé, Assurance)

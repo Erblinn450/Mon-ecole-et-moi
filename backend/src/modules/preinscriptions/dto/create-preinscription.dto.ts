@@ -44,6 +44,11 @@ export class CreatePreinscriptionDto {
   @IsString()
   etablissementPrecedent?: string;
 
+  @ApiPropertyOptional({ example: 'Grande Section' })
+  @IsOptional()
+  @IsString()
+  classeActuelle?: string;
+
   // Parent 1
   @ApiPropertyOptional({ example: 'M.' })
   @IsOptional()
@@ -151,5 +156,10 @@ export class CreatePreinscriptionDto {
   @IsOptional()
   @IsString()
   difficultes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  situationAutre?: string;
 }
 

@@ -37,6 +37,7 @@ export class PreinscriptionsService {
         allergies: createDto.allergies,
         classeSouhaitee: createDto.classeSouhaitee,
         etablissementPrecedent: createDto.etablissementPrecedent,
+        classeActuelle: createDto.classeActuelle,
         civiliteParent: createDto.civiliteParent,
         nomParent: createDto.nomParent,
         prenomParent: createDto.prenomParent,
@@ -55,6 +56,7 @@ export class PreinscriptionsService {
         professionParent2: createDto.professionParent2,
         dateIntegration: createDto.dateIntegration ? new Date(createDto.dateIntegration) : null,
         situationFamiliale: createDto.situationFamiliale,
+        situationAutre: createDto.situationAutre,
         decouverte: createDto.decouverte,
         pedagogieMontessori: createDto.pedagogieMontessori,
         difficultes: createDto.difficultes,
@@ -457,7 +459,7 @@ export class PreinscriptionsService {
       const enfant = p.enfants?.[0];
       if (!enfant) return true;
 
-      const isSigned = enfant.signatureReglements.some(s => s.parentAccepte);
+      const isSigned = enfant.signatureReglements?.parentAccepte || false;
       const hasDocs = enfant.justificatifs.some(j => j.valide === true);
       const hasPendingDocs = enfant.justificatifs.some(j => j.valide === null);
 

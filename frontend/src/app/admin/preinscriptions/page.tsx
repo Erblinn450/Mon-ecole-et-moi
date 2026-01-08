@@ -38,7 +38,7 @@ interface Preinscription {
   enfants?: {
     id: number;
     justificatifs: { id: number; typeId: number; valide: boolean | null }[];
-    signatureReglements: { id: number; parentAccepte: boolean }[];
+    signatureReglements: { id: number; parentAccepte: boolean } | null;
   }[];
 }
 
@@ -158,7 +158,7 @@ export default function PreinscriptionsAdminPage() {
     }
 
     // Vérifier signature
-    const isSigned = enfant.signatureReglements.length > 0 && enfant.signatureReglements[0].parentAccepte;
+    const isSigned = enfant.signatureReglements?.parentAccepte ?? false;
 
     // Vérifier documents
     const hasDocs = enfant.justificatifs.some(j => j.valide === true);
