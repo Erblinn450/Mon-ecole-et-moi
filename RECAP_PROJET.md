@@ -317,15 +317,18 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
    - Création d'un `docker-compose.nestjs.yml` propre
    - Nettoyage des fichiers racines (scripts shell, configs PHP)
    - Création des `.env.example` corrects pour la nouvelle stack
+   - Ajout `.eslintrc` pour backend et frontend (Linting)
+   - Configuration `nest-cli.json` corrigée pour le build (assets)
 
 **📁 Fichiers modifiés :**
 - `README.md` (x3)
 - `backend/prisma/schema.prisma`
-- `backend/src/modules/auth/auth.service.ts`
-- `frontend/src/app/(parent)/changer-mot-de-passe/page.tsx`
+- `backend/nest-cli.json` (fix build)
+- `backend/.eslintrc.js`, `frontend/.eslintrc.json` (new)
 - `.gitignore`, `package.json` (nettoyage)
 
 **🐛 Bugs corrigés :**
+- Les templates emails n'étaient pas copiés au bon endroit dans `dist/` (fix assets outDir)
 - Le flag `premiereConnexion` ne passait pas à `false`
 - Dépendances lourdes inutiles dans le frontend
 - Documentation obsolète qui induisait en erreur
