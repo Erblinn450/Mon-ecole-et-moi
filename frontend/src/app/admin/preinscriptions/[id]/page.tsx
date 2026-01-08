@@ -98,10 +98,10 @@ const classeLabels: Record<Classe, string> = {
   [Classe.COLLEGE]: "Collège",
 };
 
-const statutConfig = {
+const statutConfig: Record<StatutPreinscription, { label: string; bg: string; text: string }> = {
   [StatutPreinscription.EN_ATTENTE]: { label: "En attente", bg: "bg-amber-100", text: "text-amber-800" },
   [StatutPreinscription.DEJA_CONTACTE]: { label: "Contacté", bg: "bg-blue-100", text: "text-blue-800" },
-  [StatutPreinscription.VALIDE]: { label: "Validé", bg: "bg-emerald-100", text: "text-emerald-800" },
+  [StatutPreinscription.VALIDE]: { label: "Validé", bg: "bg-indigo-100", text: "text-indigo-800" },
   [StatutPreinscription.REFUSE]: { label: "Refusé", bg: "bg-rose-100", text: "text-rose-800" },
   [StatutPreinscription.ANNULE]: { label: "Annulé", bg: "bg-gray-100", text: "text-gray-800" },
 };
@@ -117,6 +117,15 @@ export default function PreinscriptionDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<Partial<Preinscription>>({});
+
+  useEffect(() => {
+    if (preinscription) {
+      setFormData(preinscription);
+    }
+  }, [preinscription]);
+
 
   useEffect(() => {
     loadData();
@@ -238,6 +247,33 @@ export default function PreinscriptionDetailPage() {
     }
   };
 
+  const handleSave = async () => {
+    if (!preinscription) return;
+    setIsUpdating(true);
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${API_URL}/preinscriptions/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) throw new Error("Erreur lors de la sauvegarde");
+
+      await loadData();
+      setIsEditing(false);
+      alert("Modifications enregistrées !");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -280,9 +316,19 @@ export default function PreinscriptionDetailPage() {
             </p>
           </div>
         </div>
-        <span className={`px-4 py-2 rounded-full font-medium ${statut.bg} ${statut.text}`}>
-          {statut.label}
-        </span>
+        <div className="flex items-center gap-3">
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+            >
+              Modifier le dossier
+            </button>
+          )}
+          <span className={`px-4 py-2 rounded-full font-medium ${statut.bg} ${statut.text}`}>
+            {statut.label}
+          </span>
+        </div>
       </div>
 
       {/* Statut inscription complète */}
@@ -308,27 +354,81 @@ export default function PreinscriptionDetailPage() {
         <div className="p-6 grid md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-500">Nom</p>
-            <p className="font-medium">{preinscription.nomEnfant}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.nomEnfant || ''}
+                onChange={e => setFormData({ ...formData, nomEnfant: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{preinscription.nomEnfant}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Prénom</p>
-            <p className="font-medium">{preinscription.prenomEnfant}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.prenomEnfant || ''}
+                onChange={e => setFormData({ ...formData, prenomEnfant: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{preinscription.prenomEnfant}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Date de naissance</p>
-            <p className="font-medium">{new Date(preinscription.dateNaissance).toLocaleDateString("fr-FR")}</p>
+            {isEditing ? (
+              <input
+                type="date"
+                value={formData.dateNaissance ? new Date(formData.dateNaissance).toISOString().split('T')[0] : ''}
+                onChange={e => setFormData({ ...formData, dateNaissance: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{new Date(preinscription.dateNaissance).toLocaleDateString("fr-FR")}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Lieu de naissance</p>
-            <p className="font-medium">{preinscription.lieuNaissance || "Non renseigné"}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.lieuNaissance || ''}
+                onChange={e => setFormData({ ...formData, lieuNaissance: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{preinscription.lieuNaissance || "Non renseigné"}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Nationalité</p>
-            <p className="font-medium">{preinscription.nationalite || "Non renseigné"}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.nationalite || ''}
+                onChange={e => setFormData({ ...formData, nationalite: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{preinscription.nationalite || "Non renseigné"}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Allergies</p>
-            <p className="font-medium">{preinscription.allergies || "Aucune"}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.allergies || ''}
+                onChange={e => setFormData({ ...formData, allergies: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{preinscription.allergies || "Aucune"}</p>
+            )}
           </div>
         </div>
       </section>
@@ -343,23 +443,62 @@ export default function PreinscriptionDetailPage() {
         <div className="p-6 grid md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-500">Classe souhaitée</p>
-            <p className="font-medium">{classeLabels[preinscription.classeSouhaitee]}</p>
+            {isEditing ? (
+              <select
+                value={formData.classeSouhaitee || Classe.MATERNELLE}
+                onChange={(e) => setFormData({ ...formData, classeSouhaitee: e.target.value as Classe })}
+                className="w-full p-2 border rounded-lg"
+              >
+                <option value={Classe.MATERNELLE}>Maternelle</option>
+                <option value={Classe.ELEMENTAIRE}>Élémentaire</option>
+                <option value={Classe.COLLEGE}>Collège</option>
+              </select>
+            ) : (
+              <p className="font-medium">{classeLabels[preinscription.classeSouhaitee]}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Date d&apos;intégration</p>
-            <p className="font-medium">
-              {preinscription.dateIntegration
-                ? new Date(preinscription.dateIntegration).toLocaleDateString("fr-FR")
-                : "Rentrée scolaire"}
-            </p>
+            {isEditing ? (
+              <input
+                type="date"
+                value={formData.dateIntegration ? new Date(formData.dateIntegration).toISOString().split('T')[0] : ''}
+                onChange={e => setFormData({ ...formData, dateIntegration: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">
+                {preinscription.dateIntegration
+                  ? new Date(preinscription.dateIntegration).toLocaleDateString("fr-FR")
+                  : "Rentrée scolaire"}
+              </p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Établissement précédent</p>
-            <p className="font-medium">{preinscription.etablissementPrecedent || "Non renseigné"}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.etablissementPrecedent || ''}
+                onChange={e => setFormData({ ...formData, etablissementPrecedent: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{preinscription.etablissementPrecedent || "Non renseigné"}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Classe actuelle</p>
-            <p className="font-medium">{preinscription.classeActuelle || "Non scolarisé"}</p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.classeActuelle || ''}
+                onChange={e => setFormData({ ...formData, classeActuelle: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+              />
+            ) : (
+              <p className="font-medium">{preinscription.classeActuelle || "Non scolarisé"}</p>
+            )}
           </div>
         </div>
       </section>
@@ -555,36 +694,69 @@ export default function PreinscriptionDetailPage() {
       )}
 
       {/* Actions */}
-      {preinscription.statut === StatutPreinscription.EN_ATTENTE && (
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={() => updateStatut(StatutPreinscription.VALIDE)}
-            disabled={isUpdating}
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
-          >
-            {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-            Valider le dossier
-          </button>
+      {/* Actions */}
+      <div className="flex flex-wrap gap-4">
+        {isEditing ? (
+          <>
+            <button
+              onClick={handleSave}
+              disabled={isUpdating}
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+            >
+              {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+              Enregistrer les modifications
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              disabled={isUpdating}
+              className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors disabled:opacity-50"
+            >
+              <X size={18} />
+              Annuler les modifications
+            </button>
+          </>
+        ) : (
+          preinscription.statut === StatutPreinscription.EN_ATTENTE && (
+            <>
+              <button
+                onClick={() => updateStatut(StatutPreinscription.VALIDE)}
+                disabled={isUpdating}
+                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                Valider le dossier
+              </button>
+              <button
+                onClick={() => {
+                  const motif = prompt("Motif du refus :");
+                  if (motif) updateStatut(StatutPreinscription.REFUSE, motif);
+                }}
+                disabled={isUpdating}
+                className="flex items-center gap-2 px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+              >
+                <XCircle size={18} />
+                Refuser le dossier
+              </button>
+            </>
+          )
+        )}
+
+        {/* Bouton Annuler (visible si actif et pas en édition) */}
+        {!isEditing && preinscription.statut !== StatutPreinscription.ANNULE && preinscription.statut !== StatutPreinscription.REFUSE && (
           <button
             onClick={() => {
-              const motif = prompt("Motif du refus :");
-              if (motif) updateStatut(StatutPreinscription.REFUSE, motif);
+              if (confirm("Êtes-vous sûr de vouloir annuler ce dossier ?")) {
+                updateStatut(StatutPreinscription.ANNULE);
+              }
             }}
             disabled={isUpdating}
-            className="flex items-center gap-2 px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-xl transition-colors disabled:opacity-50 ml-auto"
           >
             <XCircle size={18} />
-            Refuser le dossier
+            Annuler le dossier
           </button>
-          <button
-            onClick={() => updateStatut(StatutPreinscription.DEJA_CONTACTE)}
-            disabled={isUpdating}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
-          >
-            Marquer comme contacté
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

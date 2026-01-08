@@ -110,3 +110,6 @@ dist/
 
 # Prisma
 .env.local
+
+# Local uploads
+/backend/uploads/

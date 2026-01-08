@@ -30,7 +30,7 @@ export default function ParentRootLayout({
     // Vérifier si première connexion (changement de mot de passe obligatoire)
     const userStr = localStorage.getItem("user");
     let needsPasswordChange = false;
-    
+
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
@@ -80,10 +80,10 @@ export default function ParentRootLayout({
   // ==========================================
   // Si l'utilisateur doit changer son mot de passe, on affiche UNIQUEMENT
   // le contenu de la page SANS le menu de navigation (ParentLayout)
-  
+
   if (mustChangePassword) {
     const isOnChangePasswordPage = pathname === "/changer-mot-de-passe";
-    
+
     // Si sur la page de changement de mot de passe, afficher le formulaire SEUL
     if (isOnChangePasswordPage) {
       return (
@@ -102,15 +102,15 @@ export default function ParentRootLayout({
               </div>
             </div>
           </header>
-          
+
           {/* Bannière d'avertissement */}
           <div className="bg-amber-500 text-white py-3 px-4">
             <div className="max-w-2xl mx-auto flex items-center justify-center gap-3 text-sm font-medium">
               <Lock size={18} />
-              <span>Changement de mot de passe obligatoire avant d'accéder à votre espace</span>
+              <span>Changement de mot de passe obligatoire avant d&apos;accéder à votre espace</span>
             </div>
           </div>
-          
+
           {/* Contenu */}
           <main className="flex-1 p-6 lg:p-10">
             <div className="max-w-md mx-auto pt-8">
@@ -120,7 +120,7 @@ export default function ParentRootLayout({
         </div>
       );
     }
-    
+
     // Si essaie d'accéder à une autre page → bloquer et rediriger
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 via-white to-amber-50/30">
@@ -132,7 +132,7 @@ export default function ParentRootLayout({
             Action requise
           </h2>
           <p className="text-gray-600 mb-6">
-            Pour des raisons de sécurité, vous devez changer votre mot de passe avant d'accéder à votre espace parent.
+            Pour des raisons de sécurité, vous devez changer votre mot de passe avant d&apos;accéder à votre espace parent.
           </p>
           <button
             onClick={() => router.push("/changer-mot-de-passe")}

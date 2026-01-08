@@ -15,6 +15,9 @@ import {
   AlertCircle,
   Users,
   GraduationCap,
+  FileCheck,
+  FileText,
+  Shield
 } from "lucide-react";
 import { StatutPreinscription, Classe } from "@/types";
 
@@ -31,12 +34,18 @@ interface Preinscription {
   emailParent: string;
   telephoneParent: string;
   compteCree: boolean;
+  // Relations complètes (injectées par le backend update)
+  enfants?: {
+    id: number;
+    justificatifs: { id: number; typeId: number; valide: boolean | null }[];
+    signatureReglements: { id: number; parentAccepte: boolean }[];
+  }[];
 }
 
 interface Stats {
   total: number;
   enAttente: number;
-  dejaContacte: number;
+  piecesAValider: number;
   valide: number;
   refuse: number;
 }
@@ -56,9 +65,9 @@ const statutConfig = {
   },
   [StatutPreinscription.VALIDE]: {
     label: "Validé",
-    bg: "bg-emerald-100",
-    text: "text-emerald-800",
-    icon: CheckCircle,
+    bg: "bg-indigo-100",
+    text: "text-indigo-800",
+    icon: Users,
   },
   [StatutPreinscription.REFUSE]: {
     label: "Refusé",
@@ -138,6 +147,31 @@ export default function PreinscriptionsAdminPage() {
     );
   });
 
+  // Calculer l'état d'avancement (Progression)
+  const getProgressionStatus = (p: Preinscription) => {
+    if (p.statut !== StatutPreinscription.VALIDE) return null;
+
+    const enfant = p.enfants?.[0];
+    // S'il n'y a pas encore d'enfant créé (cas rare car créé à la validation), c'est forcément à valider
+    if (!enfant) {
+      return { label: "Pièces à valider", color: "text-orange-700", bg: "bg-orange-100", icon: FileText };
+    }
+
+    // Vérifier signature
+    const isSigned = enfant.signatureReglements.length > 0 && enfant.signatureReglements[0].parentAccepte;
+
+    // Vérifier documents
+    const hasDocs = enfant.justificatifs.some(j => j.valide === true);
+    const hasPendingDocs = enfant.justificatifs.some(j => j.valide === null);
+
+    if (isSigned && hasDocs && !hasPendingDocs) {
+      return { label: "Dossier Complet", color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle };
+    }
+
+    // Tout le reste est à valider
+    return { label: "Pièces à valider", color: "text-orange-700", bg: "bg-orange-100", icon: FileText };
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -166,13 +200,13 @@ export default function PreinscriptionsAdminPage() {
             <p className="text-sm text-amber-700">En attente</p>
             <p className="text-2xl font-bold text-amber-800">{stats.enAttente}</p>
           </div>
-          <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
-            <p className="text-sm text-blue-700">Contactés</p>
-            <p className="text-2xl font-bold text-blue-800">{stats.dejaContacte}</p>
+          <div className="bg-orange-50 rounded-xl border border-orange-100 p-4">
+            <p className="text-sm text-orange-700">Pièces à valider</p>
+            <p className="text-2xl font-bold text-orange-800">{stats.piecesAValider}</p>
           </div>
-          <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
-            <p className="text-sm text-emerald-700">Validés</p>
-            <p className="text-2xl font-bold text-emerald-800">{stats.valide}</p>
+          <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
+            <p className="text-sm text-indigo-700">Comptes Validés</p>
+            <p className="text-2xl font-bold text-indigo-800">{stats.valide}</p>
           </div>
           <div className="bg-rose-50 rounded-xl border border-rose-100 p-4">
             <p className="text-sm text-rose-700">Refusés</p>
@@ -206,7 +240,6 @@ export default function PreinscriptionsAdminPage() {
             >
               <option value="">Tous les statuts</option>
               <option value={StatutPreinscription.EN_ATTENTE}>En attente</option>
-              <option value={StatutPreinscription.DEJA_CONTACTE}>Contacté</option>
               <option value={StatutPreinscription.VALIDE}>Validé</option>
               <option value={StatutPreinscription.REFUSE}>Refusé</option>
             </select>
@@ -247,12 +280,11 @@ export default function PreinscriptionsAdminPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Dossier</th>
                   <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Enfant</th>
                   <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Classe</th>
                   <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Contact</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Date</th>
                   <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Statut</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Avancement</th>
                   <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Actions</th>
                 </tr>
               </thead>
@@ -260,21 +292,21 @@ export default function PreinscriptionsAdminPage() {
                 {filteredPreinscriptions.map((preinscription) => {
                   const statut = statutConfig[preinscription.statut];
                   const StatutIcon = statut.icon;
+                  const progression = getProgressionStatus(preinscription);
+                  const ProgressionIcon = progression?.icon;
 
                   return (
                     <tr key={preinscription.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
-                        <p className="font-mono text-sm text-gray-900">{preinscription.numeroDossier}</p>
-                      </td>
-                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <Users size={18} className="text-indigo-600" />
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">
+                            {preinscription.prenomEnfant.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">
                               {preinscription.prenomEnfant} {preinscription.nomEnfant}
                             </p>
+                            <p className="font-mono text-xs text-gray-400">{preinscription.numeroDossier}</p>
                           </div>
                         </div>
                       </td>
@@ -289,15 +321,24 @@ export default function PreinscriptionsAdminPage() {
                         <p className="text-xs text-gray-500">{preinscription.telephoneParent}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm text-gray-600">
-                          {new Date(preinscription.dateDemande).toLocaleDateString("fr-FR")}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${statut.bg} ${statut.text}`}>
                           <StatutIcon size={14} />
                           {statut.label}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {preinscription.statut === StatutPreinscription.VALIDE ? (
+                          progression ? (
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${progression.bg} ${progression.color}`}>
+                              {ProgressionIcon && <ProgressionIcon size={14} />}
+                              {progression.label}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )
+                        ) : (
+                          <span className="text-gray-300 text-sm italic">N/A</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Link
@@ -319,4 +360,3 @@ export default function PreinscriptionsAdminPage() {
     </div>
   );
 }
-

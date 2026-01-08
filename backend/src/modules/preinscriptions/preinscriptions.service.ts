@@ -16,16 +16,16 @@ export class PreinscriptionsService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   async create(createDto: CreatePreinscriptionDto) {
     const numeroDossier = this.generateNumeroDossier();
-    
+
     // Générer un token de vérification unique (valide 24h)
     const requireEmailVerification = this.configService.get('REQUIRE_EMAIL_VERIFICATION', 'false') === 'true';
     const verificationToken = requireEmailVerification ? this.generateVerificationToken() : null;
     const tokenExpiresAt = requireEmailVerification ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null; // 24h
-    
+
     const preinscription = await this.prisma.preinscription.create({
       data: {
         numeroDossier,
@@ -104,7 +104,7 @@ export class PreinscriptionsService {
       requiresEmailVerification: requireEmailVerification,
     };
   }
-  
+
   /**
    * Vérifie le token de vérification email
    */
@@ -153,13 +153,13 @@ export class PreinscriptionsService {
       this.logger.error(`Erreur envoi email confirmation: ${error.message}`);
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Email vérifié avec succès',
       numeroDossier: preinscription.numeroDossier,
     };
   }
-  
+
   /**
    * Génère un token de vérification unique
    */
@@ -169,9 +169,17 @@ export class PreinscriptionsService {
 
   async findAll(statut?: StatutPreinscription) {
     const where = statut ? { statut } : {};
-    
+
     return this.prisma.preinscription.findMany({
       where,
+      include: {
+        enfants: {
+          include: {
+            justificatifs: true,
+            signatureReglements: true,
+          },
+        },
+      },
       orderBy: [
         { statut: 'asc' },
         { dateDemande: 'desc' },
@@ -331,17 +339,17 @@ export class PreinscriptionsService {
    */
   private async creerCompteParentEtEnfant(preinscription: any) {
     // Utiliser un mot de passe aléatoire en production
-    const useRandomPassword = this.configService.get('USE_RANDOM_PASSWORD', 'false') === 'true' 
+    const useRandomPassword = this.configService.get('USE_RANDOM_PASSWORD', 'false') === 'true'
       || this.configService.get('NODE_ENV') === 'production';
-    
-    const motDePasse = useRandomPassword 
-      ? this.generateSecurePassword(12) 
+
+    const motDePasse = useRandomPassword
+      ? this.generateSecurePassword(12)
       : 'parent1234'; // Mot de passe par défaut pour le développement
-    
+
     if (useRandomPassword) {
       this.logger.log(`Mot de passe sécurisé généré pour ${preinscription.emailParent}`);
     }
-    
+
     const hashedPassword = await bcrypt.hash(motDePasse, 10);
 
     // Vérifier si le parent existe déjà
@@ -401,19 +409,19 @@ export class PreinscriptionsService {
     const numbers = '23456789';
     const special = '@#$%&*!?';
     const allChars = uppercase + lowercase + numbers + special;
-    
+
     // Garantir au moins un caractère de chaque type
     let password = '';
     password += uppercase[crypto.randomInt(uppercase.length)];
     password += lowercase[crypto.randomInt(lowercase.length)];
     password += numbers[crypto.randomInt(numbers.length)];
     password += special[crypto.randomInt(special.length)];
-    
+
     // Compléter avec des caractères aléatoires
     for (let i = 4; i < length; i++) {
       password += allChars[crypto.randomInt(allChars.length)];
     }
-    
+
     // Mélanger le mot de passe pour ne pas avoir un pattern prévisible
     return password.split('').sort(() => crypto.randomInt(3) - 1).join('');
   }
@@ -424,15 +432,40 @@ export class PreinscriptionsService {
   }
 
   async getStats() {
-    const [total, enAttente, dejaContacte, valide, refuse] = await Promise.all([
+    const [total, enAttente, valide, refuse] = await Promise.all([
       this.prisma.preinscription.count(),
       this.prisma.preinscription.count({ where: { statut: StatutPreinscription.EN_ATTENTE } }),
-      this.prisma.preinscription.count({ where: { statut: StatutPreinscription.DEJA_CONTACTE } }),
       this.prisma.preinscription.count({ where: { statut: StatutPreinscription.VALIDE } }),
       this.prisma.preinscription.count({ where: { statut: StatutPreinscription.REFUSE } }),
     ]);
 
-    return { total, enAttente, dejaContacte, valide, refuse };
+    // Récupérer tous les dossiers validés pour checker leur avancement réel (optimisé)
+    const dossiersValides = await this.prisma.preinscription.findMany({
+      where: { statut: StatutPreinscription.VALIDE },
+      select: {
+        enfants: {
+          select: {
+            justificatifs: { select: { valide: true } },
+            signatureReglements: { select: { parentAccepte: true } },
+          }
+        }
+      }
+    });
+
+    // Compter ceux qui ne sont PAS complets
+    const piecesAValider = dossiersValides.filter(p => {
+      const enfant = p.enfants?.[0];
+      if (!enfant) return true;
+
+      const isSigned = enfant.signatureReglements.some(s => s.parentAccepte);
+      const hasDocs = enfant.justificatifs.some(j => j.valide === true);
+      const hasPendingDocs = enfant.justificatifs.some(j => j.valide === null);
+
+      const isComplet = isSigned && hasDocs && !hasPendingDocs;
+      return !isComplet;
+    }).length;
+
+    return { total, enAttente, piecesAValider, valide, refuse };
   }
 
   /**
