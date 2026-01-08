@@ -1,76 +1,59 @@
 # Mon École et Moi - Frontend
 
-Application Next.js 14 pour la gestion scolaire Montessori.
+Application web moderne construite avec **Next.js 14**, **Tailwind CSS** et **TypeScript**.
 
-## 🚀 Technologies
+## 🚀 Stack
 
 - **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui style
-- **Auth**: NextAuth.js (prévu)
+- **Langage**: TypeScript
+- **Styles**: Tailwind CSS + Shadcn UI
+- **Icônes**: Lucide React
+- **Formulaires**: React Hook Form + Zod
 - **Animations**: Framer Motion
 
-## 📦 Installation
+## 🛠️ Installation
 
 ```bash
-# Installer les dépendances
+# Installation des dépendances
 npm install
 
-# Copier le fichier d'environnement
+# Configuration
 cp .env.example .env.local
-
-# Configurer les variables d'environnement dans .env.local
 ```
 
-## 🔧 Configuration
-
-Créer un fichier `.env.local` avec :
-
+### Variables d'environnement (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=votre_cle_publique_recaptcha
 ```
 
-## 🏃 Démarrage
+## 🏃‍♂️ Démarrage
 
 ```bash
-# Mode développement
+# Serveur de développement
 npm run dev
-
-# Build production
-npm run build
-
-# Démarrer en production
-npm start
 ```
+L'application sera accessible sur : **http://localhost:3000**
 
-L'application sera disponible sur http://localhost:3000
-
-## 📁 Structure
+## 📂 Structure du projet
 
 ```
 src/
-├── app/                    # App Router
-│   ├── (public)/          # Pages publiques (préinscription, connexion)
-│   ├── (parent)/          # Espace parent (dashboard, enfants, repas)
-│   ├── (admin)/           # Espace admin (gestion complète)
-│   ├── layout.tsx         # Layout principal
-│   ├── page.tsx           # Page d'accueil
-│   └── globals.css        # Styles globaux
-├── components/
-│   └── ui/                # Composants UI réutilisables
-└── lib/
-    └── utils.ts           # Utilitaires
+├── app/                  # Pages (App Router)
+│   ├── (auth)/          # Routes authentification
+│   ├── (parent)/        # Espace Parent (protégé)
+│   ├── (admin)/         # Espace Admin (protégé)
+│   └── (public)/        # Pages publiques
+├── components/           # Composants Réutilisables
+│   ├── ui/              # Composants de base (boutons, inputs...)
+│   └── ...
+├── hooks/                # Custom Hooks (useAuth, useEnfants...)
+├── lib/                  # Utilitaires (API client, dates...)
+└── types/                # Définitions TypeScript partagées
 ```
 
-## 🎨 Design
+## ✨ Fonctionnalités Clés
 
-- Palette de couleurs douces (verts Montessori, bleus apaisants)
-- Interface mobile-first
-- Animations fluides
-- Accessibilité WCAG
-
-## 📱 PWA
-
-L'application est configurée pour être installable comme PWA sur mobile.
-
+- **Espace Parent** : Dashboard, gestion enfants, inscriptions
+- **Espace Admin** : Valiation dossiers, gestion utilisateurs
+- **Sécurité** : Protection des routes, gestion automatique des tokens JWT, reCAPTCHA v3

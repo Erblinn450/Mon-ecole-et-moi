@@ -1,152 +1,93 @@
 # Mon École et Moi
 
-Application de gestion scolaire pour école Montessori (Laravel + Blade + MySQL).
+Application de gestion scolaire pour école Montessori, développée avec une stack moderne **Next.js + NestJS**.
 
-## 🔌 Ports & URLs par défaut
-- Application web + API : http://localhost:8000
-- Formulaire : http://localhost:8000/formulaire
-- Admin : http://localhost:8000/admin
-- API : http://localhost:8000/api
-- MySQL (Docker) : `localhost:3307` (int. 3306) — utilisateur `admin` / mdp `password123` / base `mon_ecole_db`
-- PhpMyAdmin (Docker) : http://localhost:8081 (host `db`, user `admin`, mdp `password123`)
+> **Note**: Ce projet a migré de Laravel vers l'architecture actuelle en janvier 2026. L'ancienne documentation Laravel est archivée dans `archive/docs-laravel/`.
 
-## 🐳 Démarrage avec Docker (recommandé)
-**Prérequis :** Docker + Docker Compose.
+---
 
-1) (Optionnel) Adapter `.env.docker` si vous changez la BDD ou l’URL.
-2) Construire les images :
+## 🏗️ Architecture Technique
+
+| Couche | Technologie | Port par défaut |
+|--------|-------------|-----------------|
+| **Frontend** | Next.js 14 (App Router) + Tailwind | `3000` |
+| **Backend** | NestJS 10 + Prisma ORM | `3001` |
+| **Base de données** | PostgreSQL 16 (via Docker) | `5432` |
+| **Emails** | MailHog (via Docker) | `8025` (UI) / `1025` (SMTP) |
+
+---
+
+## 🚀 Guide de Démarrage Rapide
+
+### Prérequis
+- Node.js 20+
+- Docker & Docker Compose
+- Git
+
+### 1. Démarrer l'infrastructure (BDD + Mail)
 ```bash
-docker compose build
-```
-3) Démarrer les services :
-```bash
-docker compose up -d
-```
-4) Lancer les migrations une fois MySQL healthy (inclut la table `sessions` utilisée par le formulaire) :
-```bash
-docker compose exec app php artisan migrate --force
-```
-5) Vérifier :
-   - App : http://localhost:8000
-   - PhpMyAdmin : http://localhost:8081 (host `db`)
-   - MySQL depuis l’hôte : `mysql -h 127.0.0.1 -P 3307 -u admin -p password123 mon_ecole_db`
-6) Arrêter :
-```bash
-docker compose down
-```
-Notes :
-- Les volumes `storage` et `bootstrap/cache` sont persistés.
-- Si 8000/8081/3307 sont pris, modifiez les ports dans `docker-compose.yml` puis relancez `build` + `up -d`.
-
-## 💻 Démarrage local (sans Docker)
-**Prérequis :** PHP 8.3+, Composer, MySQL (ou MariaDB).
-
-1) Cloner le dépôt :
-```bash
-git clone https://git.uha4point0.fr/UHA40/mon-ecole-et-moi.git
-cd mon-ecole-et-moi
-```
-2) Installer les dépendances PHP :
-```bash
-composer install
-```
-3) Copier et éditer l’environnement :
-```bash
-cp .env.example .env
-```
-   - Par défaut, `.env` est en SQLite : créez le fichier si besoin :
-     ```bash
-     touch database/database.sqlite
-     ```
-   - Si vous préférez MySQL, remplacez `DB_CONNECTION` et renseignez `DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=mon_ecole_et_moi`, `DB_USERNAME=root`, `DB_PASSWORD=...`.
-4) Générer la clé :
-```bash
-php artisan key:generate
-```
-5) Créer la base (si besoin) et migrer :
-```bash
-# Si MySQL
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS mon_ecole_et_moi;"
-
-# Migrations (crée aussi la table sessions pour le formulaire)
-php artisan migrate
-```
-6) Lancer l’app :
-```bash
-php artisan serve --port=8000
-```
-7) Vérifier : http://localhost:8000 (formulaire, admin, API sur le même port).
-
-> Les assets sont déjà servis depuis `public/` (pas de build front nécessaire dans l’état actuel).
-
-## 🔐 Authentification
-
-L'application utilise **Laravel Sanctum** pour l'authentification API.
-
-**Endpoints disponibles :**
-- `POST /api/auth/register` - Inscription
-- `POST /api/auth/login` - Connexion
-- `GET /api/auth/user` - Infos utilisateur (protégé)
-- `POST /api/auth/logout` - Déconnexion (protégé)
-
-📖 **Documentation complète :** [API_AUTHENTICATION.md](./API_AUTHENTICATION.md)
-
-## Architecture
-
-- **Backend + Frontend** : Laravel avec Blade Templates + MySQL
-- **Assets** : CSS, JavaScript, Images dans public/
-- **Authentification** : Laravel Sanctum
-- **Pages** : 19 vues Blade disponibles (/formulaire, /admin, /connexion, etc.)
-
-## 🚨 Problèmes Courants
-
-### Backend ne démarre pas
-```bash
-# Vérifier PHP et extensions
-php --version
-php -m | grep mysql
-
-# Réinstaller si nécessaire
-sudo apt install php8.3 php8.3-mysql php8.3-xml composer
+# Lance PostgreSQL et MailHog en arrière-plan
+docker compose -f docker-compose.nestjs.yml up -d
 ```
 
-### Application Laravel ne démarre pas
+### 2. Démarrer le Backend
 ```bash
-# Vérifier les dépendances
-composer install
-
-# Vérifier la configuration
-php artisan config:clear
-php artisan cache:clear
-
-# Vérifier les permissions
-chmod -R 775 storage bootstrap/cache
+cd backend
+npm install
+cp .env.example .env    # Vérifiez la config DB (monecole/postgres/postgres)
+npx prisma generate     # Génère le client Prisma
+npx prisma db push      # Pousse le schéma vers la BDD
+npm run start:dev
 ```
+> API disponible sur : http://localhost:3001/api
+
+### 3. Démarrer le Frontend
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+npm run dev
+```
+> Application disponible sur : http://localhost:3000
+
+---
+
+## 🔐 Identifiants de Test
+
+Des comptes par défaut sont créés via le seed (si exécuté) ou peuvent être créés manuellement :
+
+| Rôle | Email | Mot de passe |
+|------|-------|--------------|
+| **Admin** | `admin@ecole.fr` | `admin123` |
+| **Parent** | `parent@test.fr` | `parent1234` |
+
+---
+
+## 📚 Documentation Détaillée
+
+- **Frontend** : Voir [frontend/README.md](./frontend/README.md)
+- **Backend** : Voir [backend/README.md](./backend/README.md)
+- **État du projet** : Voir [RECAP_PROJET.md](./RECAP_PROJET.md)
+- **Suivi Mémoire** : Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)
+
+---
+
+## 🛠️ Commandes Utiles
 
 ### Base de données
 ```bash
-# Local : démarrer MySQL
-sudo systemctl start mysql
+# Ouvrir Prisma Studio (interface graphique BDD)
+cd backend && npx prisma studio
 
-# Docker : vérifier l'état du conteneur
-docker compose ps db
-# Tester la connexion depuis l'hôte (ports docker)
-mysql -h 127.0.0.1 -P 3307 -u admin -p password123 mon_ecole_db
+# Réinitialiser la BDD avec les données de test
+cd backend && npx prisma db push --force-reset && npx prisma db seed
 ```
 
-## 📚 Documentation Complète
+### Docker
+```bash
+# Arrêter les conteneurs
+docker compose -f docker-compose.nestjs.yml down
 
-➡️ **Voir [API_AUTHENTICATION.md](./API_AUTHENTICATION.md) pour l'authentification**
-➡️ **Voir [GUIDE_DEMARRAGE.md](./GUIDE_DEMARRAGE.md) pour les instructions détaillées**
-
-## Conventions Git
-
-- Branches : `feature/MON-XX-description`
-- Commits : `[MON-XX] type: description`
-
-## Équipe
-
-- Tech Lead : Erblin
-- Backend : Laravel + Sanctum
-- Frontend : Blade Templates + CSS/JS
-- QA : Tests manuels + Feature tests
+# Voir les logs
+docker compose -f docker-compose.nestjs.yml logs -f
+```

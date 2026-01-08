@@ -1,113 +1,77 @@
 # Mon École et Moi - Backend
 
-API NestJS pour la gestion scolaire Montessori.
+API RESTful construite avec **NestJS**, **Prisma** et **PostgreSQL**.
 
-## 🚀 Technologies
+## 🚀 Stack
 
 - **Framework**: NestJS 10
-- **Language**: TypeScript
+- **Base de données**: PostgreSQL 16
 - **ORM**: Prisma
-- **Base de données**: PostgreSQL
-- **Auth**: JWT + Passport
-- **Documentation**: Swagger
+- **Authentification**: JWT (Passport) + Rôles (Guard)
+- **Validation**: class-validator + class-transformer
+- **Documentation**: Swagger OpenAPI
 
-## 📦 Installation
+## 🛠️ Installation
 
 ```bash
-# Installer les dépendances
+# Installation des dépendances
 npm install
 
-# Copier le fichier d'environnement
-# Créer un fichier .env avec les variables nécessaires
+# Configuration de l'environnement
+cp .env.example .env
 ```
 
-## 🔧 Configuration
-
-Créer un fichier `.env` avec :
-
+### Variables d'environnement (.env)
 ```env
-# Base de données PostgreSQL
-DATABASE_URL="postgresql://user:password@localhost:5432/mon_ecole_db?schema=public"
-
-# JWT
-JWT_SECRET="your-super-secret-jwt-key"
-JWT_EXPIRATION="7d"
-
-# Application
-PORT=4000
-NODE_ENV=development
+PORT=3001
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/monecole?schema=public"
+JWT_SECRET="votre_secret_tres_long_et_securise"
+JWT_EXPIRES_IN="7d"
 FRONTEND_URL="http://localhost:3000"
+
+# Email (MailHog en dev)
+MAIL_HOST=localhost
+MAIL_PORT=1025
+MAIL_IGNORE_TLS=true
 ```
 
-## 🗄️ Base de données
+## 🗄️ Base de Données
 
 ```bash
-# Générer le client Prisma
-npm run prisma:generate
+# Générer le client Prisma (après modif schema.prisma)
+npx prisma generate
 
-# Créer/mettre à jour les tables
-npm run prisma:migrate
+# Appliquer les modifications de schéma (sans migration formelle en dev)
+npx prisma db push
 
-# Visualiser la BDD
-npm run prisma:studio
+# Explorer la base de données
+npx prisma studio
 ```
 
-## 🏃 Démarrage
+## 🏃‍♂️ Démarrage
 
 ```bash
-# Mode développement
+# Développement (avec hot-reload)
 npm run start:dev
 
-# Build production
+# Production
 npm run build
-
-# Démarrer en production
 npm run start:prod
 ```
 
-L'API sera disponible sur http://localhost:4000
+## 📖 Documentation API
 
-## 📚 Documentation API
+Une fois le serveur lancé, la documentation Swagger est accessible sur :
+👉 **http://localhost:3001/api/docs**
 
-Swagger UI disponible sur http://localhost:4000/api/docs
+## ✨ Modules Principaux
 
-## 📁 Structure
-
-```
-src/
-├── main.ts                 # Point d'entrée
-├── app.module.ts           # Module principal
-├── prisma/                 # Service Prisma
-└── modules/
-    ├── auth/              # Authentification JWT
-    ├── users/             # Gestion utilisateurs
-    ├── enfants/           # Gestion enfants
-    ├── preinscriptions/   # Préinscriptions
-    ├── repas/             # Commande repas
-    ├── periscolaire/      # Périscolaire
-    ├── justificatifs/     # Documents
-    ├── signatures/        # Signature règlement
-    └── facturation/       # Facturation (à compléter)
-```
-
-## 🔐 Endpoints principaux
-
-### Auth
-- `POST /api/auth/login` - Connexion
-- `POST /api/auth/register` - Inscription
-- `GET /api/auth/profile` - Profil connecté
-
-### Préinscriptions
-- `POST /api/preinscriptions` - Nouvelle préinscription (public)
-- `GET /api/preinscriptions` - Liste (admin)
-- `PATCH /api/preinscriptions/:id/statut` - Changer statut
-
-### Repas
-- `POST /api/repas/commander` - Commander un repas
-- `GET /api/repas/date/:date` - Repas d'une date
-- `DELETE /api/repas/:id` - Annuler (1 semaine avant)
-
-### Signatures
-- `POST /api/signatures/signer` - Signer règlement
-- `GET /api/signatures/non-signees` - Enfants sans signature
-
+| Module | Description | Statut |
+|--------|-------------|--------|
+| `Auth` | Login, Register, Changement MDP | ✅ Complet |
+| `Users` | Gestion des utilisateurs | ✅ Complet |
+| `Preinscriptions` | Workflow d'inscription + Email | ✅ Complet |
+| `Enfants` | Gestion des enfants | ✅ Complet |
+| `Signatures` | Signature électronique règlement | ✅ Complet |
+| `Justificatifs` | Upload documents | 🚧 En cours |
+| `Facturation` | Gestion factures | 📅 Prévu Février |
