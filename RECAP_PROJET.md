@@ -302,32 +302,38 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ### 🗓️ Mercredi 8 janvier 2026
 
-**Durée :** 1h
+**Durée :** 3h
 
 **✅ Réalisé :**
-1. Correction bug changement mot de passe (premiereConnexion ne passait pas à false)
-2. Audit complet du schéma Prisma (score: 7.5/10)
-3. Optimisations BDD appliquées :
-   - Ajout index composite `[role, actif]` sur User
-   - Ajout index composite `[statut, dateEcheance]` sur Facture
-   - Ajout index `[openedAt]` sur PdfOuverture
-   - Création enum `TypeEvenementCalendrier` pour CalendrierScolaire
-   - Suppression tables système Laravel inutilisées
-4. Nettoyage du fichier RECAP_PROJET.md (de 1300 à 330 lignes)
+1. **Audit Complet du Projet** (Score final : 8.2/10)
+2. **Optimisations & Fixes :**
+   - Correction bug changement mot de passe (premiereConnexion)
+   - Optimisation schéma Prisma (Index composite user/facture)
+   - Suppression dépendances front inutiles (next-auth, @prisma/client)
+   - Calcul dynamique année scolaire (plus hardcodé)
+3. **Documentation & Nettoyage :**
+   - Mise à jour totale des README (root, backend, frontend) pour NestJS/Next.js
+   - Archivage des anciennes docs Laravel dans `archive/`
+   - Création d'un `docker-compose.nestjs.yml` propre
+   - Nettoyage des fichiers racines (scripts shell, configs PHP)
+   - Création des `.env.example` corrects pour la nouvelle stack
 
 **📁 Fichiers modifiés :**
-- `backend/prisma/schema.prisma` (optimisations)
-- `backend/src/modules/auth/auth.service.ts` (fix bug mdp)
-- `frontend/src/app/(parent)/changer-mot-de-passe/page.tsx` (fix bug mdp)
-- `RECAP_PROJET.md` (nettoyage)
+- `README.md` (x3)
+- `backend/prisma/schema.prisma`
+- `backend/src/modules/auth/auth.service.ts`
+- `frontend/src/app/(parent)/changer-mot-de-passe/page.tsx`
+- `.gitignore`, `package.json` (nettoyage)
 
 **🐛 Bugs corrigés :**
-- Le flag `premiereConnexion` ne passait pas à `false` après changement de mot de passe
+- Le flag `premiereConnexion` ne passait pas à `false`
+- Dépendances lourdes inutiles dans le frontend
+- Documentation obsolète qui induisait en erreur
 
 **⏭️ Prochaines étapes :**
-- [ ] Dashboard parent complet
-- [ ] Liste enfants du parent
-- [ ] Upload justificatifs
+- [ ] 📂 Upload des justificatifs (Carnet de santé, Assurance)
+- [ ] 👶 Page "Mes Enfants" détaillée
+- [ ] 🍽️ Gestion Cantine (Février)
 
 ---
 
