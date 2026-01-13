@@ -1,7 +1,9 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -10,6 +12,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) { }
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -105,6 +108,51 @@ export class AuthService {
       message: 'Mot de passe changé avec succès',
       premiereConnexion: updatedUser.premiereConnexion,
     };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+
+    // On retourne toujours le même message pour des raisons de sécurité
+    // (ne pas révéler si l'email existe ou non)
+    if (!user) {
+      return { message: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.' };
+    }
+
+    // Générer un token unique
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Sauvegarder le token
+    await this.usersService.setResetToken(user.id, resetToken);
+
+    // Envoyer l'email
+    await this.emailService.sendPasswordResetEmail(
+      user.email,
+      resetToken,
+      user.name || user.prenom || 'Utilisateur',
+    );
+
+    return { message: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    // Trouver l'utilisateur avec ce token
+    const user = await this.usersService.findByResetToken(token);
+
+    if (!user) {
+      throw new BadRequestException('Lien invalide ou expiré');
+    }
+
+    // Valider le nouveau mot de passe
+    if (newPassword.length < 8) {
+      throw new BadRequestException('Le nouveau mot de passe doit contenir au moins 8 caractères');
+    }
+
+    // Hasher et mettre à jour
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.resetPasswordWithToken(user.id, hashedPassword);
+
+    return { message: 'Mot de passe réinitialisé avec succès' };
   }
 }
 

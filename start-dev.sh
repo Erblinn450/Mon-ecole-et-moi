@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 
 # 1. Lancer Docker (infrastructure uniquement)
 echo -e "${BLUE}📦 Démarrage de l'infrastructure Docker (Postgres + MailHog)...${NC}"
-docker compose -f docker-compose.dev.yml up -d
+docker compose up -d
 
 # Attendre que Postgres soit prêt
 echo -e "${BLUE}⏳ Attente de la base de données...${NC}"

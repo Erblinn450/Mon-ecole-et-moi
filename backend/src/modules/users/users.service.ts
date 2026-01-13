@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(data: Prisma.UserCreateInput) {
     const existingUser = await this.prisma.user.findUnique({
@@ -98,6 +98,32 @@ export class UsersService {
             classe: true,
           },
         },
+      },
+    });
+  }
+
+  async setResetToken(id: number, token: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        rememberToken: token,
+      },
+    });
+  }
+
+  async findByResetToken(token: string) {
+    return this.prisma.user.findFirst({
+      where: { rememberToken: token },
+    });
+  }
+
+  async resetPasswordWithToken(id: number, hashedPassword: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
+        rememberToken: null, // Clear the token
+        premiereConnexion: false,
       },
     });
   }

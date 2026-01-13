@@ -16,6 +16,7 @@ import { JustificatifsModule } from './modules/justificatifs/justificatifs.modul
 import { SignaturesModule } from './modules/signatures/signatures.module';
 import { FacturationModule } from './modules/facturation/facturation.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    
+
     // Rate Limiting (protection anti-spam)
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
@@ -37,16 +38,16 @@ import { DocumentsModule } from './modules/documents/documents.module';
       ]),
       inject: [ConfigService],
     }),
-    
+
     // Planification de tâches (factures mensuelles, etc.)
     ScheduleModule.forRoot(),
-    
+
     // Prisma (base de données)
     PrismaModule,
-    
+
     // Email
     EmailModule,
-    
+
     // Modules fonctionnels
     AuthModule,
     UsersModule,
@@ -56,7 +57,8 @@ import { DocumentsModule } from './modules/documents/documents.module';
     SignaturesModule,
     FacturationModule,
     DocumentsModule,
-    
+    LoggerModule,
+
     // TODO: Réactiver en AVRIL (selon planning)
     // RepasModule,
     // PeriscolaireModule,
@@ -69,5 +71,5 @@ import { DocumentsModule } from './modules/documents/documents.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
 

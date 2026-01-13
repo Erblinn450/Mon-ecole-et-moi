@@ -116,8 +116,11 @@ docker exec -it monecole-postgres psql -U postgres -d monecole
 # Prisma Studio
 cd backend && npx prisma studio  # http://localhost:5555
 
-# Mettre à jour après modif schema
-cd backend && npx prisma db push
+# Créer une migration après modif schema (dev)
+cd backend && npx prisma migrate dev --name nom_migration
+
+# Ou appliquer les migrations existantes (prod)
+cd backend && npx prisma migrate deploy
 ```
 
 ---
@@ -314,7 +317,7 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 3. **Documentation & Nettoyage :**
    - Mise à jour totale des README (root, backend, frontend) pour NestJS/Next.js
    - Archivage des anciennes docs Laravel dans `archive/`
-   - Création d'un `docker-compose.nestjs.yml` propre
+   - Création d'un `docker-compose.yml` unifié (PostgreSQL + MailHog)
    - Nettoyage des fichiers racines (scripts shell, configs PHP)
    - Création des `.env.example` corrects pour la nouvelle stack
    - Ajout `.eslintrc` pour backend et frontend (Linting)

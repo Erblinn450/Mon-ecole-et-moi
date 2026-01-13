@@ -27,7 +27,7 @@ Application de gestion scolaire pour école Montessori, développée avec une st
 ### 1. Démarrer l'infrastructure (BDD + Mail)
 ```bash
 # Lance PostgreSQL et MailHog en arrière-plan
-docker compose -f docker-compose.nestjs.yml up -d
+docker compose up -d
 ```
 
 ### 2. Démarrer le Backend
@@ -36,7 +36,8 @@ cd backend
 npm install
 cp .env.example .env    # Vérifiez la config DB (monecole/postgres/postgres)
 npx prisma generate     # Génère le client Prisma
-npx prisma db push      # Pousse le schéma vers la BDD
+npx prisma migrate deploy  # Applique les migrations en production
+# OU en développement: npx prisma migrate dev
 npm run start:dev
 ```
 > API disponible sur : http://localhost:3001/api
@@ -80,14 +81,14 @@ Des comptes par défaut sont créés via le seed (si exécuté) ou peuvent être
 cd backend && npx prisma studio
 
 # Réinitialiser la BDD avec les données de test
-cd backend && npx prisma db push --force-reset && npx prisma db seed
+cd backend && npx prisma migrate reset
 ```
 
 ### Docker
 ```bash
 # Arrêter les conteneurs
-docker compose -f docker-compose.nestjs.yml down
+docker compose down
 
 # Voir les logs
-docker compose -f docker-compose.nestjs.yml logs -f
+docker compose logs -f
 ```

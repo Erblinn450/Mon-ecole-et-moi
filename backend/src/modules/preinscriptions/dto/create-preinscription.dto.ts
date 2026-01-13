@@ -1,5 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsDateString,
+  MinLength,
+  MaxLength,
+  Matches
+} from 'class-validator';
 import { Classe, SituationFamiliale } from '@prisma/client';
 
 export class CreatePreinscriptionDto {
@@ -7,11 +17,15 @@ export class CreatePreinscriptionDto {
   @ApiProperty({ example: 'Dupont' })
   @IsNotEmpty()
   @IsString()
+  @MinLength(2, { message: 'Le nom doit contenir au moins 2 caractères' })
+  @MaxLength(50, { message: 'Le nom ne peut pas dépasser 50 caractères' })
   nomEnfant: string;
 
   @ApiProperty({ example: 'Marie' })
   @IsNotEmpty()
   @IsString()
+  @MinLength(2, { message: 'Le prénom doit contenir au moins 2 caractères' })
+  @MaxLength(50, { message: 'Le prénom ne peut pas dépasser 50 caractères' })
   prenomEnfant: string;
 
   @ApiProperty({ example: '2020-05-15' })
@@ -73,6 +87,9 @@ export class CreatePreinscriptionDto {
   @ApiProperty({ example: '0612345678' })
   @IsNotEmpty()
   @IsString()
+  @Matches(/^0[1-9][0-9]{8}$/, {
+    message: 'Le numéro de téléphone doit être au format français (10 chiffres)',
+  })
   telephoneParent: string;
 
   @ApiPropertyOptional({ example: 'pere' })
@@ -114,6 +131,9 @@ export class CreatePreinscriptionDto {
   @ApiPropertyOptional({ example: '0687654321' })
   @IsOptional()
   @IsString()
+  @Matches(/^0[1-9][0-9]{8}$/, {
+    message: 'Le numéro de téléphone doit être au format français (10 chiffres)',
+  })
   telephoneParent2?: string;
 
   @ApiPropertyOptional({ example: 'mere' })

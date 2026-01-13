@@ -3,11 +3,11 @@
 import { Header } from "./Header";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  FileText, 
-  GraduationCap, 
-  UtensilsCrossed, 
+import {
+  LayoutDashboard,
+  FileText,
+  GraduationCap,
+  UtensilsCrossed,
   Palette,
   Users,
   BarChart3,
@@ -94,35 +94,31 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-              
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`group flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm transition-all duration-200 ${
-                    isActive
-                      ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
-                      : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-900"
-                  }`}
+                  className={`group flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm transition-all duration-200 ${isActive
+                    ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
+                    : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-900"
+                    }`}
                 >
-                  <div className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${
-                    isActive 
-                      ? "bg-white/20" 
-                      : "bg-gray-100 group-hover:bg-violet-100 group-hover:text-violet-600"
-                  }`}>
+                  <div className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${isActive
+                    ? "bg-white/20"
+                    : "bg-gray-100 group-hover:bg-violet-100 group-hover:text-violet-600"
+                    }`}>
                     <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{item.label}</p>
-                    <p className={`text-xs truncate ${
-                      isActive ? "text-violet-200" : "text-gray-400"
-                    }`}>
+                    <p className={`text-xs truncate ${isActive ? "text-violet-200" : "text-gray-400"
+                      }`}>
                       {item.description}
                     </p>
                   </div>
-                  <ChevronRight size={14} className={`transition-transform ${
-                    isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50"
-                  }`} />
+                  <ChevronRight size={14} className={`transition-transform ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50"
+                    }`} />
                 </Link>
               );
             })}
@@ -151,11 +147,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[56px] ${
-                    isActive
-                      ? "text-violet-600 bg-violet-50"
-                      : "text-gray-400 hover:text-gray-600"
-                  }`}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[56px] ${isActive
+                    ? "text-violet-600 bg-violet-50"
+                    : "text-gray-400 hover:text-gray-600"
+                    }`}
                 >
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                   <span className="text-[10px] font-medium truncate">{item.label.split(" ")[0]}</span>

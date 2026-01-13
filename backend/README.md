@@ -41,11 +41,29 @@ MAIL_IGNORE_TLS=true
 # Générer le client Prisma (après modif schema.prisma)
 npx prisma generate
 
-# Appliquer les modifications de schéma (sans migration formelle en dev)
-npx prisma db push
+# === MIGRATIONS ===
+# Créer une nouvelle migration (développement)
+npx prisma migrate dev --name nom_de_la_migration
+
+# Appliquer les migrations (production)
+npx prisma migrate deploy
+
+# Réinitialiser la BDD (⚠️ supprime toutes les données)
+npx prisma migrate reset
 
 # Explorer la base de données
 npx prisma studio
+```
+
+### Scripts npm disponibles
+
+```bash
+npm run prisma:generate    # Génère le client Prisma
+npm run prisma:migrate     # Crée et applique une migration (dev)
+npm run prisma:deploy      # Applique les migrations (production)
+npm run prisma:reset       # Réinitialise la BDD avec seed
+npm run prisma:studio      # Ouvre Prisma Studio
+npm run db:seed            # Exécute le seed uniquement
 ```
 
 ## 🏃‍♂️ Démarrage

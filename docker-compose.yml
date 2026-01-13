@@ -1,88 +1,41 @@
+version: '3.8'
+
 services:
-  app:
-    build:
-      context: .
-      target: app
-    env_file:
-      - .env.docker
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./:/var/www
-      - storage:/var/www/storage
-      - bootstrap_cache:/var/www/bootstrap/cache
-    networks:
-      - app
-    expose:
-      - "9000"
-
-  web:
-    build:
-      context: .
-      target: web
-    depends_on:
-      app:
-        condition: service_started
-    ports:
-      - "8000:80"
-    volumes:
-      - ./:/var/www
-      - storage:/var/www/storage
-      - bootstrap_cache:/var/www/bootstrap/cache
-    networks:
-      - app
-
-  db:
-    image: mysql:8.0
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: monecole-postgres-dev
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: mon_ecole_db
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: password123
-      MYSQL_ROOT_PASSWORD: rootpassword
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: monecole
     ports:
-      - "3307:3306"
+      - "5432:5432"
     volumes:
-      - db_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - app
+      - monecole
 
-  phpmyadmin:
-    image: phpmyadmin:5
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PMA_HOST: db
-      PMA_USER: admin
-      PMA_PASSWORD: password123
-    ports:
-      - "8081:80"
-    networks:
-      - app
-
+  # MailHog for email testing
   mailhog:
     image: mailhog/mailhog:latest
+    container_name: monecole-mailhog-dev
     restart: unless-stopped
     ports:
-      - "8025:8025" # Interface web
-      - "1025:1025" # SMTP
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
     networks:
-      - app
+      - monecole
 
 volumes:
-  db_data:
-  storage:
-  bootstrap_cache:
+  postgres_data:
 
 networks:
-  app:
+  monecole:
     driver: bridge

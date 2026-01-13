@@ -25,6 +25,10 @@ yarn-error.log*
 # Local env files
 .env*.local
 .env
+.env.production
+# MAIS PAS .env.example (à committer)
+!.env.example
+!**/.env.example
 
 # Vercel
 .vercel
@@ -113,3 +117,15 @@ dist/
 
 # Local uploads
 /backend/uploads/
+
+# Archive (anciens fichiers Laravel)
+archive/
+
+# Backups
+backups/
+*.sql
+!backups/.gitkeep
+
+# Logs de production
+/backend/logs/
+!/backend/logs/.gitkeep

@@ -12,7 +12,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Servir les fichiers statiques (uploads)
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  // __dirname = dist/src/, donc on remonte 2 niveaux pour atteindre la racine backend/
+  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), {
     prefix: '/api/storage/',
   });
 
@@ -28,10 +29,13 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
+  // CORS - Configuration complète pour production
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Disposition'],
   });
 
   // Swagger Documentation
