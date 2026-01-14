@@ -68,12 +68,21 @@ Toujours prévoir du temps pour les imprévus.
 
 **🎯 Livrable S2 :** Module inscriptions terminé et testé
 
-**📊 Avancées 14/01/2026 :**
+**📊 Avancées 14/01/2026 (session 1) :**
 - ✅ **Modal d'authentification** : Code nettoyé, email + téléphone corrigés
 - ✅ **Templates emails** : 3 templates conformes aux modèles de la cliente (acceptation, refus, annulation)
 - ✅ **Backend** : Nouvelle méthode `sendPreinscriptionCancelled()` intégrée
 - ✅ **Uniformisation** : Email `contact@montessorietmoi.com` partout
 - ✅ **Commit** : `391e5d8` poussé sur GitHub
+
+**📊 Avancées 14/01/2026 (session 2) :**
+- ✅ **Justificatifs** : Attestation de responsabilité civile ajoutée (obligatoire)
+- ✅ **Justificatifs** : Champ "Autre" ajouté (optionnel) pour documents complémentaires
+- ✅ **Génération PDF** : Dossiers de pré-inscription téléchargeables en PDF (admin)
+- ✅ **Rappels automatiques** : Système de rappels annuels pour l'attestation RC (1er septembre)
+- ✅ **Backend** : Module RappelsService avec cron job + EmailService
+- ✅ **Frontend** : Bouton "Télécharger PDF" dans l'interface admin
+- ✅ **Commit** : `de27f78` poussé sur GitHub
 
 #### Semaines 3-4 (20-31 janvier)
 **Objectif :** Démarrer facturation (modèle de données)
