@@ -20,6 +20,7 @@ import {
   X,
   FileCheck,
   Upload,
+  Download,
 } from "lucide-react";
 import { Classe, StatutPreinscription, SituationFamiliale } from "@/types";
 
@@ -127,6 +128,7 @@ export default function PreinscriptionDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Preinscription>>({});
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   useEffect(() => {
     if (preinscription) {
@@ -290,6 +292,37 @@ export default function PreinscriptionDetailPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!preinscription) return;
+    setIsDownloadingPdf(true);
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${API_URL}/preinscriptions/${id}/pdf`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Erreur lors de la génération du PDF");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `dossier-${preinscription.numeroDossier}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur lors du téléchargement");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -348,6 +381,23 @@ export default function PreinscriptionDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDownloadingPdf ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Génération...
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                Télécharger PDF
+              </>
+            )}
+          </button>
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}

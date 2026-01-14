@@ -33,9 +33,19 @@ async function main() {
       obligatoire: true,
     },
     {
+      nom: 'Attestation de responsabilité civile',
+      description: "Attestation d'assurance responsabilité civile de l'enfant (à renouveler chaque année en septembre)",
+      obligatoire: true,
+    },
+    {
       nom: 'Règlement intérieur signé',
       description: "Règlement intérieur de l'école lu et signé par les parents",
       obligatoire: true,
+    },
+    {
+      nom: 'Autre',
+      description: "Tout autre document que vous souhaitez fournir",
+      obligatoire: false,
     },
   ];
 

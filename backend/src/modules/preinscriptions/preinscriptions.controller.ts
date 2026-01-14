@@ -10,7 +10,10 @@ import {
   UseGuards,
   ParseIntPipe,
   Request,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PreinscriptionsService } from './preinscriptions.service';
@@ -87,6 +90,26 @@ export class PreinscriptionsController {
   @ApiOperation({ summary: 'Vérifie l\'email via le token de vérification' })
   verifyEmail(@Param('token') token: string) {
     return this.preinscriptionsService.verifyEmail(token);
+  }
+
+  @Get(':id/pdf')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Génère le PDF du dossier de préinscription (Admin)' })
+  async generatePdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.preinscriptionsService.generatePdf(id);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=dossier-preinscription-${id}.pdf`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.end(pdfBuffer);
   }
 
   @Get(':id')

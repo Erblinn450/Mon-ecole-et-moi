@@ -16,6 +16,7 @@ import { JustificatifsModule } from './modules/justificatifs/justificatifs.modul
 import { SignaturesModule } from './modules/signatures/signatures.module';
 import { FacturationModule } from './modules/facturation/facturation.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { RappelsModule } from './modules/rappels/rappels.module';
 import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
@@ -57,6 +58,7 @@ import { LoggerModule } from './common/logger/logger.module';
     SignaturesModule,
     FacturationModule,
     DocumentsModule,
+    RappelsModule,
     LoggerModule,
 
     // TODO: Réactiver en AVRIL (selon planning)
