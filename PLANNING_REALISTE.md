@@ -51,17 +51,29 @@ Toujours prévoir du temps pour les imprévus.
 #### Semaines 1-2 (6-17 janvier)
 **Objectif :** Inscriptions 100% terminées
 
-| Tâche | Temps |
-|-------|-------|
-| ✅ Setup projet (FAIT) | - |
-| ✅ Préinscription (FAIT) | - |
-| ✅ Auth + Sécurité (FAIT) | - |
-| Dashboard parent complet | 2 jours |
-| Upload justificatifs | 3 jours |
-| Interface admin inscriptions | 3 jours |
-| Tests + corrections | 2 jours |
+| Tâche | Temps | Statut |
+|-------|-------|--------|
+| ✅ Setup projet (FAIT) | - | ✅ |
+| ✅ Préinscription (FAIT) | - | ✅ |
+| ✅ Auth + Sécurité (FAIT) | - | ✅ |
+| ✅ Modal d'authentification optimisé | 1 jour | ✅ 14/01 |
+| ✅ Templates emails conformes aux modèles | 1 jour | ✅ 14/01 |
+| ✅ Email uniformisé (contact@montessorietmoi.com) | - | ✅ 14/01 |
+| ✅ Suppression section tarifs formulaire | - | ✅ 14/01 |
+| ✅ Nettoyage code mort | - | ✅ 14/01 |
+| Dashboard parent complet | 2 jours | 🔄 |
+| Upload justificatifs | 3 jours | 📋 |
+| Interface admin inscriptions | 3 jours | 📋 |
+| Tests + corrections | 2 jours | 📋 |
 
 **🎯 Livrable S2 :** Module inscriptions terminé et testé
+
+**📊 Avancées 14/01/2026 :**
+- ✅ **Modal d'authentification** : Code nettoyé, email + téléphone corrigés
+- ✅ **Templates emails** : 3 templates conformes aux modèles de la cliente (acceptation, refus, annulation)
+- ✅ **Backend** : Nouvelle méthode `sendPreinscriptionCancelled()` intégrée
+- ✅ **Uniformisation** : Email `contact@montessorietmoi.com` partout
+- ✅ **Commit** : `391e5d8` poussé sur GitHub
 
 #### Semaines 3-4 (20-31 janvier)
 **Objectif :** Démarrer facturation (modèle de données)
