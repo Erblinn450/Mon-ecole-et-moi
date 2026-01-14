@@ -429,6 +429,64 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Mardi 14 janvier 2026 (Session 2)
+
+**Durée :** ~5h (Session IA)
+
+**✅ Réalisé :**
+1. **Justificatifs : Attestation Responsabilité Civile**
+   - Ajout d'un nouveau type de justificatif obligatoire : "Attestation de responsabilité civile".
+   - Note automatique dans la description : "à renouveler chaque année en septembre".
+   - Seed mis à jour pour créer ce type en base de données.
+2. **Justificatifs : Champ "Autre" (Optionnel)**
+   - Ajout d'un type de justificatif optionnel "Autre" pour permettre aux parents d'uploader des documents supplémentaires non prévus.
+3. **Génération PDF des Dossiers de Préinscription**
+   - Installation de `pdfmake` et `@types/pdfmake` pour la génération de PDF côté backend.
+   - Création d'une méthode `generatePdf(id)` dans `PreinscriptionsService` qui génère un PDF professionnel avec :
+     - En-tête avec logo et titre
+     - Numéro de dossier et statut
+     - 5 sections formatées : Enfant, Scolarité, Parents 1 & 2, Infos complémentaires
+     - Footer avec date de génération
+   - Nouvel endpoint `GET /api/preinscriptions/:id/pdf` (admin uniquement, protégé par JWT + Role Guard).
+   - Bouton "Télécharger PDF" ajouté dans la page admin de détail d'une préinscription (`/admin/preinscriptions/[id]`).
+   - Téléchargement automatique du fichier avec nom formaté : `dossier-{numeroDossier}.pdf`.
+4. **Système de Rappels Automatiques Annuels**
+   - Création d'un nouveau module `RappelsModule` avec service dédié.
+   - Cron job quotidien (tous les jours à 9h, fuseau Europe/Paris) qui vérifie si on est le 1er septembre.
+   - Logique métier :
+     - Récupère tous les enfants avec une inscription ACTIVE.
+     - Vérifie si chaque enfant a une attestation RC à jour pour l'année en cours.
+     - Si manquante ou expirée, envoie un email de rappel aux deux parents avec un lien direct vers la page de téléchargement.
+   - Email HTML stylisé avec bouton CTA "Télécharger le document".
+   - Méthode de test `testEnvoiRappels()` disponible pour les tests manuels.
+5. **Documentation & Git**
+   - Mise à jour du `PLANNING_REALISTE.md` avec les avancées de la session 2 du 14/01/2026.
+   - Commits GitHub :
+     - `de27f78` : Features (justificatifs RC, PDF, rappels annuels)
+     - `38d6c9a` : Documentation du planning
+
+**📁 Fichiers modifiés/créés :**
+- `backend/package.json` (ajout pdfmake + @types/pdfmake)
+- `backend/prisma/seed.ts` (2 nouveaux types de justificatifs)
+- `backend/src/modules/preinscriptions/preinscriptions.controller.ts` (nouvel endpoint PDF)
+- `backend/src/modules/preinscriptions/preinscriptions.service.ts` (méthode generatePdf)
+- `backend/src/modules/rappels/rappels.service.ts` (nouveau module - cron job)
+- `backend/src/modules/rappels/rappels.module.ts` (nouveau module)
+- `backend/src/app.module.ts` (import RappelsModule)
+- `frontend/src/app/admin/preinscriptions/[id]/page.tsx` (bouton télécharger PDF)
+- `PLANNING_REALISTE.md` (documentation session 2)
+
+**🐛 Bugs corrigés :**
+- Aucun bug identifié. Toutes les nouvelles fonctionnalités compilent et fonctionnent correctement.
+
+**⏭️ Prochaines étapes :**
+- [ ] Tester manuellement la génération PDF (vérifier le rendu).
+- [ ] Tester le cron job de rappels (ou attendre septembre pour le test réel).
+- [ ] Finaliser les 4 améliorations critiques du modal (CGU, validation tel, XSS, ARIA) prévu semaine prochaine.
+- [ ] Commencer le module Facturation (Février).
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -466,6 +524,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 14 janvier 2026 (10h00)  
-**Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)  
+**Dernière mise à jour :** 14 janvier 2026 (17h00)
+**Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)
