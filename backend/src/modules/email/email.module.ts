@@ -91,7 +91,7 @@ import { EmailService } from './email.service';
           defaults: {
             from: configService.get(
               'MAIL_FROM',
-              '"Mon École et Moi" <contact@mon-ecole-et-moi.fr>',
+              '"Mon École et Moi" <contact@montessorietmoi.com>',
             ),
           },
           template: {

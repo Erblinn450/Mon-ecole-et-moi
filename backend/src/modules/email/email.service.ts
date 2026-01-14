@@ -96,15 +96,22 @@ export class EmailService {
   async sendPreinscriptionValidated(data: PreinscriptionEmailData) {
     const { emailParent, emailParent2, motDePasse, ...rest } = data;
 
+    // Formater la date d'intégration
+    const dateIntegration = data.dateIntegration
+      ? data.dateIntegration instanceof Date
+        ? data.dateIntegration.toLocaleDateString('fr-FR')
+        : new Date(data.dateIntegration).toLocaleDateString('fr-FR')
+      : 'prochainement';
+
     try {
       await this.mailerService.sendMail({
         to: emailParent,
-        subject:
-          '🎉 Votre pré-inscription a été validée ! - Mon École et Moi',
+        subject: 'Mon école Montessori et Moi - Votre dossier d\'inscription pour ' + data.prenomEnfant + ' est accepté !',
         template: 'preinscription-validated',
         context: {
           ...rest,
           emailParent,
+          dateIntegration,
           motDePasse, // Inclure le mot de passe pour l'afficher dans l'email
           year: new Date().getFullYear(),
         },
@@ -114,12 +121,12 @@ export class EmailService {
       if (emailParent2) {
         await this.mailerService.sendMail({
           to: emailParent2,
-          subject:
-            '🎉 Votre pré-inscription a été validée ! - Mon École et Moi',
+          subject: 'Mon école Montessori et Moi - Votre dossier d\'inscription pour ' + data.prenomEnfant + ' est accepté !',
           template: 'preinscription-validated',
           context: {
             ...rest,
             emailParent: emailParent2,
+            dateIntegration,
             motDePasse: null, // Pas de mot de passe pour le parent 2
             year: new Date().getFullYear(),
           },
@@ -142,7 +149,7 @@ export class EmailService {
     try {
       await this.mailerService.sendMail({
         to: emailParent,
-        subject: 'Réponse à votre demande de pré-inscription - Mon École et Moi',
+        subject: 'Mon école Montessori et Moi - Statut de votre dossier d\'inscription pour ' + data.prenomEnfant,
         template: 'preinscription-refus',
         context: {
           ...rest,
@@ -153,8 +160,7 @@ export class EmailService {
       if (emailParent2) {
         await this.mailerService.sendMail({
           to: emailParent2,
-          subject:
-            'Réponse à votre demande de pré-inscription - Mon École et Moi',
+          subject: 'Mon école Montessori et Moi - Statut de votre dossier d\'inscription pour ' + data.prenomEnfant,
           template: 'preinscription-refus',
           context: {
             ...rest,
@@ -167,6 +173,42 @@ export class EmailService {
       return true;
     } catch (error) {
       this.logger.error("Erreur lors de l'envoi de l'email de refus", {
+        error: error.message,
+      });
+      return false;
+    }
+  }
+
+  async sendPreinscriptionCancelled(data: PreinscriptionEmailData) {
+    const { emailParent, emailParent2, ...rest } = data;
+
+    try {
+      await this.mailerService.sendMail({
+        to: emailParent,
+        subject: 'Mon école Montessori et Moi - Confirmation d\'annulation de la demande d\'inscription pour ' + data.prenomEnfant,
+        template: 'preinscription-annulation',
+        context: {
+          ...rest,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      if (emailParent2) {
+        await this.mailerService.sendMail({
+          to: emailParent2,
+          subject: 'Mon école Montessori et Moi - Confirmation d\'annulation de la demande d\'inscription pour ' + data.prenomEnfant,
+          template: 'preinscription-annulation',
+          context: {
+            ...rest,
+            year: new Date().getFullYear(),
+          },
+        });
+      }
+
+      this.logger.log(`Email d'annulation envoyé pour ${data.numeroDossier}`);
+      return true;
+    } catch (error) {
+      this.logger.error("Erreur lors de l'envoi de l'email d'annulation", {
         error: error.message,
       });
       return false;

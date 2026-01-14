@@ -320,12 +320,16 @@ export class PreinscriptionsService {
         // Email de validation avec les identifiants si nouveau compte
         await this.emailService.sendPreinscriptionValidated({
           ...emailData,
+          dateIntegration: preinscription.dateIntegration,
           motDePasse: motDePasseGenere, // Ajouter le mot de passe pour l'email
         } as any);
         this.logger.log(`Email de validation envoyé pour ${preinscription.numeroDossier}`);
       } else if (statut === StatutPreinscription.REFUSE) {
         await this.emailService.sendPreinscriptionRefused(emailData);
         this.logger.log(`Email de refus envoyé pour ${preinscription.numeroDossier}`);
+      } else if (statut === StatutPreinscription.ANNULE) {
+        await this.emailService.sendPreinscriptionCancelled(emailData);
+        this.logger.log(`Email d'annulation envoyé pour ${preinscription.numeroDossier}`);
       }
     } catch (error) {
       this.logger.error(`Erreur envoi email statut: ${error.message}`);

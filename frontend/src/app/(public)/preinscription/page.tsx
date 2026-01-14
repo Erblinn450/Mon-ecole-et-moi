@@ -21,7 +21,6 @@ import {
 import { preinscriptionsApi } from "@/lib/api";
 import { CreatePreinscriptionRequest, Classe, SituationFamiliale } from "@/types";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
-import { TARIFS, ECOLE_INFO, ORGANISATION, formatPrix } from "@/config/tarifs";
 
 // Mapping des classes vers l'enum backend
 // L'école propose 2 classes multi-âges: Maternelle (3-6 ans) et Élémentaire (6-12 ans)
@@ -621,77 +620,6 @@ export default function PreinscriptionPage() {
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors resize-none"
                   placeholder="Difficultés d'apprentissage, comportement, santé..."
                 />
-              </div>
-            </div>
-          </section>
-
-          {/* Section 6: Informations tarifaires */}
-          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <FileText size={20} /> Informations tarifaires
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200">
-                <p className="text-sm text-gray-600 mb-4">
-                  Voici un récapitulatif des tarifs pour l&apos;année scolaire :
-                </p>
-
-                <div className="space-y-4">
-                  {/* Frais d'inscription */}
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                    <div>
-                      <p className="font-medium text-gray-900">Frais d&apos;inscription</p>
-                      <p className="text-xs text-gray-500">1ère année : {formatPrix(TARIFS.inscription.premiereAnnee)} / Renouvellement : {formatPrix(TARIFS.inscription.anneesSuivantes)}/an</p>
-                    </div>
-                  </div>
-
-                  {/* Scolarité */}
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                    <div>
-                      <p className="font-medium text-gray-900">Frais de scolarité</p>
-                      <p className="text-xs text-gray-500">{formatPrix(TARIFS.scolarite.mensuel)}/mois × 12 = {formatPrix(TARIFS.scolarite.annuel)}/an</p>
-                    </div>
-                    <span className="text-emerald-600 text-xs font-medium bg-emerald-50 px-2 py-1 rounded-lg">
-                      -20% dès le 2e enfant
-                    </span>
-                  </div>
-
-                  {/* Frais de fonctionnement */}
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                    <div>
-                      <p className="font-medium text-gray-900">Frais de fonctionnement</p>
-                      <p className="text-xs text-gray-500">
-                        Maternelle : {formatPrix(TARIFS.fonctionnement.maternelle)}/an | Élémentaire : {formatPrix(TARIFS.fonctionnement.elementaire)}/an
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Services optionnels */}
-                  <div>
-                    <p className="font-medium text-gray-900 mb-2">Services optionnels</p>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div className="bg-white rounded-lg p-3 border border-gray-100">
-                        <p className="text-sm font-medium text-gray-800">🍽️ Repas (midi)</p>
-                        <p className="text-lg font-bold text-emerald-600">{formatPrix(TARIFS.repas.midi)}</p>
-                        <p className="text-xs text-gray-500">par repas (traiteur)</p>
-                      </div>
-                      <div className="bg-white rounded-lg p-3 border border-gray-100">
-                        <p className="text-sm font-medium text-gray-800">🎨 Périscolaire</p>
-                        <p className="text-lg font-bold text-violet-600">{formatPrix(TARIFS.periscolaire.seance)}</p>
-                        <p className="text-xs text-gray-500">{ORGANISATION.periscolaire.debut} - {ORGANISATION.periscolaire.fin} (goûter inclus)</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 text-center">
-                    📍 {ECOLE_INFO.adresse.rue}, {ECOLE_INFO.adresse.codePostal} {ECOLE_INFO.adresse.ville}<br />
-                    📞 {ECOLE_INFO.contact.telephone} | ✉️ {ECOLE_INFO.contact.email}
-                  </p>
-                </div>
               </div>
             </div>
           </section>

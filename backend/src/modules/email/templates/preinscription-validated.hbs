@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pré-inscription validée</title>
+    <title>Dossier d'inscription accepté</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -71,6 +71,13 @@
             color: #1d4ed8;
             margin-top: 0;
         }
+        .next-steps ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 8px 0;
+        }
         .footer {
             margin-top: 30px;
             padding-top: 20px;
@@ -86,28 +93,52 @@
             border-radius: 8px;
             font-style: italic;
         }
+        a {
+            color: #10b981;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #10b981;
+            color: white !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .btn:hover {
+            background-color: #059669;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="icon">🎉</div>
-            <h1>Félicitations !</h1>
-            <p style="color: #047857; margin: 10px 0 0 0;">Votre pré-inscription a été validée</p>
+            <h1>Mon école Montessori et Moi</h1>
+            <p style="color: #047857; margin: 10px 0 0 0; font-size: 18px; font-weight: bold;">Votre dossier d'inscription pour {{prenomEnfant}} est accepté !</p>
         </div>
 
         <div class="content">
-            <p><strong>Bonjour {{civiliteParent}} {{nomParent}},</strong></p>
+            <p><strong>Chère Madame, Cher Monsieur {{nomParent}},</strong></p>
 
-            <div class="success-box">
-                <h2>✅ Inscription confirmée pour {{prenomEnfant}} !</h2>
-                <p>Nous sommes ravis de vous accueillir dans notre école.</p>
-            </div>
+            <p>C'est avec grand plaisir que nous vous informons que la candidature de votre enfant, <strong>{{prenomEnfant}}</strong>, pour la date du <strong>{{dateIntegration}}</strong> est officiellement acceptée dans notre établissement.</p>
 
-            <div class="info-box">
-                <p><strong>📋 Dossier :</strong> {{numeroDossier}}</p>
-                <p><strong>👶 Enfant :</strong> {{prenomEnfant}} {{nomEnfant}}</p>
-                <p><strong>🎓 Classe :</strong> {{classeSouhaitee}}</p>
+            <p>Nous vous remercions chaleureusement de la confiance que vous nous accordez.</p>
+
+            <div class="next-steps">
+                <h3>📋 Prochaines étapes importantes</h3>
+                <p>Afin de valider définitivement l'inscription et de réserver la place de votre enfant, nous vous prions de bien vouloir compléter les documents administratifs restants :</p>
+                <ul>
+                    <li><strong>Le règlement intérieur :</strong> à signer numériquement</li>
+                    <li><strong>Le Règlement des Frais d'Inscription</strong> (non remboursable)</li>
+                    <li><strong>Les Documents Obligatoires à Fournir</strong></li>
+                </ul>
             </div>
 
             {{#if motDePasse}}
@@ -119,36 +150,24 @@
                     <p style="margin: 5px 0;"><strong>Mot de passe :</strong> <code style="background-color: #f3f4f6; padding: 2px 8px; border-radius: 4px; font-family: monospace;">{{motDePasse}}</code></p>
                 </div>
                 <p style="font-size: 12px; color: #92400e;">⚠️ Nous vous recommandons de changer ce mot de passe lors de votre première connexion.</p>
+                <p style="text-align: center;">
+                    <a href="http://localhost:3000/connexion" class="btn">Se connecter à mon espace</a>
+                </p>
             </div>
             {{/if}}
 
-            <div class="next-steps">
-                <h3>📋 Prochaines étapes importantes</h3>
-                <p>Connectez-vous à votre espace parent pour :</p>
-                <ul>
-                    <li><strong>⚠️ Signer le règlement intérieur</strong> (obligatoire pour finaliser l'inscription)</li>
-                    <li>Consulter les informations de votre enfant</li>
-                    <li>Commander les repas</li>
-                    <li>Gérer les inscriptions périscolaires</li>
-                </ul>
-                <p style="margin-top: 15px;">
-                    <a href="http://localhost:3000/connexion" style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
-                        Se connecter à mon espace
-                    </a>
-                </p>
-            </div>
+            <p>Nous restons à votre disposition pour toute question et nous réjouissons d'accueillir {{prenomEnfant}} prochainement.</p>
 
             <div class="signature">
-                <p><strong>Bienvenue dans notre école !</strong><br>
+                <p><strong>Cordialement,</strong><br>
                 L'équipe pédagogique de Mon École Montessori et Moi</p>
             </div>
         </div>
 
         <div class="footer">
-            <p>Pour toute question, contactez-nous à : <a href="mailto:contact@mon-ecole-et-moi.fr">contact@mon-ecole-et-moi.fr</a></p>
+            <p>Pour toute question, contactez-nous à : <a href="mailto:contact@montessorietmoi.com">contact@montessorietmoi.com</a></p>
             <p>&copy; {{year}} Mon École et Moi - Tous droits réservés</p>
         </div>
     </div>
 </body>
 </html>
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,7 +12,6 @@ import {
     AlertCircle,
     ArrowRight,
     KeyRound,
-    CheckCircle,
     ArrowLeft
 } from "lucide-react";
 import { authApi } from "@/lib/api";
@@ -25,7 +24,7 @@ interface AuthModalProps {
     initialTab?: "login" | "forgot";
 }
 
-type TabType = "login" | "forgot" | "forgot-success";
+type TabType = "login" | "forgot";
 
 export function AuthModal({ isOpen, onClose, initialTab = "login" }: AuthModalProps) {
     const router = useRouter();
@@ -37,9 +36,6 @@ export function AuthModal({ isOpen, onClose, initialTab = "login" }: AuthModalPr
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    // Forgot password form
-    const [forgotEmail, setForgotEmail] = useState("");
-
     // Reset on open/close
     useEffect(() => {
         if (isOpen) {
@@ -47,7 +43,6 @@ export function AuthModal({ isOpen, onClose, initialTab = "login" }: AuthModalPr
             setError("");
             setEmail("");
             setPassword("");
-            setForgotEmail("");
         }
     }, [isOpen, initialTab]);
 
@@ -97,34 +92,6 @@ export function AuthModal({ isOpen, onClose, initialTab = "login" }: AuthModalPr
         }
     };
 
-    const handleForgotPassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError("");
-
-        try {
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/auth/forgot-password`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: forgotEmail }),
-                }
-            );
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || "Une erreur est survenue");
-            }
-
-            setActiveTab("forgot-success");
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Une erreur est survenue");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     return (
         <AnimatePresence>
             {isOpen && (
@@ -162,18 +129,15 @@ export function AuthModal({ isOpen, onClose, initialTab = "login" }: AuthModalPr
                                 <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white/20 flex items-center justify-center">
                                     {activeTab === "login" && <LogIn size={24} className="text-white" />}
                                     {activeTab === "forgot" && <KeyRound size={24} className="text-white" />}
-                                    {activeTab === "forgot-success" && <CheckCircle size={24} className="text-white" />}
                                 </div>
 
                                 <h2 className="text-xl font-bold text-white">
                                     {activeTab === "login" && "Connexion"}
                                     {activeTab === "forgot" && "Mot de passe oublié"}
-                                    {activeTab === "forgot-success" && "Email envoyé !"}
                                 </h2>
                                 <p className="text-emerald-100 text-sm mt-1">
                                     {activeTab === "login" && "Accédez à votre espace personnel"}
                                     {activeTab === "forgot" && "Réinitialisez votre mot de passe"}
-                                    {activeTab === "forgot-success" && "Vérifiez votre boîte mail"}
                                 </p>
                             </div>
 
@@ -264,27 +228,9 @@ export function AuthModal({ isOpen, onClose, initialTab = "login" }: AuthModalPr
                                             Contactez l&apos;administration de l&apos;école pour réinitialiser votre mot de passe :
                                         </p>
                                         <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                                            <p className="font-medium text-gray-900">contact@monecole.fr</p>
-                                            <p className="text-sm text-gray-500">ou par téléphone au 03 89 XX XX XX</p>
+                                            <p className="font-medium text-gray-900">contact@montessorietmoi.com</p>
+                                            <p className="text-sm text-gray-500">ou par téléphone au 03 89 06 07 77</p>
                                         </div>
-                                        <button
-                                            onClick={() => setActiveTab("login")}
-                                            className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center justify-center gap-1 mx-auto"
-                                        >
-                                            <ArrowLeft size={16} />
-                                            Retour à la connexion
-                                        </button>
-                                    </div>
-                                )}
-                                {/* Forgot Password Success */}
-                                {activeTab === "forgot-success" && (
-                                    <div className="text-center py-4">
-                                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
-                                            <CheckCircle size={32} className="text-emerald-600" />
-                                        </div>
-                                        <p className="text-gray-600 mb-4">
-                                            Si un compte est associé à <strong>{forgotEmail}</strong>, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.
-                                        </p>
                                         <button
                                             onClick={() => setActiveTab("login")}
                                             className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center justify-center gap-1 mx-auto"
