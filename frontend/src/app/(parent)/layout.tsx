@@ -4,43 +4,38 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ParentLayout } from "@/components/layout/ParentLayout";
 import { Lock, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ParentRootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Vérifier l'authentification
-    const token = localStorage.getItem("auth_token");
-    const parentLogged = sessionStorage.getItem("parent_logged");
+    // Si l'auth est en cours de chargement, on attend
+    if (authLoading) return;
 
-    if (!token && !parentLogged) {
+    // Si non authentifié, redirection vers connexion
+    if (!isAuthenticated) {
       router.push("/connexion");
-      setIsLoading(false);
       return;
     }
 
     // Vérifier si première connexion (changement de mot de passe obligatoire)
-    const userStr = localStorage.getItem("user");
     let needsPasswordChange = false;
 
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        // Vérification stricte du flag premiereConnexion
-        if (user.premiereConnexion === true || user.premiere_connexion === true) {
-          needsPasswordChange = true;
-          setMustChangePassword(true);
-        }
-      } catch {
-        // Ignorer les erreurs de parsing
+    if (user) {
+      // Vérification du flag premiereConnexion (gestion camelCase et snake_case pour sécurité)
+      if (user.premiereConnexion === true || (user as any).premiere_connexion === true) {
+        needsPasswordChange = true;
+        setMustChangePassword(true);
+      } else {
+        setMustChangePassword(false);
       }
     }
 
@@ -48,16 +43,18 @@ export default function ParentRootLayout({
     const isOnChangePasswordPage = pathname === "/changer-mot-de-passe";
     if (needsPasswordChange && !isOnChangePasswordPage) {
       router.push("/changer-mot-de-passe");
-      // Ne pas mettre isLoading à false ici pour bloquer le rendu
       return;
     }
 
-    setIsAuthenticated(true);
-    setIsLoading(false);
-  }, [router, pathname]);
+    // Si NE DOIT PAS changer le mdp mais est sur la page, rediriger vers dashboard
+    if (!needsPasswordChange && isOnChangePasswordPage) {
+      router.push("/dashboard");
+    }
 
-  // État de chargement
-  if (isLoading) {
+  }, [user, authLoading, isAuthenticated, router, pathname]);
+
+  // État de chargement (Auth ou vérification locale)
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 via-white to-emerald-50/30">
         <div className="text-center">
@@ -70,7 +67,7 @@ export default function ParentRootLayout({
     );
   }
 
-  // Non authentifié
+  // Non authentifié (sera redirigé par le useEffect, mais on affiche rien en attendant)
   if (!isAuthenticated) {
     return null;
   }
@@ -122,6 +119,7 @@ export default function ParentRootLayout({
     }
 
     // Si essaie d'accéder à une autre page → bloquer et rediriger
+    // (Cela ne devrait pas arriver souvent grâce au useEffect, mais sécurité supplémentaire)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 via-white to-amber-50/30">
         <div className="text-center max-w-md p-8">

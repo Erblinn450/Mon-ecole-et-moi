@@ -392,6 +392,43 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Lundi 13 - Mardi 14 janvier 2026
+
+**Durée :** ~3h (Session IA)
+
+**✅ Réalisé :**
+1. **Analyse Complète du Projet**
+   - Revue ligne par ligne du code frontend (Next.js 14) et backend (NestJS 10).
+   - Vérification du schéma Prisma et de la cohérence des données.
+   - Documentation de l'état d'avancement dans `RECAP_PROJET.md`.
+2. **Correction Bug Critique : Boucle "Changement Mot de Passe"**
+   - Problème : Après le changement de mot de passe, l'utilisateur était redirigé en boucle vers la page de changement.
+   - Cause : Le `ParentLayout` lisait le flag `premiereConnexion` depuis le `localStorage` au lieu du contexte d'authentification.
+   - Solution : Refactoring du `ParentLayout` pour utiliser le hook `useAuth()`, permettant une mise à jour réactive de l'état utilisateur.
+3. **Vérification des APIs via Terminal**
+   - Login API : ✅ Fonctionnel (`premiereConnexion: false` confirmé)
+   - Justificatifs API : ✅ Les 5 types de documents sont bien retournés.
+   - Preinscriptions API : ✅ Protection auth fonctionnelle (401 sans token).
+4. **Confirmation : Module Upload Justificatifs déjà implémenté**
+   - Backend : `JustificatifsController` avec Multer (PDF, JPEG, PNG, max 5Mo).
+   - Frontend : Page `fournir-documents/page.tsx` opérationnelle.
+
+**📁 Fichiers modifiés :**
+- `frontend/src/app/(parent)/layout.tsx` (fix boucle auth)
+- `frontend/src/app/admin/preinscriptions/[id]/page.tsx` (fix validation inscription)
+- `RECAP_PROJET.md` (mise à jour)
+
+**🐛 Bugs corrigés :**
+- Boucle infinie "Changement de mot de passe" après première connexion.
+- **Validation prématurée de l'inscription** : Le système affichait "Inscription complète" même si tous les documents obligatoires n'étaient pas uploadés. Maintenant, chaque type de document obligatoire doit être présent ET validé.
+
+**⏭️ Prochaines étapes :**
+- [ ] Tester manuellement l'upload de justificatifs.
+- [ ] Vérifier le Dashboard Parent (vue d'ensemble).
+- [ ] Commencer le module Facturation (Février).
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -429,6 +466,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 8 janvier 2026 (19h30)  
+**Dernière mise à jour :** 14 janvier 2026 (10h00)  
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)  
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

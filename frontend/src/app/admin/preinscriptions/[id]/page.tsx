@@ -92,6 +92,13 @@ interface SignatureStatus {
   };
 }
 
+interface TypeJustificatif {
+  id: number;
+  nom: string;
+  description: string;
+  obligatoire: boolean;
+}
+
 const classeLabels: Record<Classe, string> = {
   [Classe.MATERNELLE]: "Maternelle",
   [Classe.ELEMENTAIRE]: "Élémentaire",
@@ -114,6 +121,7 @@ export default function PreinscriptionDetailPage() {
   const [preinscription, setPreinscription] = useState<Preinscription | null>(null);
   const [justificatifs, setJustificatifs] = useState<Justificatif[]>([]);
   const [signatureStatus, setSignatureStatus] = useState<SignatureStatus | null>(null);
+  const [typesJustificatifs, setTypesJustificatifs] = useState<TypeJustificatif[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -149,6 +157,14 @@ export default function PreinscriptionDetailPage() {
 
       const data = await response.json();
       setPreinscription(data);
+
+      // Charger les types de justificatifs obligatoires
+      const typesResponse = await fetch(`${API_URL}/justificatifs/types`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (typesResponse.ok) {
+        setTypesJustificatifs(await typesResponse.json());
+      }
 
       // Si validée, charger les justificatifs et la signature
       if (data.statut === StatutPreinscription.VALIDE && data.enfantId) {
@@ -296,8 +312,23 @@ export default function PreinscriptionDetailPage() {
 
   const statut = statutConfig[preinscription.statut];
   const isValide = preinscription.statut === StatutPreinscription.VALIDE;
-  const allJustifsValidated = justificatifs.length > 0 && justificatifs.every((j) => j.valide === true);
-  const isFullyCompleted = isValide && allJustifsValidated && signatureStatus?.signed;
+
+  // Récupérer les types obligatoires (exclure le règlement intérieur qui est géré par signature)
+  const requiredTypes = typesJustificatifs.filter(t => t.obligatoire && t.id !== 5);
+
+  // Vérifier que TOUS les types obligatoires ont un justificatif validé
+  const allRequiredDocumentsValidated = requiredTypes.length > 0 && requiredTypes.every(type => {
+    const justif = justificatifs.find(j => j.typeId === type.id);
+    return justif && justif.valide === true;
+  });
+
+  // Compter les documents manquants pour affichage
+  const missingDocuments = requiredTypes.filter(type => {
+    const justif = justificatifs.find(j => j.typeId === type.id);
+    return !justif || justif.valide !== true;
+  });
+
+  const isFullyCompleted = isValide && allRequiredDocumentsValidated && signatureStatus?.signed;
 
   return (
     <div className="space-y-6">
@@ -340,6 +371,27 @@ export default function PreinscriptionDetailPage() {
             <p className="text-sm text-emerald-700">
               Tous les documents sont validés et le règlement est signé.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Avertissement documents manquants */}
+      {isValide && !isFullyCompleted && missingDocuments.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="font-semibold text-amber-800">⚠️ Inscription incomplète</p>
+              <p className="text-sm text-amber-700 mt-1">
+                Documents manquants ou non validés :
+              </p>
+              <ul className="list-disc list-inside text-sm text-amber-700 mt-2">
+                {missingDocuments.map(doc => (
+                  <li key={doc.id}>{doc.nom}</li>
+                ))}
+                {!signatureStatus?.signed && <li>Signature du règlement intérieur</li>}
+              </ul>
+            </div>
           </div>
         </div>
       )}
