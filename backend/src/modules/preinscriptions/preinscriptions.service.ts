@@ -501,20 +501,8 @@ export class PreinscriptionsService {
       throw new NotFoundException('Préinscription non trouvée');
     }
 
-    // Import dynamique de pdfmake
-    const PdfPrinter = require('pdfmake');
-
-    // Définir les polices (utiliser les polices système par défaut)
-    const fonts = {
-      Roboto: {
-        normal: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italics: 'Helvetica-Oblique',
-        bolditalics: 'Helvetica-BoldOblique',
-      },
-    };
-
-    const printer = new PdfPrinter(fonts);
+    // Import dynamique de PDFKit
+    const PDFDocument = require('pdfkit');
 
     // Formater les dates
     const formatDate = (date: Date | string | null) => {
@@ -543,213 +531,109 @@ export class PreinscriptionsService {
       return labels[classe] || classe;
     };
 
-    // Définir le contenu du PDF
-    const docDefinition: any = {
-      content: [
-        // En-tête
-        {
-          text: 'DOSSIER DE PRÉ-INSCRIPTION',
-          style: 'header',
-          alignment: 'center',
-          margin: [0, 0, 0, 10],
-        },
-        {
-          text: 'Mon École Montessori et Moi',
-          style: 'subheader',
-          alignment: 'center',
-          margin: [0, 0, 0, 20],
-        },
+    // Créer le document PDF
+    const doc = new PDFDocument({ margin: 50 });
 
-        // Numéro de dossier et statut
-        {
-          columns: [
-            {
-              text: `Numéro de dossier: ${preinscription.numeroDossier}`,
-              bold: true,
-            },
-            {
-              text: `Statut: ${getStatutLabel(preinscription.statut)}`,
-              bold: true,
-              alignment: 'right',
-            },
-          ],
-          margin: [0, 0, 0, 5],
-        },
-        {
-          text: `Date de demande: ${formatDate(preinscription.dateDemande)}`,
-          margin: [0, 0, 0, 20],
-        },
-
-        // Section 1: Informations de l'enfant
-        {
-          text: '1. INFORMATIONS DE L\'ENFANT',
-          style: 'sectionHeader',
-        },
-        {
-          table: {
-            widths: ['30%', '70%'],
-            body: [
-              ['Nom', preinscription.nomEnfant],
-              ['Prénom', preinscription.prenomEnfant],
-              ['Date de naissance', formatDate(preinscription.dateNaissance)],
-              ['Lieu de naissance', preinscription.lieuNaissance || 'Non renseigné'],
-              ['Nationalité', preinscription.nationalite || 'Non renseigné'],
-              ['Allergies', preinscription.allergies || 'Aucune'],
-            ],
-          },
-          margin: [0, 5, 0, 15],
-        },
-
-        // Section 2: Scolarité
-        {
-          text: '2. SCOLARITÉ',
-          style: 'sectionHeader',
-        },
-        {
-          table: {
-            widths: ['30%', '70%'],
-            body: [
-              ['Classe souhaitée', getClasseLabel(preinscription.classeSouhaitee)],
-              ['Classe actuelle', preinscription.classeActuelle || 'Non renseigné'],
-              ['Établissement précédent', preinscription.etablissementPrecedent || 'Non renseigné'],
-              ['Date d\'intégration souhaitée', formatDate(preinscription.dateIntegration)],
-            ],
-          },
-          margin: [0, 5, 0, 15],
-        },
-
-        // Section 3: Parent 1
-        {
-          text: '3. PARENT / RESPONSABLE LÉGAL 1',
-          style: 'sectionHeader',
-        },
-        {
-          table: {
-            widths: ['30%', '70%'],
-            body: [
-              ['Civilité', preinscription.civiliteParent || 'Non renseigné'],
-              ['Nom', preinscription.nomParent],
-              ['Prénom', preinscription.prenomParent || 'Non renseigné'],
-              ['Email', preinscription.emailParent],
-              ['Téléphone', preinscription.telephoneParent],
-              ['Lien de parenté', preinscription.lienParente || 'Non renseigné'],
-              ['Adresse', preinscription.adresseParent || 'Non renseigné'],
-              ['Profession', preinscription.professionParent || 'Non renseigné'],
-            ],
-          },
-          margin: [0, 5, 0, 15],
-        },
-
-        // Section 4: Parent 2 (si renseigné)
-        ...(preinscription.nomParent2
-          ? [
-              {
-                text: '4. PARENT / RESPONSABLE LÉGAL 2',
-                style: 'sectionHeader',
-              },
-              {
-                table: {
-                  widths: ['30%', '70%'],
-                  body: [
-                    ['Civilité', preinscription.civiliteParent2 || 'Non renseigné'],
-                    ['Nom', preinscription.nomParent2],
-                    ['Prénom', preinscription.prenomParent2 || 'Non renseigné'],
-                    ['Email', preinscription.emailParent2 || 'Non renseigné'],
-                    ['Téléphone', preinscription.telephoneParent2 || 'Non renseigné'],
-                    ['Lien de parenté', preinscription.lienParente2 || 'Non renseigné'],
-                    ['Adresse', preinscription.adresseParent2 || 'Non renseigné'],
-                    ['Profession', preinscription.professionParent2 || 'Non renseigné'],
-                  ],
-                },
-                margin: [0, 5, 0, 15],
-              },
-            ]
-          : []),
-
-        // Section 5: Informations complémentaires
-        {
-          text: preinscription.nomParent2 ? '5. INFORMATIONS COMPLÉMENTAIRES' : '4. INFORMATIONS COMPLÉMENTAIRES',
-          style: 'sectionHeader',
-        },
-        {
-          table: {
-            widths: ['30%', '70%'],
-            body: [
-              ['Situation familiale', preinscription.situationFamiliale || 'Non renseigné'],
-              ...(preinscription.situationAutre ? [['Autre situation', preinscription.situationAutre]] : []),
-              ['Comment avez-vous découvert l\'école?', preinscription.decouverte || 'Non renseigné'],
-              [
-                'Connaissance de la pédagogie Montessori',
-                preinscription.pedagogieMontessori || 'Non renseigné',
-              ],
-              ['Difficultés particulières', preinscription.difficultes || 'Non renseigné'],
-            ],
-          },
-          margin: [0, 5, 0, 15],
-        },
-
-        // Section statut si refus ou commentaire
-        ...(preinscription.commentaireRefus
-          ? [
-              {
-                text: 'COMMENTAIRE',
-                style: 'sectionHeader',
-              },
-              {
-                text: preinscription.commentaireRefus,
-                margin: [0, 5, 0, 15],
-              },
-            ]
-          : []),
-
-        // Footer
-        {
-          text: `Document généré le ${formatDate(new Date())}`,
-          style: 'footer',
-          alignment: 'center',
-          margin: [0, 30, 0, 0],
-        },
-      ],
-      styles: {
-        header: {
-          fontSize: 18,
-          bold: true,
-          color: '#10b981',
-        },
-        subheader: {
-          fontSize: 14,
-          color: '#6b7280',
-        },
-        sectionHeader: {
-          fontSize: 12,
-          bold: true,
-          color: '#374151',
-          margin: [0, 10, 0, 5],
-          background: '#f3f4f6',
-          padding: 5,
-        },
-        footer: {
-          fontSize: 9,
-          color: '#6b7280',
-          italics: true,
-        },
-      },
-      defaultStyle: {
-        fontSize: 10,
-        lineHeight: 1.3,
-      },
-    };
-
-    // Créer le PDF
-    const pdfDoc = printer.createPdfKitDocument(docDefinition);
-
-    // Convertir en Buffer
-    return new Promise((resolve, reject) => {
+    // Collecter les chunks du PDF
+    return new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];
-      pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
-      pdfDoc.on('error', reject);
-      pdfDoc.end();
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // === EN-TÊTE ===
+      doc.fontSize(20).fillColor('#10b981').text('DOSSIER DE PRÉ-INSCRIPTION', { align: 'center' });
+      doc.fontSize(14).fillColor('#6b7280').text('Mon École Montessori et Moi', { align: 'center' });
+      doc.moveDown(1);
+
+      // Numéro de dossier et statut
+      doc.fontSize(10).fillColor('#000000');
+      doc.text(`Numéro de dossier: ${preinscription.numeroDossier}`, 50);
+      doc.text(`Statut: ${getStatutLabel(preinscription.statut)}`, 300, doc.y - 12);
+      doc.text(`Date de demande: ${formatDate(preinscription.dateDemande)}`, 50);
+      doc.moveDown(1);
+
+      // === SECTION 1: ENFANT ===
+      doc.fontSize(12).fillColor('#374151').text('1. INFORMATIONS DE L\'ENFANT', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#000000');
+      doc.text(`Nom: ${preinscription.nomEnfant}`);
+      doc.text(`Prénom: ${preinscription.prenomEnfant}`);
+      doc.text(`Date de naissance: ${formatDate(preinscription.dateNaissance)}`);
+      doc.text(`Lieu de naissance: ${preinscription.lieuNaissance || 'Non renseigné'}`);
+      doc.text(`Nationalité: ${preinscription.nationalite || 'Non renseigné'}`);
+      doc.text(`Allergies: ${preinscription.allergies || 'Aucune'}`);
+      doc.moveDown(1);
+
+      // === SECTION 2: SCOLARITÉ ===
+      doc.fontSize(12).fillColor('#374151').text('2. SCOLARITÉ', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#000000');
+      doc.text(`Classe souhaitée: ${getClasseLabel(preinscription.classeSouhaitee)}`);
+      doc.text(`Classe actuelle: ${preinscription.classeActuelle || 'Non renseigné'}`);
+      doc.text(`Établissement précédent: ${preinscription.etablissementPrecedent || 'Non renseigné'}`);
+      doc.text(`Date d'intégration souhaitée: ${formatDate(preinscription.dateIntegration)}`);
+      doc.moveDown(1);
+
+      // === SECTION 3: PARENT 1 ===
+      doc.fontSize(12).fillColor('#374151').text('3. PARENT / RESPONSABLE LÉGAL 1', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#000000');
+      doc.text(`Civilité: ${preinscription.civiliteParent || 'Non renseigné'}`);
+      doc.text(`Nom: ${preinscription.nomParent}`);
+      doc.text(`Prénom: ${preinscription.prenomParent || 'Non renseigné'}`);
+      doc.text(`Email: ${preinscription.emailParent}`);
+      doc.text(`Téléphone: ${preinscription.telephoneParent}`);
+      doc.text(`Lien de parenté: ${preinscription.lienParente || 'Non renseigné'}`);
+      doc.text(`Adresse: ${preinscription.adresseParent || 'Non renseigné'}`);
+      doc.text(`Profession: ${preinscription.professionParent || 'Non renseigné'}`);
+      doc.moveDown(1);
+
+      // === SECTION 4: PARENT 2 (si renseigné) ===
+      if (preinscription.nomParent2) {
+        doc.fontSize(12).fillColor('#374151').text('4. PARENT / RESPONSABLE LÉGAL 2', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10).fillColor('#000000');
+        doc.text(`Civilité: ${preinscription.civiliteParent2 || 'Non renseigné'}`);
+        doc.text(`Nom: ${preinscription.nomParent2}`);
+        doc.text(`Prénom: ${preinscription.prenomParent2 || 'Non renseigné'}`);
+        doc.text(`Email: ${preinscription.emailParent2 || 'Non renseigné'}`);
+        doc.text(`Téléphone: ${preinscription.telephoneParent2 || 'Non renseigné'}`);
+        doc.text(`Lien de parenté: ${preinscription.lienParente2 || 'Non renseigné'}`);
+        doc.text(`Adresse: ${preinscription.adresseParent2 || 'Non renseigné'}`);
+        doc.text(`Profession: ${preinscription.professionParent2 || 'Non renseigné'}`);
+        doc.moveDown(1);
+      }
+
+      // === SECTION 5: INFORMATIONS COMPLÉMENTAIRES ===
+      const sectionNum = preinscription.nomParent2 ? '5' : '4';
+      doc.fontSize(12).fillColor('#374151').text(`${sectionNum}. INFORMATIONS COMPLÉMENTAIRES`, { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#000000');
+      doc.text(`Situation familiale: ${preinscription.situationFamiliale || 'Non renseigné'}`);
+      if (preinscription.situationAutre) {
+        doc.text(`Autre situation: ${preinscription.situationAutre}`);
+      }
+      doc.text(`Comment avez-vous découvert l'école?: ${preinscription.decouverte || 'Non renseigné'}`);
+      doc.text(`Connaissance de la pédagogie Montessori: ${preinscription.pedagogieMontessori || 'Non renseigné'}`);
+      doc.text(`Difficultés particulières: ${preinscription.difficultes || 'Non renseigné'}`);
+      doc.moveDown(1);
+
+      // === COMMENTAIRE (si refusé) ===
+      if (preinscription.commentaireRefus) {
+        doc.fontSize(12).fillColor('#374151').text('COMMENTAIRE', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10).fillColor('#000000');
+        doc.text(preinscription.commentaireRefus);
+        doc.moveDown(1);
+      }
+
+      // === FOOTER ===
+      doc.moveDown(2);
+      doc.fontSize(9).fillColor('#6b7280').text(`Document généré le ${formatDate(new Date())}`, { align: 'center' });
+
+      // Finaliser le document
+      doc.end();
     });
   }
 }
