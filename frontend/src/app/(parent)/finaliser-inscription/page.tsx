@@ -94,8 +94,8 @@ export default function FinaliserInscriptionPage() {
   // Vérifier si tous les documents obligatoires sont fournis
   useEffect(() => {
     if (typesAttendus.length > 0) {
-      // Filtrer pour exclure "Règlement intérieur signé" (ID 5) qui est géré à part
-      const docsRequis = typesAttendus.filter(t => t.obligatoire && t.id !== 5);
+      // Le backend exclut déjà le règlement intérieur, on filtre juste les obligatoires
+      const docsRequis = typesAttendus.filter(t => t.obligatoire);
 
       const isComplete = docsRequis.every(type => {
         const justif = justificatifsEnfant.find(j => j.typeId === type.id);
@@ -219,9 +219,9 @@ export default function FinaliserInscriptionPage() {
     );
   }
 
-  // Filtrer les types de justificatifs à afficher (exclure le règlement intérieur ID 5)
-  // Exclure le "Règlement intérieur signé" - géré via signature électronique (étape 2)
-  const displayTypes = typesAttendus.filter(t => t.id !== 5 && !t.nom.toLowerCase().includes('règlement'));
+  // Filtrer les types de justificatifs à afficher
+  // Exclure le "Règlement intérieur signé" (ID 6) - géré via signature électronique (étape 2)
+  const displayTypes = typesAttendus.filter(t => !t.nom.toLowerCase().includes('règlement'));
 
   const isInscriptionComplete = signatureStatus?.signed && allDocsUploaded;
 
@@ -253,8 +253,8 @@ export default function FinaliserInscriptionPage() {
                 key={enfant.id}
                 onClick={() => setSelectedEnfantId(enfant.id)}
                 className={`p-4 rounded-xl border-2 text-left transition-all ${selectedEnfantId === enfant.id
-                    ? "border-violet-500 bg-violet-50 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 bg-white"
+                  ? "border-violet-500 bg-violet-50 shadow-sm"
+                  : "border-gray-200 hover:border-gray-300 bg-white"
                   }`}
               >
                 <p className="font-semibold text-gray-900">
