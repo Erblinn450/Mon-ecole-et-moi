@@ -437,6 +437,93 @@ export class PreinscriptionsService {
     return this.prisma.preinscription.delete({ where: { id } });
   }
 
+  /**
+   * Envoie un email de relance pour les documents manquants
+   */
+  async relancerDocumentsManquants(id: number, documentsManquants: string[]) {
+    const preinscription = await this.prisma.preinscription.findUnique({
+      where: { id },
+      include: {
+        enfants: {
+          include: {
+            signatureReglements: true,
+          },
+        },
+      },
+    });
+
+    if (!preinscription) {
+      throw new NotFoundException('Préinscription non trouvée');
+    }
+
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+    const enfant = preinscription.enfants?.[0];
+    const signatureMissing = !enfant?.signatureReglements?.parentAccepte;
+
+    // Construire la liste des documents manquants pour l'email
+    let listeDocuments = documentsManquants.map(doc => `<li>${doc}</li>`).join('');
+    if (signatureMissing) {
+      listeDocuments += '<li>Signature du règlement intérieur</li>';
+    }
+
+    const subject = `📋 Rappel : Documents manquants pour ${preinscription.prenomEnfant} ${preinscription.nomEnfant}`;
+    const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif;line-height: 1.6;color: #333;max-width: 600px;margin: 0 auto;padding: 20px;background-color: #f4f4f4;">
+    <div style="background-color: #ffffff;border-radius: 12px;padding: 30px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="text-align: center;margin-bottom: 30px;padding-bottom: 20px;border-bottom: 3px solid #f59e0b;">
+            <div style="font-size: 48px;margin-bottom: 10px;">📋</div>
+            <h1 style="color: #f59e0b;margin: 0;font-size: 24px;">Documents manquants</h1>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <p><strong>Bonjour ${preinscription.prenomParent} ${preinscription.nomParent},</strong></p>
+            <p>Nous vous rappelons que le dossier d'inscription de <strong>${preinscription.prenomEnfant} ${preinscription.nomEnfant}</strong> est incomplet.</p>
+
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);border-left: 4px solid #f59e0b;padding: 15px 20px;margin: 20px 0;border-radius: 0 8px 8px 0;">
+                <p style="margin: 5px 0;font-weight: bold;">📌 Documents manquants :</p>
+                <ul style="margin: 10px 0;padding-left: 20px;">
+                    ${listeDocuments}
+                </ul>
+            </div>
+
+            <p>Merci de vous connecter à votre espace parent pour compléter le dossier :</p>
+
+            <div style="text-align: center;margin: 30px 0;">
+                <a href="${frontendUrl}/fournir-documents" style="display: inline-block;padding: 15px 30px;background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);color: white;text-decoration: none;border-radius: 12px;font-weight: bold;font-size: 16px;">
+                    📤 Compléter mon dossier
+                </a>
+            </div>
+
+            <p style="color: #6b7280;font-size: 14px;">Ces documents sont obligatoires pour finaliser l'inscription de votre enfant.</p>
+        </div>
+
+        <div style="margin-top: 30px;padding-top: 20px;border-top: 1px solid #e5e7eb;text-align: center;font-size: 12px;color: #6b7280;">
+            <p>Pour toute question, contactez-nous à : <a href="mailto:contact@montessorietmoi.com">contact@montessorietmoi.com</a></p>
+            <p>© ${new Date().getFullYear()} Mon École et Moi - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+
+    // Envoyer l'email
+    await this.emailService['mailerService'].sendMail({
+      to: preinscription.emailParent,
+      subject,
+      html,
+    });
+
+    this.logger.log(`📧 Email de relance envoyé pour le dossier ${preinscription.numeroDossier}`);
+
+    return { success: true, message: 'Email de relance envoyé avec succès' };
+  }
+
   async getStats() {
     const [total, enAttente, valide, refuse] = await Promise.all([
       this.prisma.preinscription.count(),

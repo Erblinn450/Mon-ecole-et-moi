@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { 
+import {
   LayoutDashboard,
   GraduationCap,
   FileText,
@@ -11,16 +11,49 @@ import {
   BarChart3,
   Users,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Download,
+  ChevronDown
 } from "lucide-react";
 import { preinscriptionsApi, enfantsApi } from "@/lib/api";
 import { PreinscriptionStats, EnfantStats, Classe } from "@/types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 export default function AdminDashboardPage() {
   const [preinscriptionStats, setPreinscriptionStats] = useState<PreinscriptionStats | null>(null);
   const [enfantStats, setEnfantStats] = useState<EnfantStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async (type: 'eleves' | 'preinscriptions' | 'parents' | 'factures' | 'complet') => {
+    setIsExporting(true);
+    setShowExportMenu(false);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${API_URL}/export/${type}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Erreur lors de l'export");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || `export_${type}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (err) {
+      alert("Erreur lors de l'export : " + (err instanceof Error ? err.message : "Erreur inconnue"));
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -78,13 +111,73 @@ export default function AdminDashboardPage() {
             Vue d&apos;ensemble de l&apos;activité de l&apos;école
           </p>
         </div>
-        <div className="text-sm text-gray-500">
-          {new Date().toLocaleDateString("fr-FR", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {new Date().toLocaleDateString("fr-FR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </div>
+
+          {/* Bouton Export */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium rounded-xl shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-50"
+            >
+              {isExporting ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Download size={18} />
+              )}
+              Exporter
+              <ChevronDown size={16} />
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                <button
+                  onClick={() => handleExport('complet')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 font-medium text-emerald-700"
+                >
+                  <Download size={16} />
+                  Export complet (tout)
+                </button>
+                <hr className="my-2 border-gray-100" />
+                <button
+                  onClick={() => handleExport('eleves')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <GraduationCap size={16} className="text-gray-400" />
+                  Liste des élèves
+                </button>
+                <button
+                  onClick={() => handleExport('preinscriptions')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FileText size={16} className="text-gray-400" />
+                  Préinscriptions
+                </button>
+                <button
+                  onClick={() => handleExport('parents')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Users size={16} className="text-gray-400" />
+                  Parents / Comptes
+                </button>
+                <button
+                  onClick={() => handleExport('factures')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <BarChart3 size={16} className="text-gray-400" />
+                  Factures
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

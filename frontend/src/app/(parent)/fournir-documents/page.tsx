@@ -94,7 +94,9 @@ export default function FournirDocumentsPage() {
       if (typesResponse.ok) {
         const types = await typesResponse.json();
         // Exclure le type "Règlement intérieur signé" (géré via signature électronique)
-        setTypesJustificatifs(types.filter((t: TypeJustificatif) => t.id !== 5));
+        setTypesJustificatifs(types.filter((t: TypeJustificatif) =>
+          t.id !== 5 && !t.nom.toLowerCase().includes('règlement')
+        ));
       }
 
       // Charger les justificatifs déjà déposés

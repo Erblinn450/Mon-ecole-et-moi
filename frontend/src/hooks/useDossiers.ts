@@ -4,33 +4,43 @@ import { useState, useEffect, useCallback } from "react";
 import { preinscriptionsApi } from "@/lib/api";
 import { Preinscription } from "@/types";
 
-// Hook pour récupérer les dossiers d'un parent par email
-export function useDossiers(email?: string) {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+// Hook pour récupérer les dossiers du parent connecté
+export function useDossiers() {
   const [dossiers, setDossiers] = useState<Preinscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchDossiers = useCallback(async () => {
-    if (!email) {
-      setDossiers([]);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      // Pour l'instant, on utilise une recherche par numéro de dossier
-      // TODO: Ajouter un endpoint backend pour récupérer les dossiers par email parent
-      setDossiers([]);
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        setDossiers([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/preinscriptions/mes-dossiers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDossiers(data);
+      } else {
+        setDossiers([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors du chargement");
       setDossiers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [email]);
+  }, []);
 
   useEffect(() => {
     fetchDossiers();

@@ -102,8 +102,6 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const updatedUser = await this.usersService.updatePassword(userId, hashedPassword);
 
-    console.log(`[AUTH] Mot de passe changé pour user ${userId}, premiereConnexion = ${updatedUser.premiereConnexion}`);
-
     return {
       message: 'Mot de passe changé avec succès',
       premiereConnexion: updatedUser.premiereConnexion,

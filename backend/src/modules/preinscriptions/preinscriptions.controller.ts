@@ -153,5 +153,17 @@ export class PreinscriptionsController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.preinscriptionsService.remove(id);
   }
+
+  @Post(':id/relancer-documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Envoie un email de relance pour les documents manquants (Admin)' })
+  relancerDocuments(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { documentsManquants: string[] },
+  ) {
+    return this.preinscriptionsService.relancerDocumentsManquants(id, body.documentsManquants);
+  }
 }
 

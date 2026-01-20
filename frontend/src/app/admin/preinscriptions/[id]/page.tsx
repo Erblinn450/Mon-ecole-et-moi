@@ -19,8 +19,8 @@ import {
   Check,
   X,
   FileCheck,
-  Upload,
   Download,
+  Mail,
 } from "lucide-react";
 import { Classe, StatutPreinscription, SituationFamiliale } from "@/types";
 
@@ -129,6 +129,7 @@ export default function PreinscriptionDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Preinscription>>({});
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   useEffect(() => {
     if (preinscription) {
@@ -271,16 +272,55 @@ export default function PreinscriptionDetailPage() {
 
     try {
       const token = localStorage.getItem("auth_token");
+
+      // Ne garder que les champs éditables (correspondant au DTO backend)
+      const editableFields = {
+        nomEnfant: formData.nomEnfant,
+        prenomEnfant: formData.prenomEnfant,
+        dateNaissance: formData.dateNaissance,
+        lieuNaissance: formData.lieuNaissance,
+        nationalite: formData.nationalite,
+        allergies: formData.allergies,
+        classeSouhaitee: formData.classeSouhaitee,
+        etablissementPrecedent: formData.etablissementPrecedent,
+        classeActuelle: formData.classeActuelle,
+        civiliteParent: formData.civiliteParent,
+        nomParent: formData.nomParent,
+        prenomParent: formData.prenomParent,
+        emailParent: formData.emailParent,
+        telephoneParent: formData.telephoneParent,
+        lienParente: formData.lienParente,
+        adresseParent: formData.adresseParent,
+        professionParent: formData.professionParent,
+        civiliteParent2: formData.civiliteParent2,
+        nomParent2: formData.nomParent2,
+        prenomParent2: formData.prenomParent2,
+        emailParent2: formData.emailParent2,
+        telephoneParent2: formData.telephoneParent2,
+        lienParente2: formData.lienParente2,
+        adresseParent2: formData.adresseParent2,
+        professionParent2: formData.professionParent2,
+        dateIntegration: formData.dateIntegration,
+        situationFamiliale: formData.situationFamiliale,
+        situationAutre: formData.situationAutre,
+        decouverte: formData.decouverte,
+        pedagogieMontessori: formData.pedagogieMontessori,
+        difficultes: formData.difficultes,
+      };
+
       const response = await fetch(`${API_URL}/preinscriptions/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(editableFields),
       });
 
-      if (!response.ok) throw new Error("Erreur lors de la sauvegarde");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Erreur lors de la sauvegarde");
+      }
 
       await loadData();
       setIsEditing(false);
@@ -320,6 +360,38 @@ export default function PreinscriptionDetailPage() {
       alert(err instanceof Error ? err.message : "Erreur lors du téléchargement");
     } finally {
       setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleSendReminder = async (docsManquants: { id: number; nom: string }[]) => {
+    if (!preinscription || docsManquants.length === 0) return;
+
+    if (!confirm(`Envoyer un email de relance à ${preinscription.emailParent} pour les documents manquants ?`)) {
+      return;
+    }
+
+    setIsSendingReminder(true);
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${API_URL}/preinscriptions/${id}/relancer-documents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          documentsManquants: docsManquants.map(doc => doc.nom),
+        }),
+      });
+
+      if (!response.ok) throw new Error("Erreur lors de l'envoi de l'email");
+
+      alert("Email de relance envoyé avec succès !");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+    } finally {
+      setIsSendingReminder(false);
     }
   };
 
@@ -426,22 +498,41 @@ export default function PreinscriptionDetailPage() {
       )}
 
       {/* Avertissement documents manquants */}
-      {isValide && !isFullyCompleted && missingDocuments.length > 0 && (
+      {isValide && !isFullyCompleted && (missingDocuments.length > 0 || !signatureStatus?.signed) && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
-            <div>
-              <p className="font-semibold text-amber-800">⚠️ Inscription incomplète</p>
-              <p className="text-sm text-amber-700 mt-1">
-                Documents manquants ou non validés :
-              </p>
-              <ul className="list-disc list-inside text-sm text-amber-700 mt-2">
-                {missingDocuments.map(doc => (
-                  <li key={doc.id}>{doc.nom}</li>
-                ))}
-                {!signatureStatus?.signed && <li>Signature du règlement intérieur</li>}
-              </ul>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+              <div>
+                <p className="font-semibold text-amber-800">Inscription incomplète</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Documents manquants ou non validés :
+                </p>
+                <ul className="list-disc list-inside text-sm text-amber-700 mt-2">
+                  {missingDocuments.map(doc => (
+                    <li key={doc.id}>{doc.nom}</li>
+                  ))}
+                  {!signatureStatus?.signed && <li>Signature du règlement intérieur</li>}
+                </ul>
+              </div>
             </div>
+            <button
+              onClick={() => handleSendReminder(missingDocuments)}
+              disabled={isSendingReminder}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {isSendingReminder ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Envoi...
+                </>
+              ) : (
+                <>
+                  <Mail size={16} />
+                  Relancer par email
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}

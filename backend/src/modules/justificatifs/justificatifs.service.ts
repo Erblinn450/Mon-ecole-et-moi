@@ -7,6 +7,12 @@ export class JustificatifsService {
 
   async getTypesAttendus() {
     return this.prisma.justificatifAttendu.findMany({
+      where: {
+        // Exclure le "Règlement intérieur signé" car géré via signature électronique
+        NOT: {
+          nom: { contains: 'Règlement', mode: 'insensitive' },
+        },
+      },
       orderBy: { obligatoire: 'desc' },
     });
   }

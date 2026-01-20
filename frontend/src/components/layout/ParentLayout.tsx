@@ -3,14 +3,15 @@
 import { Header } from "./Header";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  UtensilsCrossed, 
-  Palette, 
-  Users, 
+import {
+  LayoutDashboard,
+  UtensilsCrossed,
+  Palette,
+  Users,
   FolderOpen,
   Mail,
-  ChevronRight
+  ChevronRight,
+  UserPlus
 } from "lucide-react";
 
 // Menu parent
@@ -40,6 +41,12 @@ const menuItems = [
     label: "Mes enfants",
     icon: Users,
     description: "Informations enfants",
+  },
+  {
+    href: "/personnes-autorisees",
+    label: "Personnes autorisées",
+    icon: UserPlus,
+    description: "Récupérer les enfants",
   },
   {
     href: "/mes-dossiers",

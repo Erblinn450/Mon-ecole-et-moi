@@ -124,6 +124,7 @@ model Enfant {
   justificatifs       Justificatif[]
   pdfOuvertures       PdfOuverture[]
   periscolaires       Periscolaire[]
+  personnesAutorisees PersonneAutorisee[]
   repas               Repas[]
   signatureReglements SignatureReglement?
 
@@ -132,6 +133,21 @@ model Enfant {
   @@index([preinscriptionId])
   @@index([deletedAt])
   @@map("enfants")
+}
+
+model PersonneAutorisee {
+  id          Int      @id @default(autoincrement())
+  enfantId    Int      @map("enfant_id")
+  nom         String
+  prenom      String
+  telephone   String
+  lienParente String?  @map("lien_parente")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  enfant      Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+
+  @@index([enfantId])
+  @@map("personnes_autorisees")
 }
 
 model Inscription {

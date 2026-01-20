@@ -74,6 +74,9 @@ mon-ecole-et-moi/
 │   │   │   ├── repas/          # Désactivé (prévu avril)
 │   │   │   ├── periscolaire/   # Désactivé (prévu avril)
 │   │   │   ├── documents/      # Règlement PDF
+│   │   │   ├── export/         # Export CSV complet
+│   │   │   ├── personnes-autorisees/ # Récupération enfants
+│   │   │   ├── rappels/        # Rappels automatiques
 │   │   │   └── email/          # Multi-providers
 │   │   ├── common/guards/      # JWT, Roles, Recaptcha
 │   │   └── prisma/             # PrismaService
@@ -107,6 +110,7 @@ Host: localhost | Port: 5432 | Database: monecole | User: postgres | Password: p
 | `signature_reglements` | Signatures (unique par enfant) |
 | `factures` + `lignes_factures` | Facturation |
 | `calendrier_scolaire` | Vacances, fériés |
+| `personnes_autorisees` | Personnes autorisées récupération enfants |
 
 ### Commandes Utiles
 ```bash
@@ -487,6 +491,81 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Lundi 20 janvier 2026
+
+**Durée :** ~4h (Session IA)
+
+**✅ Réalisé :**
+1. **Export BDD Complet (CSV)**
+   - Création du module `ExportModule` complet (service, controller, module).
+   - Endpoints admin : `/api/export/eleves`, `/api/export/preinscriptions`, `/api/export/parents`, `/api/export/factures`, `/api/export/complet`.
+   - Export CSV avec encodage UTF-8 BOM pour compatibilité Excel.
+   - Bouton dropdown "Exporter" ajouté dans le dashboard admin avec toutes les options.
+
+2. **Module Personnes Autorisées (Récupération Enfants)**
+   - Nouveau modèle Prisma `PersonneAutorisee` avec relation vers `Enfant`.
+   - Module backend complet : CRUD avec vérification des droits parent.
+   - Validation DTO (téléphone format français, champs requis).
+   - Page parent `/personnes-autorisees` avec interface complète :
+     - Liste des personnes par enfant
+     - Modal d'ajout/modification
+     - Suppression avec confirmation
+   - Ajout dans le menu latéral parent et dans les actions rapides du dashboard.
+
+3. **Bouton Relancer Documents Manquants**
+   - Nouvel endpoint `POST /api/preinscriptions/:id/relancer-documents`.
+   - Email HTML stylisé avec liste des documents manquants + lien vers espace parent.
+   - Bouton "Relancer par email" dans la page admin de détail préinscription.
+   - Apparaît uniquement si des documents sont manquants ou non validés.
+
+4. **Exclusion Règlement Intérieur des Justificatifs**
+   - Le règlement intérieur est géré via signature électronique (étape 2).
+   - Exclusion côté backend dans `getTypesAttendus()` par recherche sur le nom.
+   - Exclusion renforcée côté frontend dans `finaliser-inscription` et `fournir-documents`.
+   - Évite la duplication : le règlement n'apparaît plus 2 fois.
+
+5. **Réorganisation Dashboard Parent**
+   - Suppression de "Nouvelle inscription" (accessible via Dossiers).
+   - Ajout de "Personnes autorisées" dans les actions rapides.
+   - Réorganisation ergonomique :
+     - Ligne 1 (actions fréquentes) : Commander repas, Périscolaire, Personnes autorisées
+     - Ligne 2 (gestion admin) : Mes dossiers, Mes enfants, Réinscription
+
+**📁 Fichiers créés :**
+- `backend/src/modules/export/export.service.ts`
+- `backend/src/modules/export/export.controller.ts`
+- `backend/src/modules/export/export.module.ts`
+- `backend/src/modules/personnes-autorisees/personnes-autorisees.service.ts`
+- `backend/src/modules/personnes-autorisees/personnes-autorisees.controller.ts`
+- `backend/src/modules/personnes-autorisees/personnes-autorisees.module.ts`
+- `backend/src/modules/personnes-autorisees/dto/create-personne-autorisee.dto.ts`
+- `backend/src/modules/personnes-autorisees/dto/update-personne-autorisee.dto.ts`
+- `frontend/src/app/(parent)/personnes-autorisees/page.tsx`
+
+**📁 Fichiers modifiés :**
+- `backend/prisma/schema.prisma` (ajout modèle PersonneAutorisee)
+- `backend/src/app.module.ts` (imports ExportModule, PersonnesAutoriseesModule)
+- `backend/src/modules/preinscriptions/preinscriptions.service.ts` (méthode relancerDocumentsManquants)
+- `backend/src/modules/preinscriptions/preinscriptions.controller.ts` (endpoint relancer-documents)
+- `backend/src/modules/justificatifs/justificatifs.service.ts` (exclusion règlement par nom)
+- `frontend/src/app/admin/dashboard/page.tsx` (bouton export dropdown)
+- `frontend/src/app/admin/preinscriptions/[id]/page.tsx` (bouton relancer email)
+- `frontend/src/app/(parent)/dashboard/page.tsx` (réorganisation actions rapides)
+- `frontend/src/app/(parent)/finaliser-inscription/page.tsx` (filtre règlement)
+- `frontend/src/app/(parent)/fournir-documents/page.tsx` (filtre règlement)
+- `frontend/src/components/layout/ParentLayout.tsx` (menu personnes autorisées)
+
+**🐛 Bugs corrigés :**
+- Règlement intérieur signé apparaissait 2 fois (dans signature ET justificatifs).
+- ID du règlement intérieur différent en BDD (ID 6 au lieu de 5) → filtre par nom maintenant.
+
+**⏭️ Prochaines étapes :**
+- [ ] Tester l'envoi réel d'email de relance documents.
+- [ ] Ajouter la pagination sur l'export si volume important.
+- [ ] Commencer le module Facturation (Février).
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -524,6 +603,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 14 janvier 2026 (17h00)
+**Dernière mise à jour :** 20 janvier 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

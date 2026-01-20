@@ -8,7 +8,7 @@ import { useEnfants } from "@/hooks/useEnfants";
 import {
   UtensilsCrossed,
   Palette,
-  UserPlus,
+  UserCheck,
   RefreshCw,
   FolderOpen,
   Users,
@@ -224,6 +224,7 @@ export default function DashboardParentPage() {
           Actions rapides
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Ligne 1: Actions fréquentes */}
           <DashboardCard
             href="/repas"
             icon={UtensilsCrossed}
@@ -241,21 +242,14 @@ export default function DashboardParentPage() {
           />
 
           <DashboardCard
-            href="/preinscription-enfant"
-            icon={UserPlus}
-            title="Nouvelle inscription"
-            description="Préinscrire un nouvel enfant"
-            color="emerald"
+            href="/personnes-autorisees"
+            icon={UserCheck}
+            title="Personnes autorisées"
+            description="Gérer qui peut récupérer vos enfants"
+            color="sky"
           />
 
-          <DashboardCard
-            href="/reinscription"
-            icon={RefreshCw}
-            title="Réinscription"
-            description="Réinscrire pour l'année prochaine"
-            color="teal"
-          />
-
+          {/* Ligne 2: Gestion administrative */}
           <DashboardCard
             href="/mes-dossiers"
             icon={FolderOpen}
@@ -270,6 +264,14 @@ export default function DashboardParentPage() {
             title="Mes enfants"
             description="Consulter les informations"
             color="rose"
+          />
+
+          <DashboardCard
+            href="/reinscription"
+            icon={RefreshCw}
+            title="Réinscription"
+            description="Réinscrire pour l'année prochaine"
+            color="teal"
           />
         </div>
       </div>

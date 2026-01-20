@@ -220,7 +220,8 @@ export default function FinaliserInscriptionPage() {
   }
 
   // Filtrer les types de justificatifs à afficher (exclure le règlement intérieur ID 5)
-  const displayTypes = typesAttendus.filter(t => t.id !== 5);
+  // Exclure le "Règlement intérieur signé" - géré via signature électronique (étape 2)
+  const displayTypes = typesAttendus.filter(t => t.id !== 5 && !t.nom.toLowerCase().includes('règlement'));
 
   const isInscriptionComplete = signatureStatus?.signed && allDocsUploaded;
 
