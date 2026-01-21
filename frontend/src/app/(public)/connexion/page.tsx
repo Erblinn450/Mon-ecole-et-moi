@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,16 @@ export default function ConnexionPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Nettoyer les anciennes sessions au chargement de la page de connexion
+  useEffect(() => {
+    // Supprimer les anciens tokens/données qui peuvent causer des problèmes
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("user_email");
+    sessionStorage.removeItem("parent_logged");
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -22,7 +32,7 @@ export default function ConnexionPage() {
 
     try {
       const response = await authApi.login({ email, password });
-      
+
       // Stocker le token et les infos utilisateur
       localStorage.setItem("auth_token", response.access_token);
       localStorage.setItem("user", JSON.stringify(response.user));
