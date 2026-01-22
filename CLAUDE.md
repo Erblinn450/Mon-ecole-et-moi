@@ -267,11 +267,72 @@ const token = localStorage.getItem("auth_token");
 
 ## Règles pour Claude
 
-1. **Toujours lire le fichier avant de le modifier**
-2. **Tester les modifications** (build backend, endpoints API)
+### Niveau d'Exigence
+**Coder comme un développeur senior avec 15 ans d'expérience.** Chaque ligne de code doit être réfléchie, sécurisée et maintenable. Pas de raccourcis, pas de "ça marchera pour l'instant".
+
+### Règles Obligatoires
+
+1. **Toujours lire le fichier avant de le modifier** - Comprendre le contexte existant
+2. **Tester les modifications** - Build backend, test endpoints avec curl, vérifier les erreurs TypeScript
 3. **Mettre à jour RECAP_PROJET.md** après chaque session significative
-4. **Ne jamais exposer de credentials en production**
-5. **Utiliser les enums Prisma** (pas de strings hardcodés)
+4. **Ne jamais exposer de credentials** - Pas de secrets en dur, utiliser `.env`
+5. **Utiliser les enums Prisma** - Pas de strings hardcodés pour rôles/statuts
 6. **Préférer éditer plutôt que créer** de nouveaux fichiers
-7. **Vérifier la sécurité** des endpoints (guards, vérification propriété)
-8. **Committer régulièrement** avec messages descriptifs en français
+7. **Committer régulièrement** avec messages descriptifs en français
+
+### Bonnes Pratiques de Code
+
+#### Sécurité (CRITIQUE)
+- **Authentification** : Tout endpoint sensible doit avoir `@UseGuards(JwtAuthGuard)`
+- **Autorisation** : Endpoints admin → `@Roles(Role.ADMIN)`
+- **Propriété des données** : Toujours vérifier que l'utilisateur a le droit d'accéder à la ressource (ex: parent ne voit que SES enfants)
+- **Validation** : Utiliser DTOs avec `class-validator` côté backend, Zod côté frontend
+- **Injection SQL** : Toujours utiliser Prisma (jamais de raw SQL sans échappement)
+- **XSS** : React échappe par défaut, mais attention aux `dangerouslySetInnerHTML`
+- **Tokens** : Expiration obligatoire, pas de fallback insécurisé
+
+#### Performance
+- **Requêtes N+1** : Utiliser `include` Prisma pour les relations
+- **Pagination** : Limiter les résultats pour les grandes listes
+- **Indexes** : Vérifier que les champs fréquemment requêtés sont indexés
+
+#### Maintenabilité
+- **Typage strict** : Éviter `any`, définir des interfaces/types
+- **Nommage clair** : Variables et fonctions explicites (pas de `x`, `data`, `temp`)
+- **Commentaires** : Seulement pour expliquer le "pourquoi", pas le "quoi"
+- **DRY** : Factoriser le code répétitif (mais pas trop tôt)
+- **Séparation des responsabilités** : Controller → routing, Service → logique métier
+
+#### Gestion d'Erreurs
+- **Toujours catcher les erreurs** avec try/catch
+- **Messages d'erreur explicites** pour l'utilisateur
+- **Logs** pour le debug (mais pas d'infos sensibles)
+- **Codes HTTP appropriés** : 400 (bad request), 401 (non auth), 403 (forbidden), 404 (not found), 500 (server error)
+
+#### Avant Chaque Commit
+- [ ] Build backend sans erreurs (`npm run build`)
+- [ ] Pas d'erreurs TypeScript dans l'IDE
+- [ ] Endpoints testés avec curl ou Postman
+- [ ] Pas de `console.log` de debug oublié
+- [ ] Pas de credentials/secrets en dur
+- [ ] Code formaté correctement
+
+### Anti-Patterns à Éviter
+
+❌ **NE JAMAIS FAIRE :**
+- Fallback de sécurité par défaut (`|| 'default-secret'`)
+- Endpoint public qui devrait être protégé
+- `any` partout sans raison valable
+- Ignorer les erreurs avec catch vide
+- Hardcoder des IDs (`id === 5` au lieu de recherche par nom)
+- Laisser des TODO sans les traiter
+- Stocker des mots de passe en clair
+- Faire confiance aux données du frontend sans validation backend
+
+✅ **TOUJOURS FAIRE :**
+- Lever une erreur si config manquante
+- Valider les entrées utilisateur
+- Vérifier les permissions avant d'agir
+- Utiliser des transactions pour les opérations multiples
+- Logger les erreurs importantes
+- Tester les cas limites (liste vide, données manquantes)
