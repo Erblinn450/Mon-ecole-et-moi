@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role, TypeRepas } from '@prisma/client';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('repas')
 @Controller('repas')
@@ -44,7 +45,7 @@ export class RepasController {
   @ApiOperation({ summary: 'Annuler un repas' })
   annuler(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const isAdmin = req.user.role === Role.ADMIN;
     return this.repasService.annuler(id, req.user.id, isAdmin);

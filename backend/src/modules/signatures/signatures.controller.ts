@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('signatures')
 @Controller('signatures')
@@ -32,7 +33,7 @@ export class SignaturesController {
   @ApiOperation({ summary: 'Statut de signature pour un enfant ou préinscription' })
   getSignatureStatus(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.signaturesService.getSignatureStatus(id, req.user.email);
   }
@@ -44,7 +45,7 @@ export class SignaturesController {
   @ApiOperation({ summary: 'Statut de signature (alias Laravel)' })
   getSignatureStatusLegacy(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.signaturesService.getSignatureStatus(id, req.user.email);
   }
@@ -58,7 +59,7 @@ export class SignaturesController {
   @ApiOperation({ summary: 'Signer le règlement intérieur' })
   signerReglement(
     @Body() body: { enfant_id?: number; preinscription_id?: number; enfantId?: number; preinscriptionId?: number },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Ip() ip: string,
   ) {
     // Support des deux formats de noms (snake_case et camelCase)
@@ -80,7 +81,7 @@ export class SignaturesController {
   @ApiOperation({ summary: 'Signature parent (alias Laravel)' })
   parentAccepte(
     @Body() body: { enfant_id?: number; preinscription_id?: number },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Ip() ip: string,
   ) {
     return this.signaturesService.signerReglement(

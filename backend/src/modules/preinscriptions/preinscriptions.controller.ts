@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { RecaptchaGuard } from '../../common/guards/recaptcha.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { AuthenticatedRequest } from '../../common/interfaces';
 import { Role, StatutPreinscription } from '@prisma/client';
 
 @ApiTags('preinscriptions')
@@ -56,7 +57,7 @@ export class PreinscriptionsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Liste les dossiers du parent connecté' })
-  async mesDossiers(@Request() req: any) {
+  async mesDossiers(@Request() req: AuthenticatedRequest) {
     // Récupère les dossiers du parent connecté via son email
     return this.preinscriptionsService.findByParentEmailWithEnfants(req.user.email);
   }
@@ -84,7 +85,7 @@ export class PreinscriptionsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Récupère une préinscription par numéro de dossier (authentifié)' })
-  findByNumeroDossier(@Param('numeroDossier') numeroDossier: string, @Request() req: any) {
+  findByNumeroDossier(@Param('numeroDossier') numeroDossier: string, @Request() req: AuthenticatedRequest) {
     return this.preinscriptionsService.findByNumeroDossierForUser(numeroDossier, req.user.email);
   }
 

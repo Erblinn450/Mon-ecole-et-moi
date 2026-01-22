@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('facturation')
 @Controller('facturation')
@@ -23,7 +24,7 @@ export class FacturationController {
 
   @Get('mes-factures')
   @ApiOperation({ summary: 'Liste mes factures (Parent)' })
-  getFacturesParent(@Request() req: any) {
+  getFacturesParent(@Request() req: AuthenticatedRequest) {
     return this.facturationService.getFacturesParent(req.user.id);
   }
 

@@ -39,18 +39,18 @@ export default function ConnexionPage() {
       localStorage.setItem("user_name", response.user.name || "");
       localStorage.setItem("user_email", response.user.email);
       sessionStorage.setItem("parent_logged", "true");
-      
+
       // Vérifier si c'est la première connexion (changement de mot de passe obligatoire)
       if (response.user.premiereConnexion) {
-        router.push("/changer-mot-de-passe");
+        window.location.href = "/changer-mot-de-passe";
         return;
       }
-      
-      // Redirection selon le rôle
+
+      // Redirection selon le rôle - utiliser window.location pour forcer le rechargement complet
       if (response.user.role === Role.ADMIN) {
-        router.push("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
       } else {
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Identifiants incorrects");

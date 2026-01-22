@@ -15,6 +15,7 @@ import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DocumentsService } from './documents.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../../common/interfaces';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
@@ -43,7 +44,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Enregistrer l\'ouverture du règlement' })
   async enregistrerOuverture(
     @Body() body: { enfant_id: number; document_type?: string },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {
@@ -62,7 +63,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Vérifier si le règlement a été ouvert' })
   async verifierOuverture(
     @Param('enfantId', ParseIntPipe) enfantId: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.documentsService.verifierOuverture(
       req.user.id,

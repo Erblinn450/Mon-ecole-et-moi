@@ -29,16 +29,18 @@ import { LoggerModule } from './common/logger/logger.module';
       envFilePath: '.env',
     }),
 
-    // Rate Limiting (protection anti-spam)
+    // Rate Limiting (protection anti-spam) - DÉSACTIVÉ EN DEV
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ([
-        {
-          // Limite globale: 100 requêtes par minute
-          ttl: parseInt(configService.get('THROTTLE_TTL', '60'), 10) * 1000,
-          limit: parseInt(configService.get('THROTTLE_LIMIT', '100'), 10),
-        },
-      ]),
+      useFactory: (configService: ConfigService) => {
+        const isProduction = configService.get('NODE_ENV') === 'production';
+        return [{
+          // En développement: limites très élevées (pratiquement désactivé)
+          // En production: 100 requêtes par minute
+          ttl: isProduction ? parseInt(configService.get('THROTTLE_TTL', '60'), 10) * 1000 : 60000,
+          limit: isProduction ? parseInt(configService.get('THROTTLE_LIMIT', '100'), 10) : 10000,
+        }];
+      },
       inject: [ConfigService],
     }),
 

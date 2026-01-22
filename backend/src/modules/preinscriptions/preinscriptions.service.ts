@@ -305,13 +305,18 @@ export class PreinscriptionsService {
 
     // Si validation, créer le compte parent et l'enfant
     let motDePasseGenere: string | null = null;
+    let motDePasseParent2Genere: string | null = null;
     let parentCree = false;
 
     if (statut === StatutPreinscription.VALIDE && !preinscription.compteCree) {
-      const { parent, enfant, password } = await this.creerCompteParentEtEnfant(preinscription);
+      const { parent, parent2, enfant, password, passwordParent2 } = await this.creerCompteParentEtEnfant(preinscription);
       motDePasseGenere = password;
+      motDePasseParent2Genere = passwordParent2;
       parentCree = true;
       this.logger.log(`Compte parent créé: ${parent.email}, enfant: ${enfant.prenom} ${enfant.nom}`);
+      if (parent2) {
+        this.logger.log(`Compte parent 2 créé: ${parent2.email}`);
+      }
     }
 
     const updated = await this.prisma.preinscription.update({
@@ -338,13 +343,26 @@ export class PreinscriptionsService {
 
     try {
       if (statut === StatutPreinscription.VALIDE) {
-        // Email de validation avec les identifiants si nouveau compte
+        // Email de validation avec les identifiants si nouveau compte (Parent 1)
         await this.emailService.sendPreinscriptionValidated({
           ...emailData,
           dateIntegration: preinscription.dateIntegration,
-          motDePasse: motDePasseGenere, // Ajouter le mot de passe pour l'email
+          motDePasse: motDePasseGenere,
         } as any);
         this.logger.log(`Email de validation envoyé pour ${preinscription.numeroDossier}`);
+
+        // Email au parent 2 avec ses identifiants s'il a été créé
+        if (preinscription.emailParent2 && motDePasseParent2Genere) {
+          await this.emailService.sendPreinscriptionValidated({
+            ...emailData,
+            civiliteParent: preinscription.civiliteParent2,
+            nomParent: preinscription.nomParent2,
+            emailParent: preinscription.emailParent2,
+            dateIntegration: preinscription.dateIntegration,
+            motDePasse: motDePasseParent2Genere,
+          } as any);
+          this.logger.log(`Email de validation envoyé au parent 2: ${preinscription.emailParent2}`);
+        }
       } else if (statut === StatutPreinscription.REFUSE) {
         await this.emailService.sendPreinscriptionRefused(emailData);
         this.logger.log(`Email de refus envoyé pour ${preinscription.numeroDossier}`);
@@ -404,13 +422,14 @@ export class PreinscriptionsService {
 
     // Créer le parent 2 s'il existe
     let parent2 = null;
+    let motDePasseParent2: string | null = null;
     if (preinscription.emailParent2) {
       parent2 = await this.prisma.user.findUnique({
         where: { email: preinscription.emailParent2 },
       });
 
       if (!parent2) {
-        const motDePasseParent2 = useRandomPassword
+        motDePasseParent2 = useRandomPassword
           ? this.generateSecurePassword(12)
           : 'parent1234';
         const hashedPassword2 = await bcrypt.hash(motDePasseParent2, 10);
@@ -455,7 +474,7 @@ export class PreinscriptionsService {
       });
     }
 
-    return { parent, parent2, enfant, password: motDePasse };
+    return { parent, parent2, enfant, password: motDePasse, passwordParent2: motDePasseParent2 };
   }
 
   /**

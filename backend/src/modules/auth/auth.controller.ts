@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -43,7 +44,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Profil utilisateur connecté' })
   @ApiResponse({ status: 200, description: 'Profil récupéré' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
-  async getProfile(@Request() req: any) {
+  async getProfile(@Request() req: AuthenticatedRequest) {
     return this.authService.getProfile(req.user.id);
   }
 
@@ -64,7 +65,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Mot de passe changé' })
   @ApiResponse({ status: 400, description: 'Mot de passe actuel incorrect' })
   async changePassword(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body() body: { currentPassword: string; newPassword: string },
   ) {
     return this.authService.changePassword(

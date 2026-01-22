@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role, Classe } from '@prisma/client';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('enfants')
 @Controller('enfants')
@@ -36,7 +37,7 @@ export class EnfantsController {
 
   @Get('mes-enfants')
   @ApiOperation({ summary: 'Liste les enfants du parent connecté' })
-  findMyChildren(@Request() req: any) {
+  findMyChildren(@Request() req: AuthenticatedRequest) {
     return this.enfantsService.findByParent(req.user.id);
   }
 
