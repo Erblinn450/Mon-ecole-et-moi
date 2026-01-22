@@ -96,6 +96,49 @@ export default function PreinscriptionPage() {
   // Questions importantes
   const [decouverte, setDecouverte] = useState("");
   const [pedagogieMontessori, setPedagogieMontessori] = useState("");
+
+  // Acceptation CGU/RGPD (obligatoire légalement)
+  const [acceptCGU, setAcceptCGU] = useState(false);
+
+  // Validation téléphone
+  const [phoneErrors, setPhoneErrors] = useState<Record<number, string>>({});
+
+  // Fonction de validation du numéro de téléphone français
+  const validatePhoneNumber = (phone: string): { isValid: boolean; formatted: string; error: string } => {
+    // Supprimer tous les caractères non numériques sauf +
+    const cleaned = phone.replace(/[^0-9+]/g, "");
+
+    // Formats acceptés: 0612345678, 06 12 34 56 78, +33612345678
+    const frenchMobileRegex = /^(?:(?:\+33|0033)|0)[1-9](?:[0-9]{8})$/;
+    const isValid = frenchMobileRegex.test(cleaned);
+
+    if (!phone) {
+      return { isValid: true, formatted: "", error: "" }; // Vide = pas d'erreur
+    }
+
+    if (!isValid) {
+      return {
+        isValid: false,
+        formatted: phone,
+        error: "Format invalide. Ex: 06 12 34 56 78 ou 0612345678"
+      };
+    }
+
+    // Formater le numéro en XX XX XX XX XX
+    let formatted = cleaned;
+    if (cleaned.startsWith("+33")) {
+      formatted = "0" + cleaned.slice(3);
+    } else if (cleaned.startsWith("0033")) {
+      formatted = "0" + cleaned.slice(4);
+    }
+
+    // Ajouter les espaces
+    if (formatted.length === 10) {
+      formatted = formatted.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+    }
+
+    return { isValid: true, formatted, error: "" };
+  };
   const [difficultes, setDifficultes] = useState("");
 
   // Maternelle = première inscription (pas d'établissement précédent nécessaire)
@@ -117,6 +160,15 @@ export default function PreinscriptionPage() {
     const updated = [...responsables];
     updated[index] = { ...updated[index], [field]: value };
     setResponsables(updated);
+
+    // Validation en temps réel du téléphone
+    if (field === "telephone") {
+      const validation = validatePhoneNumber(value);
+      setPhoneErrors(prev => ({
+        ...prev,
+        [index]: validation.error
+      }));
+    }
   };
 
   const autoFillForm = () => {
@@ -510,8 +562,18 @@ export default function PreinscriptionPage() {
                         required={index === 0}
                         value={resp.telephone}
                         onChange={(e) => updateResponsable(index, "telephone", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                        placeholder="06 12 34 56 78"
+                        className={`w-full px-4 py-2.5 rounded-xl border transition-colors ${phoneErrors[index]
+                            ? "border-rose-300 focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                            : "border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          }`}
                       />
+                      {phoneErrors[index] && (
+                        <p className="mt-1 text-xs text-rose-500 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          {phoneErrors[index]}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
@@ -625,11 +687,43 @@ export default function PreinscriptionPage() {
             </div>
           </section>
 
+          {/* Section 6: Acceptation CGU et RGPD */}
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-600 to-gray-700 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Shield size={20} /> Consentement obligatoire
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={acceptCGU}
+                    onChange={(e) => setAcceptCGU(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    <strong className="text-gray-900">J&apos;accepte les conditions générales d&apos;utilisation</strong> et je consens au traitement de mes données personnelles et de celles de mon enfant conformément à notre{" "}
+                    <a href="/politique-confidentialite" target="_blank" className="text-emerald-600 hover:underline">politique de confidentialité</a>{" "}
+                    et au{" "}
+                    <a href="/rgpd" target="_blank" className="text-emerald-600 hover:underline">Règlement Général sur la Protection des Données (RGPD)</a>.
+                    <span className="text-rose-500">*</span>
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 ml-8">
+                  Vos données sont utilisées uniquement pour le traitement de cette demande de préinscription et la gestion de la scolarité de votre enfant. Elles ne seront jamais transmises à des tiers sans votre consentement.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Submit */}
           <div className="flex flex-col items-center gap-4">
             <button
               type="submit"
-              disabled={isLoading || !recaptchaLoaded}
+              disabled={isLoading || !recaptchaLoaded || !acceptCGU || Object.values(phoneErrors).some(err => err !== "")}
               className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
