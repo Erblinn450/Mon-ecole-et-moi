@@ -566,6 +566,53 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Mercredi 22 janvier 2026
+
+**Durée :** ~3h (Session IA)
+
+**✅ Réalisé :**
+1. **Audit de Sécurité Approfondi**
+   - Analyse complète des modules connexion, préinscription et inscription.
+   - Identification de 15 problèmes (4 critiques, 7 hauts, 4 moyens).
+   - Corrections appliquées pour les problèmes critiques et hauts.
+
+2. **Corrections de Sécurité Critiques**
+   - **JWT Secret** : Suppression du fallback insécurisé. Erreur levée si `JWT_SECRET` non défini.
+   - **Endpoint dossier public** : Protection de `GET /preinscriptions/dossier/:numeroDossier` avec auth JWT + vérification propriété.
+   - **Token reset password** : Ajout d'expiration 1h sur les tokens de réinitialisation.
+   - **Credentials test** : Masquage automatique en production (`NODE_ENV !== 'development'`).
+
+3. **Corrections Fonctionnelles**
+   - **Enum PS/MATERNELLE** : Remplacement de "PS" par "MATERNELLE" dans le frontend (cohérence avec backend).
+   - **Création parent 2** : Le second parent est maintenant créé automatiquement lors de la validation si `emailParent2` existe.
+   - **Nettoyage cache connexion** : Suppression automatique des anciens tokens au chargement de la page connexion.
+
+4. **Modifications Base de Données**
+   - Ajout colonne `reset_token_expires_at` dans la table `users`.
+
+**📁 Fichiers modifiés :**
+- `backend/src/modules/auth/strategies/jwt.strategy.ts` (suppression fallback)
+- `backend/src/modules/preinscriptions/preinscriptions.controller.ts` (protection endpoint)
+- `backend/src/modules/preinscriptions/preinscriptions.service.ts` (méthode findByNumeroDossierForUser, création parent 2)
+- `backend/src/modules/users/users.service.ts` (expiration token reset)
+- `backend/prisma/schema.prisma` (champ resetTokenExpiresAt)
+- `frontend/src/app/(public)/connexion/page.tsx` (masquage credentials, nettoyage cache)
+- `frontend/src/app/(public)/preinscription/page.tsx` (enum MATERNELLE)
+
+**🐛 Bugs corrigés :**
+- Faille de sécurité : endpoint `/preinscriptions/dossier/:numeroDossier` accessible sans authentification.
+- Faille de sécurité : JWT secret fallback permettant de forger des tokens.
+- Faille de sécurité : tokens de réinitialisation sans expiration.
+- Bug fonctionnel : "PS" non reconnu par le backend (enum inexistant).
+- Bug fonctionnel : parent 2 jamais créé lors de la validation de la préinscription.
+
+**⏭️ Prochaines étapes :**
+- [ ] Implémenter logout avec blacklist de tokens (optionnel).
+- [ ] Ajouter validation d'âge enfant selon la classe.
+- [ ] Commencer le module Facturation (Février).
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -603,6 +650,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 20 janvier 2026
+**Dernière mise à jour :** 22 janvier 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

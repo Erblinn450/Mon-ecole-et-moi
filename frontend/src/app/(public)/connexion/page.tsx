@@ -112,26 +112,28 @@ export default function ConnexionPage() {
                 </div>
               )}
 
-              {/* Boutons de test (dev) */}
-              <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
-                <p className="text-sm text-amber-800 mb-3 font-medium">Identifiants de test :</p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fillTestCredentials("parent")}
-                    className="flex-1 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors"
-                  >
-                    Parent
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillTestCredentials("admin")}
-                    className="flex-1 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors"
-                  >
-                    Admin
-                  </button>
+              {/* Boutons de test (dev uniquement) */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                  <p className="text-sm text-amber-800 mb-3 font-medium">Identifiants de test :</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fillTestCredentials("parent")}
+                      className="flex-1 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors"
+                    >
+                      Parent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fillTestCredentials("admin")}
+                      className="flex-1 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors"
+                    >
+                      Admin
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>

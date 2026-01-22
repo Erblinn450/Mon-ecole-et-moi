@@ -222,6 +222,27 @@ export class PreinscriptionsService {
   }
 
   /**
+   * Récupère une préinscription par numéro de dossier pour un utilisateur authentifié
+   * Vérifie que l'utilisateur est bien le parent du dossier
+   */
+  async findByNumeroDossierForUser(numeroDossier: string, userEmail: string) {
+    const preinscription = await this.prisma.preinscription.findUnique({
+      where: { numeroDossier },
+    });
+
+    if (!preinscription) {
+      throw new NotFoundException('Préinscription non trouvée');
+    }
+
+    // Vérifier que l'utilisateur est le parent du dossier
+    if (preinscription.emailParent !== userEmail && preinscription.emailParent2 !== userEmail) {
+      throw new NotFoundException('Préinscription non trouvée');
+    }
+
+    return preinscription;
+  }
+
+  /**
    * Récupère les dossiers de préinscription d'un parent par son email
    * Inclut l'enfant associé si la préinscription est validée
    */
@@ -381,13 +402,45 @@ export class PreinscriptionsService {
       });
     }
 
+    // Créer le parent 2 s'il existe
+    let parent2 = null;
+    if (preinscription.emailParent2) {
+      parent2 = await this.prisma.user.findUnique({
+        where: { email: preinscription.emailParent2 },
+      });
+
+      if (!parent2) {
+        const motDePasseParent2 = useRandomPassword
+          ? this.generateSecurePassword(12)
+          : 'parent1234';
+        const hashedPassword2 = await bcrypt.hash(motDePasseParent2, 10);
+
+        parent2 = await this.prisma.user.create({
+          data: {
+            email: preinscription.emailParent2,
+            password: hashedPassword2,
+            name: `${preinscription.prenomParent2 || ''} ${preinscription.nomParent2 || ''}`.trim(),
+            nom: preinscription.nomParent2,
+            prenom: preinscription.prenomParent2,
+            telephone: preinscription.telephoneParent2,
+            adresse: preinscription.adresseParent2,
+            role: Role.PARENT,
+            actif: true,
+            premiereConnexion: true,
+          },
+        });
+
+        this.logger.log(`Compte parent 2 créé: ${preinscription.emailParent2}`);
+      }
+    }
+
     // Vérifier si l'enfant existe déjà pour cette préinscription
     let enfant = await this.prisma.enfant.findFirst({
       where: { preinscriptionId: preinscription.id },
     });
 
     if (!enfant) {
-      // Créer l'enfant lié au parent ET à la préinscription
+      // Créer l'enfant lié aux parents ET à la préinscription
       enfant = await this.prisma.enfant.create({
         data: {
           nom: preinscription.nomEnfant,
@@ -396,12 +449,13 @@ export class PreinscriptionsService {
           lieuNaissance: preinscription.lieuNaissance,
           classe: preinscription.classeSouhaitee,
           parent1Id: parent.id,
+          parent2Id: parent2?.id || null,
           preinscriptionId: preinscription.id, // Lier à la préinscription
         },
       });
     }
 
-    return { parent, enfant, password: motDePasse };
+    return { parent, parent2, enfant, password: motDePasse };
   }
 
   /**

@@ -81,9 +81,11 @@ export class PreinscriptionsController {
   }
 
   @Get('dossier/:numeroDossier')
-  @ApiOperation({ summary: 'Récupère une préinscription par numéro de dossier' })
-  findByNumeroDossier(@Param('numeroDossier') numeroDossier: string) {
-    return this.preinscriptionsService.findByNumeroDossier(numeroDossier);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Récupère une préinscription par numéro de dossier (authentifié)' })
+  findByNumeroDossier(@Param('numeroDossier') numeroDossier: string, @Request() req: any) {
+    return this.preinscriptionsService.findByNumeroDossierForUser(numeroDossier, req.user.email);
   }
 
   @Get('verify-email/:token')

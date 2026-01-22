@@ -103,18 +103,28 @@ export class UsersService {
   }
 
   async setResetToken(id: number, token: string) {
+    // Token expire dans 1 heure
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     return this.prisma.user.update({
       where: { id },
       data: {
         rememberToken: token,
+        resetTokenExpiresAt: expiresAt,
       },
     });
   }
 
   async findByResetToken(token: string) {
-    return this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: { rememberToken: token },
     });
+
+    // Vérifier si le token a expiré
+    if (user && user.resetTokenExpiresAt && user.resetTokenExpiresAt < new Date()) {
+      return null; // Token expiré
+    }
+
+    return user;
   }
 
   async resetPasswordWithToken(id: number, hashedPassword: string) {
@@ -123,6 +133,7 @@ export class UsersService {
       data: {
         password: hashedPassword,
         rememberToken: null, // Clear the token
+        resetTokenExpiresAt: null, // Clear expiration
         premiereConnexion: false,
       },
     });

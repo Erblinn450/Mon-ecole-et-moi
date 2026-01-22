@@ -98,7 +98,8 @@ export default function PreinscriptionPage() {
   const [pedagogieMontessori, setPedagogieMontessori] = useState("");
   const [difficultes, setDifficultes] = useState("");
 
-  const isPSSelected = classeSouhaitee === "PS";
+  // Maternelle = première inscription (pas d'établissement précédent nécessaire)
+  const isMaternelleSelected = classeSouhaitee === "MATERNELLE";
 
   const addResponsable = () => {
     if (responsables.length < 2) {
@@ -125,7 +126,7 @@ export default function PreinscriptionPage() {
     setLieuNaissance("Mulhouse");
     setNationalite("Française");
     setAllergies("");
-    setClasseSouhaitee("PS");
+    setClasseSouhaitee("MATERNELLE");
     setEtablissementPrecedent("");
     setDateIntegration("2025-09-01");
     setResponsables([{
@@ -396,7 +397,7 @@ export default function PreinscriptionPage() {
                   />
                 </div>
               </div>
-              {!isPSSelected && (
+              {!isMaternelleSelected && (
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Établissement précédent</label>
