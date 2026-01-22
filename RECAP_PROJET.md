@@ -613,6 +613,37 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Mercredi 22 janvier 2026 (suite)
+
+**Durée :** 3h (session avec Antigravity)
+
+**✅ Réalisé :**
+- Analyse et validation de l'audit sécurité de Claude Code (7 corrections critiques)
+- Désactivation du rate limiting en développement (10000 req/min)
+- Fix redirection après login (router.push → window.location.href)
+- **Conformité RGPD** : case à cocher obligatoire pour CGU/RGPD sur préinscription
+- **Validation téléphone** : validation en temps réel du format français
+  - Formats acceptés : `06 12 34 56 78`, `0612345678`, `+33612345678`
+  - Message d'erreur en temps réel si format invalide
+  - Bouton "Envoyer" désactivé si téléphone invalide ou CGU non cochée
+
+**📁 Fichiers modifiés :**
+- `backend/src/app.module.ts` (rate limiting conditionnel)
+- `frontend/src/app/(public)/connexion/page.tsx` (fix redirection)
+- `frontend/src/app/(public)/preinscription/page.tsx` (CGU + validation téléphone)
+
+**🐛 Bugs corrigés :**
+- Redirection non fonctionnelle après login parent (Next.js router.push)
+- Blocage par rate limiting en développement (ThrottlerException)
+- Mot de passe parent test incohérent (parent123 vs parent1234)
+
+**⏭️ Prochaines étapes :**
+- [ ] Créer pages /politique-confidentialite et /rgpd
+- [ ] Commencer le module Facturation (Février)
+- [ ] Validation de l'âge de l'enfant selon la classe sélectionnée
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
