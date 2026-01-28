@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { LogIn, Mail, Lock, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { Role } from "@/types";
+import { sanitize } from "@/lib/sanitize";
 
 export default function ConnexionPage() {
   const router = useRouter();
@@ -106,9 +107,13 @@ export default function ConnexionPage() {
             {/* Form */}
             <div className="p-8">
               {error && (
-                <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3">
-                  <AlertCircle className="text-rose-500 flex-shrink-0" size={20} />
-                  <p className="text-sm text-rose-700">{error}</p>
+                <div
+                  className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  <AlertCircle className="text-rose-500 flex-shrink-0" size={20} aria-hidden="true" />
+                  <p className="text-sm text-rose-700">{sanitize(error)}</p>
                 </div>
               )}
 
@@ -135,36 +140,42 @@ export default function ConnexionPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5" aria-label="Formulaire de connexion">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label htmlFor="email-input" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Adresse email
                   </label>
                   <div className="relative">
-                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                     <input
+                      id="email-input"
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="votre@email.fr"
+                      aria-label="Adresse email"
+                      aria-required="true"
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label htmlFor="password-input" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Mot de passe
                   </label>
                   <div className="relative">
-                    <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                     <input
+                      id="password-input"
                       type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
+                      aria-label="Mot de passe"
+                      aria-required="true"
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                     />
                   </div>
@@ -173,6 +184,7 @@ export default function ConnexionPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
+                  aria-label={isLoading ? "Connexion en cours" : "Se connecter"}
                   className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoading ? (

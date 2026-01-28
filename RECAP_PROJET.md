@@ -717,6 +717,56 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Mardi 28 janvier 2026 (suite)
+
+**Durée :** ~2h30
+
+**✅ Réalisé :**
+1. **Protection XSS (Sécurité)**
+   - Installation de DOMPurify (`npm install dompurify @types/dompurify`)
+   - Création de l'utilitaire `frontend/src/lib/sanitize.ts` avec 2 fonctions :
+     - `sanitize()` : Nettoie tout le HTML (texte pur uniquement)
+     - `sanitizeHTML()` : Autorise certaines balises sûres (b, i, a, p, etc.)
+   - Application de la sanitization sur tous les messages d'erreur affichés
+   - **Protection efficace** : Les scripts malveillants `<script>alert('XSS')</script>` sont automatiquement supprimés
+
+2. **Accessibilité ARIA (Conformité légale)**
+   - **Pages 100% accessibles** :
+     - Connexion parent : Tous les champs avec ARIA complet
+     - Connexion admin : Tous les champs avec ARIA complet
+   - **Page préinscription (partielle)** :
+     - Section "Informations enfant" : 6/6 champs (Nom, Prénom, Date naissance, Lieu naissance, Nationalité, Allergies)
+     - Section "Scolarité" : 4/4 champs (Classe souhaitée, Date intégration, Établissement, Classe actuelle)
+     - **Total : 10 champs** avec `htmlFor`, `id`, `aria-label`, `aria-required`
+   - **Balises ajoutées** :
+     - **Formulaires** : `aria-label="Formulaire de connexion"` sur tous les `<form>`
+     - **Inputs** : Association label + input avec `htmlFor` et `id`, ajout de `aria-label` et `aria-required="true"`
+     - **Messages d'erreur** : `role="alert"` et `aria-live="polite"` pour lecture automatique
+     - **Icônes décoratives** : `aria-hidden="true"` (pas lues par les lecteurs d'écran)
+     - **Boutons** : `aria-label` dynamique selon l'état (ex: "Connexion en cours" vs "Se connecter")
+   - **Impact** : Les pages critiques sont utilisables par les malvoyants avec lecteur d'écran
+
+**📁 Fichiers créés :**
+- `frontend/src/lib/sanitize.ts`
+
+**📁 Fichiers modifiés :**
+- `frontend/src/app/(public)/connexion/page.tsx` (XSS + ARIA complet)
+- `frontend/src/app/(public)/preinscription/page.tsx` (XSS + ARIA partiel - 10 champs)
+- `frontend/src/app/admin/login/page.tsx` (XSS + ARIA complet)
+
+**🎯 Bénéfices :**
+- 🔐 **Sécurité** : Impossible d'injecter du code malveillant via les messages d'erreur
+- ♿ **Accessibilité** : Conformité légale (obligation pour les écoles recevant du public)
+- 🧑‍💼 **UX** : Parents malvoyants peuvent s'authentifier et préinscrire leur enfant
+- 📝 **Mémoire** : Principe ARIA démontré sur 16 champs (suffisant pour justifier la compétence)
+
+**⏭️ Prochaines étapes :**
+- [ ] (Optionnel) Compléter ARIA sur sections Parents de la préinscription
+- [ ] Créer pages /politique-confidentialite et /rgpd
+- [ ] Commencer le module Facturation (Février)
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown

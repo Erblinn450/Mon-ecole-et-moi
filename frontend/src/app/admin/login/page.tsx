@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { LogIn, Lock, Mail, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { Role } from "@/types";
+import { sanitize } from "@/lib/sanitize";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -111,9 +112,13 @@ export default function AdminLoginPage() {
 
             <div className="p-8">
               {error && (
-                <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3">
-                  <AlertCircle className="text-rose-500 flex-shrink-0" size={20} />
-                  <p className="text-rose-700 text-sm">{error}</p>
+                <div
+                  className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  <AlertCircle className="text-rose-500 flex-shrink-0" size={20} aria-hidden="true" />
+                  <p className="text-rose-700 text-sm">{sanitize(error)}</p>
                 </div>
               )}
 
@@ -129,13 +134,13 @@ export default function AdminLoginPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5" aria-label="Formulaire de connexion administrateur">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     Adresse email
                   </label>
                   <div className="relative">
-                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                     <input
                       id="email"
                       name="email"
@@ -143,6 +148,8 @@ export default function AdminLoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="admin@ecole.fr"
+                      aria-label="Adresse email"
+                      aria-required="true"
                       required
                       autoFocus
                       className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -155,7 +162,7 @@ export default function AdminLoginPage() {
                     Mot de passe
                   </label>
                   <div className="relative">
-                    <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                     <input
                       id="password"
                       name="password"
@@ -163,6 +170,8 @@ export default function AdminLoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
+                      aria-label="Mot de passe"
+                      aria-required="true"
                       required
                       className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
                     />
@@ -172,6 +181,7 @@ export default function AdminLoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
+                  aria-label={isLoading ? "Connexion en cours" : "Se connecter"}
                   className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-70"
                 >
                   {isLoading ? (

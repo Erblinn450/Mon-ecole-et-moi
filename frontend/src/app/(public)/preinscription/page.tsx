@@ -21,6 +21,7 @@ import {
 import { preinscriptionsApi } from "@/lib/api";
 import { CreatePreinscriptionRequest, Classe, SituationFamiliale } from "@/types";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
+import { sanitize } from "@/lib/sanitize";
 
 // Mapping des classes vers l'enum backend
 // L'école propose 2 classes multi-âges: Maternelle (3-6 ans) et Élémentaire (6-12 ans)
@@ -332,13 +333,17 @@ export default function PreinscriptionPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3">
-            <AlertCircle className="text-rose-500 flex-shrink-0" size={20} />
-            <p className="text-rose-700">{error}</p>
+          <div
+            className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3"
+            role="alert"
+            aria-live="polite"
+          >
+            <AlertCircle className="text-rose-500 flex-shrink-0" size={20} aria-hidden="true" />
+            <p className="text-rose-700">{sanitize(error)}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8" aria-label="Formulaire de préinscription">
           {/* Section 1: Informations de l'enfant */}
           <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
@@ -349,62 +354,77 @@ export default function PreinscriptionPage() {
             <div className="p-6 space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                  <label htmlFor="nom-enfant" className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
                   <input
+                    id="nom-enfant"
                     type="text"
                     required
                     value={nomEnfant}
                     onChange={(e) => setNomEnfant(e.target.value)}
+                    aria-label="Nom de l'enfant"
+                    aria-required="true"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                  <label htmlFor="prenom-enfant" className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
                   <input
+                    id="prenom-enfant"
                     type="text"
                     required
                     value={prenomEnfant}
                     onChange={(e) => setPrenomEnfant(e.target.value)}
+                    aria-label="Prénom de l'enfant"
+                    aria-required="true"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                 </div>
               </div>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de naissance *</label>
+                  <label htmlFor="date-naissance" className="block text-sm font-medium text-gray-700 mb-1">Date de naissance *</label>
                   <input
+                    id="date-naissance"
                     type="date"
                     required
                     value={dateNaissance}
                     onChange={(e) => setDateNaissance(e.target.value)}
+                    aria-label="Date de naissance de l'enfant"
+                    aria-required="true"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de naissance</label>
+                  <label htmlFor="lieu-naissance" className="block text-sm font-medium text-gray-700 mb-1">Lieu de naissance</label>
                   <input
+                    id="lieu-naissance"
                     type="text"
                     value={lieuNaissance}
                     onChange={(e) => setLieuNaissance(e.target.value)}
+                    aria-label="Lieu de naissance de l'enfant"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nationalité</label>
+                  <label htmlFor="nationalite" className="block text-sm font-medium text-gray-700 mb-1">Nationalité</label>
                   <input
+                    id="nationalite"
                     type="text"
                     value={nationalite}
                     onChange={(e) => setNationalite(e.target.value)}
+                    aria-label="Nationalité de l'enfant"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Allergies / Problèmes de santé</label>
+                <label htmlFor="allergies" className="block text-sm font-medium text-gray-700 mb-1">Allergies / Problèmes de santé</label>
                 <textarea
+                  id="allergies"
                   value={allergies}
                   onChange={(e) => setAllergies(e.target.value)}
                   rows={2}
+                  aria-label="Allergies ou problèmes de santé de l'enfant"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors resize-none"
                   placeholder="Indiquez les allergies ou problèmes de santé à signaler..."
                 />
@@ -422,11 +442,14 @@ export default function PreinscriptionPage() {
             <div className="p-6 space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Classe souhaitée *</label>
+                  <label htmlFor="classe-souhaitee" className="block text-sm font-medium text-gray-700 mb-1">Classe souhaitée *</label>
                   <select
+                    id="classe-souhaitee"
                     required
                     value={classeSouhaitee}
                     onChange={(e) => setClasseSouhaitee(e.target.value)}
+                    aria-label="Classe souhaitée pour l'enfant"
+                    aria-required="true"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   >
                     <option value="">-- Sélectionnez --</option>
@@ -440,11 +463,13 @@ export default function PreinscriptionPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date d&apos;intégration souhaitée</label>
+                  <label htmlFor="date-integration" className="block text-sm font-medium text-gray-700 mb-1">Date d&apos;intégration souhaitée</label>
                   <input
+                    id="date-integration"
                     type="date"
                     value={dateIntegration}
                     onChange={(e) => setDateIntegration(e.target.value)}
+                    aria-label="Date d'intégration souhaitée"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                 </div>
@@ -452,11 +477,13 @@ export default function PreinscriptionPage() {
               {!isMaternelleSelected && (
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Établissement précédent</label>
+                    <label htmlFor="etablissement-precedent" className="block text-sm font-medium text-gray-700 mb-1">Établissement précédent</label>
                     <input
+                      id="etablissement-precedent"
                       type="text"
                       value={etablissementPrecedent}
                       onChange={(e) => setEtablissementPrecedent(e.target.value)}
+                      aria-label="Établissement scolaire précédent"
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                       placeholder="Nom de l'école précédente..."
                     />
@@ -564,8 +591,8 @@ export default function PreinscriptionPage() {
                         onChange={(e) => updateResponsable(index, "telephone", e.target.value)}
                         placeholder="06 12 34 56 78"
                         className={`w-full px-4 py-2.5 rounded-xl border transition-colors ${phoneErrors[index]
-                            ? "border-rose-300 focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                            : "border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          ? "border-rose-300 focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                          : "border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                           }`}
                       />
                       {phoneErrors[index] && (
