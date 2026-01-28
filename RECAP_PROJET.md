@@ -140,7 +140,7 @@ cd backend && npx prisma migrate deploy
 | Email | Mot de passe | Rôle |
 |-------|--------------|------|
 | `admin@ecole.fr` | `admin123` | ADMIN |
-| `parent@test.fr` | `parent123` | PARENT |
+| `parent@test.fr` | `parent1234` | PARENT |
 
 ### Sécurité Production
 | Protection | Description |
@@ -644,6 +644,79 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Mardi 28 janvier 2026
+
+**Durée :** ~3h (Session IA)
+
+**✅ Réalisé :**
+1. **Analyse et Optimisation Complète du Code**
+   - Revue de tous les modules (justificatifs, enfants, users, preinscriptions).
+   - Vérification de la cohérence du flux inscription/connexion.
+   - Tests automatisés des endpoints (IDOR, auth, stats).
+
+2. **Corrections de Sécurité**
+   - **Vulnérabilité IDOR corrigée** : Un parent pouvait accéder aux justificatifs de n'importe quel enfant. Ajout de `verifyEnfantOwnership()` dans `JustificatifsService`.
+   - Vérification que l'utilisateur est parent1 ou parent2 avant tout accès aux données d'un enfant.
+   - Les admins conservent l'accès à toutes les données.
+
+3. **Corrections de Code**
+   - **Bug "Invalid Date"** : Affichage de "date inconnue" si `parentDateSignature` est null dans finaliser-inscription.
+   - **Filtre règlement intérieur** : Remplacement du filtre hardcodé `t.id !== 5` par un filtre basé sur le nom (`!t.nom.toLowerCase().includes('règlement')`).
+   - **Seed.ts amélioré** : Upsert par nom au lieu d'ID hardcodé pour éviter les conflits.
+   - **Identifiants de test corrigés** : `parent123` → `parent1234`, `admin2@ecole.fr` → `admin@ecole.fr`.
+
+4. **Création de DTOs Manquants**
+   - `backend/src/modules/enfants/dto/create-enfant.dto.ts` : Validation complète (nom, prénom, dateNaissance, classe).
+   - `backend/src/modules/enfants/dto/update-enfant.dto.ts` : Tous les champs optionnels.
+   - `backend/src/modules/users/dto/update-user.dto.ts` : Validation email, téléphone français, booléen actif.
+
+5. **Amélioration des Types TypeScript**
+   - Ajout de `premiere_connexion?: boolean` (alias snake_case) dans l'interface User.
+   - Suppression des types `any` dans les controllers.
+
+6. **Confirmation Flux Inscription**
+   - L'inscription finale se fait uniquement quand l'admin valide tous les documents.
+   - Pas d'automatisation : contrôle manuel complet par l'admin.
+
+**📁 Fichiers créés :**
+- `backend/src/modules/enfants/dto/create-enfant.dto.ts`
+- `backend/src/modules/enfants/dto/update-enfant.dto.ts`
+- `backend/src/modules/users/dto/update-user.dto.ts`
+
+**📁 Fichiers modifiés :**
+- `backend/prisma/seed.ts` (upsert par nom)
+- `backend/src/modules/justificatifs/justificatifs.service.ts` (IDOR fix + UserPayload)
+- `backend/src/modules/justificatifs/justificatifs.controller.ts` (AuthenticatedRequest)
+- `backend/src/modules/enfants/enfants.controller.ts` (import DTOs)
+- `backend/src/modules/users/users.controller.ts` (UpdateUserDto)
+- `frontend/src/types/index.ts` (premiere_connexion alias)
+- `frontend/src/app/(parent)/layout.tsx` (gestion camelCase/snake_case)
+- `frontend/src/app/(parent)/finaliser-inscription/page.tsx` (fix Invalid Date + filtre règlement)
+- `frontend/src/app/(public)/connexion/page.tsx` (fix identifiants test)
+- `frontend/src/app/admin/preinscriptions/[id]/page.tsx` (filtre règlement par nom)
+
+**🐛 Bugs corrigés :**
+- **IDOR Critique** : Accès non autorisé aux justificatifs d'autres enfants.
+- **Invalid Date** : Affichage incorrect de la date de signature si null.
+- **ID hardcodé** : Filtre `t.id !== 5` ne fonctionnait plus après changement de seed.
+- **Identifiants test incorrects** : `parent123` au lieu de `parent1234`.
+
+**✅ Tests effectués :**
+- Build backend : ✅
+- Build frontend : ✅
+- Login API : ✅
+- Justificatifs types API : ✅ (6 types, RC incluse)
+- Protection IDOR : ✅ (403 Forbidden testé)
+- Stats préinscriptions : ✅
+- Stats enfants : ✅
+
+**⏭️ Prochaines étapes :**
+- [ ] Créer pages /politique-confidentialite et /rgpd
+- [ ] Commencer le module Facturation (Février)
+- [ ] Validation de l'âge de l'enfant selon la classe sélectionnée
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -681,6 +754,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 22 janvier 2026
+**Dernière mise à jour :** 28 janvier 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

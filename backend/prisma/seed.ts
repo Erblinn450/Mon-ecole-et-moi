@@ -50,11 +50,21 @@ async function main() {
   ];
 
   for (const type of justificatifsTypes) {
-    await prisma.justificatifAttendu.upsert({
-      where: { id: justificatifsTypes.indexOf(type) + 1 },
-      update: type,
-      create: type,
+    // Chercher par nom pour éviter les doublons (plus robuste que par ID)
+    const existing = await prisma.justificatifAttendu.findFirst({
+      where: { nom: type.nom },
     });
+
+    if (existing) {
+      // Mettre à jour si nécessaire
+      await prisma.justificatifAttendu.update({
+        where: { id: existing.id },
+        data: type,
+      });
+    } else {
+      // Créer si n'existe pas
+      await prisma.justificatifAttendu.create({ data: type });
+    }
   }
   console.log('✅ Types de justificatifs créés');
 

@@ -63,9 +63,9 @@ export default function ConnexionPage() {
   const fillTestCredentials = (type: "parent" | "admin") => {
     if (type === "parent") {
       setEmail("parent@test.fr");
-      setPassword("parent123");
+      setPassword("parent1234");
     } else {
-      setEmail("admin2@ecole.fr");
+      setEmail("admin@ecole.fr");
       setPassword("admin123");
     }
   };

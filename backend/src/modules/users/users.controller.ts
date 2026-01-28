@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Patch,
   Param,
@@ -15,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -46,7 +46,7 @@ export class UsersController {
   @Patch(':id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Modifie un utilisateur (Admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateData: any) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateData: UpdateUserDto) {
     return this.usersService.update(id, updateData);
   }
 

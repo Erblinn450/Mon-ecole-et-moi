@@ -51,6 +51,8 @@ export interface User {
   role: Role;
   actif: boolean;
   premiereConnexion: boolean;
+  // Alias snake_case (peut venir du backend selon la config)
+  premiere_connexion?: boolean;
 }
 
 export interface LoginRequest {

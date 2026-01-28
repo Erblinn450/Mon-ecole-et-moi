@@ -18,6 +18,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role, Classe } from '@prisma/client';
 import { AuthenticatedRequest } from '../../common/interfaces';
+import { CreateEnfantDto } from './dto/create-enfant.dto';
+import { UpdateEnfantDto } from './dto/update-enfant.dto';
 
 @ApiTags('enfants')
 @Controller('enfants')
@@ -67,7 +69,7 @@ export class EnfantsController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Créer un enfant (Admin)' })
-  create(@Body() createDto: any) {
+  create(@Body() createDto: CreateEnfantDto) {
     return this.enfantsService.create(createDto);
   }
 
@@ -75,7 +77,7 @@ export class EnfantsController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Modifier un enfant (Admin)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: any) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateEnfantDto) {
     return this.enfantsService.update(id, updateDto);
   }
 

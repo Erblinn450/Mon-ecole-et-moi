@@ -419,7 +419,9 @@ export default function PreinscriptionDetailPage() {
   const isValide = preinscription.statut === StatutPreinscription.VALIDE;
 
   // Récupérer les types obligatoires (exclure le règlement intérieur qui est géré par signature)
-  const requiredTypes = typesJustificatifs.filter(t => t.obligatoire && t.id !== 5);
+  const requiredTypes = typesJustificatifs.filter(t =>
+    t.obligatoire && !t.nom.toLowerCase().includes('règlement')
+  );
 
   // Vérifier que TOUS les types obligatoires ont un justificatif validé
   const allRequiredDocumentsValidated = requiredTypes.length > 0 && requiredTypes.every(type => {

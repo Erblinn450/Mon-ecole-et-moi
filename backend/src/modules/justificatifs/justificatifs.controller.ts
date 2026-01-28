@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Request as Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -23,6 +24,7 @@ import { diskStorage, FileFilterCallback } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { Request } from 'express';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 // Configuration de stockage Multer
 const storage = diskStorage({
@@ -84,8 +86,11 @@ export class JustificatifsController {
 
   @Get('enfant/:enfantId')
   @ApiOperation({ summary: 'Liste les justificatifs d\'un enfant' })
-  getJustificatifsEnfant(@Param('enfantId', ParseIntPipe) enfantId: number) {
-    return this.justificatifsService.getJustificatifsEnfant(enfantId);
+  getJustificatifsEnfant(
+    @Param('enfantId', ParseIntPipe) enfantId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.justificatifsService.getJustificatifsEnfant(enfantId, req.user);
   }
 
   @Get('en-attente')
@@ -113,6 +118,7 @@ export class JustificatifsController {
   async upload(
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { enfantId: string; typeId: string },
+    @Req() req: AuthenticatedRequest,
   ) {
     if (!file) {
       throw new BadRequestException('Fichier requis');
@@ -128,7 +134,7 @@ export class JustificatifsController {
     // Stocker le chemin relatif
     const fichierUrl = `justificatifs/${file.filename}`;
 
-    return this.justificatifsService.upload(enfantId, typeId, fichierUrl);
+    return this.justificatifsService.upload(enfantId, typeId, fichierUrl, req.user);
   }
 
   @Patch(':id/valider')
@@ -146,8 +152,8 @@ export class JustificatifsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Supprimer un justificatif' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.justificatifsService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.justificatifsService.remove(id, req.user);
   }
 }
 

@@ -30,8 +30,8 @@ export default function ParentRootLayout({
     let needsPasswordChange = false;
 
     if (user) {
-      // Vérification du flag premiereConnexion (gestion camelCase et snake_case pour sécurité)
-      if (user.premiereConnexion === true || (user as any).premiere_connexion === true) {
+      // Vérification du flag premiereConnexion (gestion camelCase et snake_case)
+      if (user.premiereConnexion === true || user.premiere_connexion === true) {
         needsPasswordChange = true;
         setMustChangePassword(true);
       } else {

@@ -220,7 +220,7 @@ export default function FinaliserInscriptionPage() {
   }
 
   // Filtrer les types de justificatifs à afficher
-  // Exclure le "Règlement intérieur signé" (ID 6) - géré via signature électronique (étape 2)
+  // Exclure le "Règlement intérieur signé" - géré via signature électronique (étape 2)
   const displayTypes = typesAttendus.filter(t => !t.nom.toLowerCase().includes('règlement'));
 
   const isInscriptionComplete = signatureStatus?.signed && allDocsUploaded;
@@ -386,7 +386,9 @@ export default function FinaliserInscriptionPage() {
                     ) : (
                       <div className="mt-2 text-sm text-emerald-700 flex items-center gap-2">
                         <Shield size={16} />
-                        Signé le {new Date(signatureStatus.signature?.parentDateSignature || "").toLocaleDateString("fr-FR")}
+                        Signé le {signatureStatus.signature?.parentDateSignature
+                          ? new Date(signatureStatus.signature.parentDateSignature).toLocaleDateString("fr-FR")
+                          : "date inconnue"}
                       </div>
                     )}
                   </div>
