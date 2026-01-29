@@ -333,8 +333,8 @@ export default function Home() {
             <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 text-emerald-100/30 text-[10px] uppercase tracking-widest font-medium">
               <p>© {new Date().getFullYear()} Mon École et Moi. Tous droits réservés.</p>
               <div className="flex gap-8">
-                <Link href="#" className="hover:text-white transition-colors">Mentions Légales</Link>
-                <Link href="#" className="hover:text-white transition-colors">Confidentialité</Link>
+                <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
+                <Link href="/politique-confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
               </div>
             </div>
           </div>
