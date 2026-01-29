@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { FileText, UtensilsCrossed, Users, ArrowRight, Mail, MapPin, Heart, Sparkles } from "lucide-react";
-import { AuthModal } from "@/components/ui/AuthModal";
 
 /**
  * Composant Blob pour l'arrière-plan animé
@@ -29,8 +27,6 @@ const Blob = ({ color, size, top, left, delay }: { color: string, size: string, 
 );
 
 export default function Home() {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -54,11 +50,6 @@ export default function Home() {
   };
 
   return (
-    <>
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
       <main className="min-h-screen bg-[#FDFCF8] selection:bg-emerald-100 selection:text-emerald-900">
         {/* Header */}
         <header className="fixed top-0 left-0 right-0 z-50 bg-[#FDFCF8]/70 backdrop-blur-md border-b border-emerald-100/30">
@@ -78,12 +69,12 @@ export default function Home() {
 
               {/* Navigation */}
               <nav className="flex items-center gap-6">
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
+                <Link
+                  href="/connexion"
                   className="text-sm font-medium text-emerald-800 hover:text-emerald-600 transition-colors"
                 >
                   Connexion
-                </button>
+                </Link>
                 <Link
                   href="/preinscription"
                   className="px-6 py-2.5 text-sm font-semibold text-white bg-emerald-900 hover:bg-emerald-800 rounded-full transition-all shadow-sm hover:shadow-md"
@@ -340,6 +331,5 @@ export default function Home() {
           </div>
         </footer>
       </main>
-    </>
   );
 }
