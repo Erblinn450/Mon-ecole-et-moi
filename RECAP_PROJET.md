@@ -762,8 +762,57 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 **⏭️ Prochaines étapes :**
 - [ ] (Optionnel) Compléter ARIA sur sections Parents de la préinscription
-- [ ] Créer pages /politique-confidentialite et /rgpd
+- [x] Créer pages /politique-confidentialite et /rgpd ✅ (fait session suivante)
 - [ ] Commencer le module Facturation (Février)
+
+---
+
+### 🗓️ Mercredi 29 janvier 2026
+
+**Durée :** ~2h
+
+**✅ Réalisé :**
+1. **Correction vulnérabilité IDOR sur endpoint enfants** (CRITIQUE)
+   - **Problème découvert** : Un parent pouvait accéder aux détails de n'importe quel enfant via `GET /api/enfants/:id`, y compris le hash du mot de passe du parent !
+   - **Correction** : Ajout vérification ownership dans `enfants.controller.ts`
+     - Admin : accès à tous les enfants
+     - Parent : accès uniquement à SES enfants (parent1Id ou parent2Id)
+     - Retourne 403 Forbidden si accès non autorisé
+   - **Sécurité renforcée** : Le service ne retourne plus le mot de passe hashé (`select` explicite sur les champs parent)
+
+2. **Pages légales créées**
+   - `/politique-confidentialite` : Politique de confidentialité complète (données collectées, finalités, durée conservation, sécurité, contact)
+   - `/rgpd` : Page droits RGPD (accès, rectification, effacement, portabilité, opposition, limitation, contact CNIL)
+   - Ces pages sont liées depuis la case CGU/RGPD du formulaire de préinscription
+
+3. **Tests complets du projet**
+   - ✅ Authentification (admin/parent, mauvais password → 401)
+   - ✅ Préinscriptions (liste, détails, accès admin uniquement)
+   - ✅ Justificatifs (types, IDOR protégé → 401)
+   - ✅ Enfants (IDOR protégé → 403 après correction)
+   - ✅ Exports CSV (élèves, parents, préinscriptions)
+   - ✅ Signatures règlement
+   - ✅ Personnes autorisées
+   - ✅ Pages frontend (toutes retournent 200)
+
+**📁 Fichiers modifiés :**
+- `backend/src/modules/enfants/enfants.controller.ts` (correction IDOR + ForbiddenException)
+- `backend/src/modules/enfants/enfants.service.ts` (select explicite pour ne pas exposer password)
+
+**📁 Fichiers créés :**
+- `frontend/src/app/(public)/politique-confidentialite/page.tsx`
+- `frontend/src/app/(public)/rgpd/page.tsx`
+
+**🐛 Bugs corrigés :**
+- IDOR critique sur `/api/enfants/:id` (parent pouvait voir tout enfant + hash password)
+
+**🔐 Sécurité :**
+- Tous les endpoints sensibles vérifient maintenant la propriété des données
+- Les mots de passe hashés ne sont plus jamais exposés dans les réponses API
+
+**⏭️ Prochaines étapes :**
+- [ ] Commencer le module Facturation (Février)
+- [ ] (Optionnel) Compléter ARIA sur sections Parents de la préinscription
 
 ---
 
@@ -804,6 +853,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 28 janvier 2026
+**Dernière mise à jour :** 29 janvier 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

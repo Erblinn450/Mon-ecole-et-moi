@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   ParseIntPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { EnfantsService } from './enfants.service';
@@ -61,8 +62,20 @@ export class EnfantsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Récupère un enfant par ID' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.enfantsService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
+    const enfant = await this.enfantsService.findOne(id);
+
+    // Les admins peuvent voir tous les enfants
+    if (req.user.role === Role.ADMIN) {
+      return enfant;
+    }
+
+    // Les parents ne peuvent voir que leurs propres enfants
+    if (enfant.parent1Id !== req.user.id && enfant.parent2Id !== req.user.id) {
+      throw new ForbiddenException('Vous n\'avez pas accès à cet enfant');
+    }
+
+    return enfant;
   }
 
   @Post()

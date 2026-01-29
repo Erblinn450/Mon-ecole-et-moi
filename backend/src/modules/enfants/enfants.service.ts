@@ -27,8 +27,12 @@ export class EnfantsService {
     const enfant = await this.prisma.enfant.findUnique({
       where: { id },
       include: {
-        parent1: true,
-        parent2: true,
+        parent1: {
+          select: { id: true, name: true, nom: true, prenom: true, email: true, telephone: true },
+        },
+        parent2: {
+          select: { id: true, name: true, nom: true, prenom: true, email: true, telephone: true },
+        },
         inscriptions: true,
         repas: {
           orderBy: { dateRepas: 'desc' },
