@@ -175,4 +175,200 @@ export class RappelsService {
     this.logger.log('🧪 Test manuel de l\'envoi des rappels');
     await this.verifierEtEnvoyerRappelsAttestationRC();
   }
+
+  /**
+   * Envoie les rappels de réinscription en mai (le 15 mai)
+   * Cron: tous les jours à 9h
+   */
+  @Cron('0 9 * * *', {
+    name: 'rappel-reinscription',
+    timeZone: 'Europe/Paris',
+  })
+  async envoyerRappelsReinscription() {
+    const now = new Date();
+    const mois = now.getMonth(); // 0-11 (4 = mai)
+    const jour = now.getDate();
+
+    // Envoyer uniquement le 15 mai
+    if (mois !== 4 || jour !== 15) {
+      return;
+    }
+
+    this.logger.log('🔔 Début de l\'envoi des rappels de réinscription (mai)');
+
+    try {
+      // Récupérer tous les enfants avec une inscription active
+      const enfants = await this.prisma.enfant.findMany({
+        where: {
+          deletedAt: null,
+          inscriptions: {
+            some: {
+              statut: 'ACTIVE',
+            },
+          },
+        },
+        include: {
+          parent1: true,
+          parent2: true,
+        },
+      });
+
+      this.logger.log(`📋 ${enfants.length} enfants actifs trouvés`);
+
+      // Regrouper les enfants par parent pour éviter d'envoyer plusieurs emails
+      const parentsEnfants = new Map<number, { parent: any; enfants: any[] }>();
+
+      for (const enfant of enfants) {
+        // Parent 1
+        if (!parentsEnfants.has(enfant.parent1.id)) {
+          parentsEnfants.set(enfant.parent1.id, { parent: enfant.parent1, enfants: [] });
+        }
+        parentsEnfants.get(enfant.parent1.id)?.enfants.push(enfant);
+
+        // Parent 2 (si existe)
+        if (enfant.parent2 && !parentsEnfants.has(enfant.parent2.id)) {
+          parentsEnfants.set(enfant.parent2.id, { parent: enfant.parent2, enfants: [] });
+        }
+        if (enfant.parent2) {
+          parentsEnfants.get(enfant.parent2.id)?.enfants.push(enfant);
+        }
+      }
+
+      let compteurEnvoyes = 0;
+
+      for (const [, data] of parentsEnfants) {
+        await this.envoyerEmailReinscription(data.parent, data.enfants);
+        compteurEnvoyes++;
+      }
+
+      this.logger.log(`🎉 ${compteurEnvoyes} emails de rappel réinscription envoyés`);
+    } catch (error) {
+      this.logger.error(`❌ Erreur lors de l'envoi des rappels réinscription: ${error.message}`, error.stack);
+    }
+  }
+
+  /**
+   * Envoie un email de rappel pour la réinscription
+   */
+  private async envoyerEmailReinscription(parent: any, enfants: any[]) {
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+    const anneeSuivante = `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+
+    const listeEnfants = enfants
+      .map(e => `<li><strong>${e.prenom} ${e.nom}</strong></li>`)
+      .join('');
+
+    try {
+      const subject = `🔄 Réinscription ${anneeSuivante} - Action requise`;
+      const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif;line-height: 1.6;color: #333;max-width: 600px;margin: 0 auto;padding: 20px;background-color: #f4f4f4;">
+    <div style="background-color: #ffffff;border-radius: 12px;padding: 30px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="text-align: center;margin-bottom: 30px;padding-bottom: 20px;border-bottom: 3px solid #10b981;">
+            <div style="font-size: 48px;margin-bottom: 10px;">🔄</div>
+            <h1 style="color: #10b981;margin: 0;font-size: 24px;">Réinscription ${anneeSuivante}</h1>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <p><strong>Bonjour ${parent.name || parent.prenom},</strong></p>
+            <p>L'année scolaire touche à sa fin ! Pour préparer au mieux la rentrée prochaine, nous vous invitons à <strong>confirmer la réinscription</strong> de votre/vos enfant(s) :</p>
+
+            <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);border-left: 4px solid #10b981;padding: 15px 20px;margin: 20px 0;border-radius: 0 8px 8px 0;">
+                <p style="margin: 5px 0 10px 0;"><strong>📚 Enfant(s) concerné(s) :</strong></p>
+                <ul style="margin: 0;padding-left: 20px;">
+                    ${listeEnfants}
+                </ul>
+            </div>
+
+            <p>La procédure est simple et rapide : <strong>3 clics suffisent !</strong></p>
+
+            <div style="text-align: center;margin: 30px 0;">
+                <a href="${frontendUrl}/reinscription" style="display: inline-block;padding: 15px 30px;background: linear-gradient(135deg, #10b981 0%, #059669 100%);color: white;text-decoration: none;border-radius: 12px;font-weight: bold;font-size: 16px;">
+                    ✅ Réinscrire mon/mes enfant(s)
+                </a>
+            </div>
+
+            <div style="background-color: #fef3c7;border-radius: 8px;padding: 15px;margin-top: 20px;">
+                <p style="margin: 0;font-size: 14px;color: #92400e;">
+                    <strong>⚠️ Important :</strong> Si vous ne souhaitez pas réinscrire votre enfant pour l'année prochaine,
+                    merci de nous contacter par téléphone pour nous en informer.
+                </p>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;padding-top: 20px;border-top: 1px solid #e5e7eb;text-align: center;font-size: 12px;color: #6b7280;">
+            <p>Pour toute question, contactez-nous à : <a href="mailto:contact@montessorietmoi.com">contact@montessorietmoi.com</a></p>
+            <p>© ${new Date().getFullYear()} Mon École et Moi - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>
+      `;
+
+      await this.emailService['mailerService'].sendMail({
+        to: parent.email,
+        subject,
+        html,
+      });
+
+      this.logger.log(`📧 Email réinscription envoyé à ${parent.email}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Erreur envoi email réinscription à ${parent.email}: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Méthode manuelle pour tester l'envoi des rappels réinscription
+   */
+  async testEnvoiRappelsReinscription() {
+    this.logger.log('🧪 Test manuel de l\'envoi des rappels réinscription');
+    // Forcer l'envoi pour test
+    const now = new Date();
+    this.logger.log(`📅 Date actuelle: ${now.toLocaleDateString('fr-FR')}`);
+
+    // Exécuter la logique sans la condition de date
+    const enfants = await this.prisma.enfant.findMany({
+      where: {
+        deletedAt: null,
+        inscriptions: {
+          some: {
+            statut: 'ACTIVE',
+          },
+        },
+      },
+      include: {
+        parent1: true,
+        parent2: true,
+      },
+    });
+
+    if (enfants.length === 0) {
+      this.logger.log('⚠️ Aucun enfant avec inscription active trouvé');
+      return { message: 'Aucun enfant éligible', count: 0 };
+    }
+
+    const parentsEnfants = new Map<number, { parent: any; enfants: any[] }>();
+
+    for (const enfant of enfants) {
+      if (!parentsEnfants.has(enfant.parent1.id)) {
+        parentsEnfants.set(enfant.parent1.id, { parent: enfant.parent1, enfants: [] });
+      }
+      parentsEnfants.get(enfant.parent1.id)?.enfants.push(enfant);
+    }
+
+    let compteur = 0;
+    for (const [, data] of parentsEnfants) {
+      await this.envoyerEmailReinscription(data.parent, data.enfants);
+      compteur++;
+    }
+
+    return { message: `${compteur} emails envoyés`, count: compteur };
+  }
 }

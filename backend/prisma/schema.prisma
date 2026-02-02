@@ -330,6 +330,27 @@ model CalendrierScolaire {
   @@map("calendrier_scolaire")
 }
 
+model Reinscription {
+  id              Int                  @id @default(autoincrement())
+  enfantId        Int                  @map("enfant_id")
+  parentId        Int                  @map("parent_id")
+  anneeScolaire   String               @map("annee_scolaire")
+  classeActuelle  String?              @map("classe_actuelle")
+  classeSouhaitee String?              @map("classe_souhaitee")
+  statut          StatutReinscription  @default(EN_ATTENTE)
+  commentaire     String?
+  dateDemande     DateTime             @default(now()) @map("date_demande")
+  dateTraitement  DateTime?            @map("date_traitement")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  @@unique([enfantId, anneeScolaire])
+  @@index([parentId])
+  @@index([anneeScolaire])
+  @@index([statut])
+  @@map("reinscriptions")
+}
+
 enum Role {
   PARENT
   ADMIN
@@ -392,4 +413,10 @@ enum TypeEvenementCalendrier {
   FERIE
   PONT
   JOURNEE_SPECIALE
+}
+
+enum StatutReinscription {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
 }

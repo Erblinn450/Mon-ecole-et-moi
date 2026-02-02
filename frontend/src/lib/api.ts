@@ -416,3 +416,155 @@ export const usersApi = {
   },
 };
 
+// ============================================
+// PERSONNES AUTORISEES API
+// ============================================
+
+export interface PersonneAutorisee {
+  id: number;
+  enfantId: number;
+  nom: string;
+  prenom: string;
+  telephone: string;
+  lienParente: string;
+  createdAt: string;
+}
+
+export interface ParentInfo {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string | null;
+}
+
+export interface EnfantPersonnesAutorisees {
+  enfantId: number;
+  enfantNom: string;
+  enfantPrenom: string;
+  classe: string | null;
+  parent1: ParentInfo | null;
+  parent2: ParentInfo | null;
+  personnesAutorisees: PersonneAutorisee[];
+}
+
+export const personnesAutoriseesApi = {
+  // Parent - Mes personnes autorisées
+  async getAll(): Promise<{ enfantId: number; enfantNom: string; personnesAutorisees: PersonneAutorisee[] }[]> {
+    const response = await fetch(`${API_BASE_URL}/personnes-autorisees`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // Parent - Par enfant
+  async getByEnfant(enfantId: number): Promise<PersonneAutorisee[]> {
+    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/enfant/${enfantId}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // Parent - Créer
+  async create(data: { enfantId: number; nom: string; prenom: string; telephone: string; lienParente: string }): Promise<PersonneAutorisee> {
+    const response = await fetch(`${API_BASE_URL}/personnes-autorisees`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  // Parent - Modifier
+  async update(id: number, data: Partial<{ nom: string; prenom: string; telephone: string; lienParente: string }>): Promise<PersonneAutorisee> {
+    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  // Parent - Supprimer
+  async delete(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors de la suppression");
+    }
+  },
+
+  // Admin - Toutes les personnes autorisées
+  async getAllAdmin(): Promise<EnfantPersonnesAutorisees[]> {
+    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/admin/all`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+};
+
+// ============================================
+// REINSCRIPTIONS API
+// ============================================
+
+export interface EnfantReinscription {
+  id: number;
+  nom: string;
+  prenom: string;
+  dateNaissance: string | null;
+  classe: string | null;
+  inscriptionActive: boolean;
+  reinscriptionStatut: string | null;
+  reinscriptionId: number | null;
+}
+
+export interface ReinscriptionData {
+  anneeScolaire: string;
+  enfants: EnfantReinscription[];
+}
+
+export interface CreateReinscriptionRequest {
+  enfantId: number;
+  classeSouhaitee?: string;
+}
+
+export const reinscriptionsApi = {
+  // Récupère les enfants éligibles à la réinscription
+  async getMesEnfants(): Promise<ReinscriptionData> {
+    const response = await fetch(`${API_BASE_URL}/reinscriptions/mes-enfants`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<ReinscriptionData>(response);
+  },
+
+  // Crée une demande de réinscription
+  async create(data: CreateReinscriptionRequest): Promise<unknown> {
+    const response = await fetch(`${API_BASE_URL}/reinscriptions`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<unknown>(response);
+  },
+
+  // Crée plusieurs réinscriptions en une fois
+  async createBulk(reinscriptions: CreateReinscriptionRequest[]): Promise<unknown> {
+    const response = await fetch(`${API_BASE_URL}/reinscriptions/bulk`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ reinscriptions }),
+    });
+    return handleResponse<unknown>(response);
+  },
+
+  // Récupère les réinscriptions du parent
+  async getMesReinscriptions(): Promise<unknown[]> {
+    const response = await fetch(`${API_BASE_URL}/reinscriptions/mes-reinscriptions`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<unknown[]>(response);
+  },
+};
+

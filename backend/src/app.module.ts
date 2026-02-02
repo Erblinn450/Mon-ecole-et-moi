@@ -19,6 +19,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { RappelsModule } from './modules/rappels/rappels.module';
 import { ExportModule } from './modules/export/export.module';
 import { PersonnesAutoriseesModule } from './modules/personnes-autorisees/personnes-autorisees.module';
+import { ReinscriptionsModule } from './modules/reinscriptions/reinscriptions.module';
 import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
@@ -65,6 +66,7 @@ import { LoggerModule } from './common/logger/logger.module';
     RappelsModule,
     ExportModule,
     PersonnesAutoriseesModule,
+    ReinscriptionsModule,
     LoggerModule,
 
     // TODO: Réactiver en AVRIL (selon planning)
