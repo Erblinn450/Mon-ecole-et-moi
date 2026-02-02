@@ -58,6 +58,7 @@ export class PreinscriptionsService {
         situationFamiliale: createDto.situationFamiliale,
         situationAutre: createDto.situationAutre,
         decouverte: createDto.decouverte,
+        attentesStructure: createDto.attentesStructure,
         pedagogieMontessori: createDto.pedagogieMontessori,
         difficultes: createDto.difficultes,
         // Vérification email
@@ -775,6 +776,7 @@ export class PreinscriptionsService {
         doc.text(`Autre situation: ${preinscription.situationAutre}`);
       }
       doc.text(`Comment avez-vous découvert l'école?: ${preinscription.decouverte || 'Non renseigné'}`);
+      doc.text(`Qu'attendez-vous de notre structure?: ${preinscription.attentesStructure || 'Non renseigné'}`);
       doc.text(`Connaissance de la pédagogie Montessori: ${preinscription.pedagogieMontessori || 'Non renseigné'}`);
       doc.text(`Difficultés particulières: ${preinscription.difficultes || 'Non renseigné'}`);
       doc.moveDown(1);

@@ -17,7 +17,7 @@ export default function RGPDPage() {
             <div className="text-center">
               <h1 className="text-lg font-semibold text-gray-900">Vos Droits RGPD</h1>
               <Link href="/" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center justify-center gap-1">
-                <ArrowLeft size={14} /> Retour a l&apos;accueil
+                <ArrowLeft size={14} /> Retour à l&apos;accueil
               </Link>
             </div>
             <Link href="/" className="flex-shrink-0">
@@ -32,24 +32,24 @@ export default function RGPDPage() {
         <div className="bg-gradient-to-r from-violet-500 to-purple-500 rounded-2xl p-8 mb-8 text-white text-center">
           <Scale size={48} className="mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Vos Droits RGPD</h1>
-          <p className="text-violet-100">Reglement General sur la Protection des Donnees</p>
-          <p className="text-sm text-violet-200 mt-4">Reglement (UE) 2016/679 du 27 avril 2016</p>
+          <p className="text-violet-100">Règlement Général sur la Protection des Données</p>
+          <p className="text-sm text-violet-200 mt-4">Règlement (UE) 2016/679 du 27 avril 2016</p>
         </div>
 
         {/* Introduction */}
         <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Qu&apos;est-ce que le RGPD ?</h2>
           <p className="text-gray-600 leading-relaxed">
-            Le Reglement General sur la Protection des Donnees (RGPD) est une legislation europeenne qui protege
-            vos donnees personnelles. Il vous accorde des droits specifiques concernant la collecte, le traitement
-            et le stockage de vos informations. L&apos;ecole <strong>Mon Ecole et Moi</strong> s&apos;engage a respecter
-            ces droits et a traiter vos donnees de maniere transparente et securisee.
+            Le Règlement Général sur la Protection des Données (RGPD) est une législation européenne qui protège
+            vos données personnelles. Il vous accorde des droits spécifiques concernant la collecte, le traitement
+            et le stockage de vos informations. L&apos;école <strong>Mon École et Moi</strong> s&apos;engage à respecter
+            ces droits et à traiter vos données de manière transparente et sécurisée.
           </p>
         </section>
 
         {/* Droits */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">Vos droits en detail</h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">Vos droits en détail</h2>
 
           {/* Droit d'acces */}
           <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
@@ -58,14 +58,14 @@ export default function RGPDPage() {
                 <Eye size={24} className="text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit d&apos;acces</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit d&apos;accès</h3>
                 <p className="text-gray-600 mb-3">
-                  Vous avez le droit de savoir si nous traitons vos donnees personnelles et, le cas echeant,
-                  d&apos;obtenir une copie de ces donnees ainsi que des informations sur leur traitement.
+                  Vous avez le droit de savoir si nous traitons vos données personnelles et, le cas échéant,
+                  d&apos;obtenir une copie de ces données ainsi que des informations sur leur traitement.
                 </p>
                 <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
-                  <strong>Comment exercer ce droit :</strong> Envoyez-nous un email en precisant votre demande.
-                  Nous vous repondrons dans un delai de 30 jours.
+                  <strong>Comment exercer ce droit :</strong> Envoyez-nous un email en précisant votre demande.
+                  Nous vous répondrons dans un délai de 30 jours.
                 </div>
               </div>
             </div>
@@ -80,7 +80,7 @@ export default function RGPDPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit de rectification</h3>
                 <p className="text-gray-600 mb-3">
-                  Vous pouvez demander la correction de donnees inexactes ou incompletes vous concernant
+                  Vous pouvez demander la correction de données inexactes ou incomplètes vous concernant
                   ou concernant votre enfant.
                 </p>
                 <div className="bg-emerald-50 rounded-lg p-3 text-sm text-emerald-800">
@@ -98,14 +98,14 @@ export default function RGPDPage() {
                 <Trash2 size={24} className="text-rose-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit a l&apos;effacement (&quot;droit a l&apos;oubli&quot;)</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit à l&apos;effacement (&quot;droit à l&apos;oubli&quot;)</h3>
                 <p className="text-gray-600 mb-3">
-                  Vous pouvez demander la suppression de vos donnees personnelles dans certains cas
-                  (donnees plus necessaires, retrait du consentement, etc.).
+                  Vous pouvez demander la suppression de vos données personnelles dans certains cas
+                  (données plus nécessaires, retrait du consentement, etc.).
                 </p>
                 <div className="bg-rose-50 rounded-lg p-3 text-sm text-rose-800">
-                  <strong>Limites :</strong> Certaines donnees doivent etre conservees pour des obligations legales
-                  (comptabilite, archives scolaires). Nous vous informerons des donnees qui ne peuvent pas etre supprimees.
+                  <strong>Limites :</strong> Certaines données doivent être conservées pour des obligations légales
+                  (comptabilité, archives scolaires). Nous vous informerons des données qui ne peuvent pas être supprimées.
                 </div>
               </div>
             </div>
@@ -118,13 +118,13 @@ export default function RGPDPage() {
                 <Download size={24} className="text-amber-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit a la portabilite</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit à la portabilité</h3>
                 <p className="text-gray-600 mb-3">
-                  Vous pouvez recevoir vos donnees dans un format structure, couramment utilise et lisible
-                  par machine (ex: CSV, JSON), et les transmettre a un autre organisme.
+                  Vous pouvez recevoir vos données dans un format structuré, couramment utilisé et lisible
+                  par machine (ex: CSV, JSON), et les transmettre à un autre organisme.
                 </p>
                 <div className="bg-amber-50 rounded-lg p-3 text-sm text-amber-800">
-                  <strong>Format disponible :</strong> Nous pouvons vous fournir vos donnees au format CSV ou PDF
+                  <strong>Format disponible :</strong> Nous pouvons vous fournir vos données au format CSV ou PDF
                   sur simple demande.
                 </div>
               </div>
@@ -140,12 +140,12 @@ export default function RGPDPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit d&apos;opposition</h3>
                 <p className="text-gray-600 mb-3">
-                  Vous pouvez vous opposer a certains traitements de vos donnees, notamment a des fins
+                  Vous pouvez vous opposer à certains traitements de vos données, notamment à des fins
                   de prospection commerciale (que nous ne pratiquons pas).
                 </p>
                 <div className="bg-purple-50 rounded-lg p-3 text-sm text-purple-800">
-                  <strong>A noter :</strong> Ce droit ne s&apos;applique pas aux traitements necessaires a l&apos;execution
-                  du contrat de scolarite ou a nos obligations legales.
+                  <strong>À noter :</strong> Ce droit ne s&apos;applique pas aux traitements nécessaires à l&apos;exécution
+                  du contrat de scolarité ou à nos obligations légales.
                 </div>
               </div>
             </div>
@@ -158,11 +158,11 @@ export default function RGPDPage() {
                 <AlertTriangle size={24} className="text-slate-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit a la limitation du traitement</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Droit à la limitation du traitement</h3>
                 <p className="text-gray-600 mb-3">
-                  Vous pouvez demander la limitation du traitement de vos donnees dans certains cas
-                  (contestation de l&apos;exactitude, traitement illicite, etc.). Vos donnees seront alors
-                  conservees mais plus utilisees.
+                  Vous pouvez demander la limitation du traitement de vos données dans certains cas
+                  (contestation de l&apos;exactitude, traitement illicite, etc.). Vos données seront alors
+                  conservées mais plus utilisées.
                 </p>
               </div>
             </div>
@@ -181,23 +181,23 @@ export default function RGPDPage() {
             Pour exercer l&apos;un de ces droits, envoyez-nous votre demande par email ou courrier :
           </p>
           <div className="bg-white rounded-lg p-4 space-y-2 text-gray-700">
-            <p><strong>Mon Ecole et Moi</strong></p>
+            <p><strong>Mon École et Moi</strong></p>
             <p>58 rue Damberg, 68350 Brunstatt-Didenheim</p>
-            <p>Email : <a href="mailto:monecoleetmoibrunstatt@gmail.com" className="text-emerald-600 hover:underline">monecoleetmoibrunstatt@gmail.com</a></p>
-            <p>Telephone : 03 89 06 07 77</p>
+            <p>Email : <a href="mailto:contact@montessorietmoi.com" className="text-emerald-600 hover:underline">contact@montessorietmoi.com</a></p>
+            <p>Téléphone : 03 89 06 07 77</p>
           </div>
           <p className="text-sm text-gray-500 mt-4">
-            Nous vous repondrons dans un delai maximum de <strong>30 jours</strong>.
-            Une piece d&apos;identite pourra vous etre demandee pour verifier votre identite.
+            Nous vous répondrons dans un délai maximum de <strong>30 jours</strong>.
+            Une pièce d&apos;identité pourra vous être demandée pour vérifier votre identité.
           </p>
         </section>
 
         {/* Reclamation CNIL */}
         <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Reclamation aupres de la CNIL</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Réclamation auprès de la CNIL</h2>
           <p className="text-gray-600 mb-4">
-            Si vous estimez que le traitement de vos donnees personnelles constitue une violation du RGPD,
-            vous avez le droit d&apos;introduire une reclamation aupres de la CNIL (Commission Nationale de l&apos;Informatique et des Libertes) :
+            Si vous estimez que le traitement de vos données personnelles constitue une violation du RGPD,
+            vous avez le droit d&apos;introduire une réclamation auprès de la CNIL (Commission Nationale de l&apos;Informatique et des Libertés) :
           </p>
           <div className="bg-gray-50 rounded-lg p-4 text-gray-700">
             <p><strong>CNIL</strong></p>
@@ -213,7 +213,7 @@ export default function RGPDPage() {
             href="/politique-confidentialite"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-violet-600 text-white font-medium rounded-xl hover:bg-violet-700 transition-colors"
           >
-            Voir la politique de confidentialite
+            Voir la politique de confidentialité
           </Link>
           <Link
             href="/preinscription"
@@ -228,7 +228,7 @@ export default function RGPDPage() {
       {/* Footer */}
       <footer className="border-t bg-white py-6 mt-12">
         <div className="container mx-auto px-4 text-center text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} Mon Ecole et Moi - Tous droits reserves</p>
+          <p>&copy; {new Date().getFullYear()} Mon École et Moi - Tous droits réservés</p>
         </div>
       </footer>
     </div>

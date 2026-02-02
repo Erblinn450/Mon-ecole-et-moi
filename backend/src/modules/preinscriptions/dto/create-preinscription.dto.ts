@@ -170,6 +170,11 @@ export class CreatePreinscriptionDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  attentesStructure?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   pedagogieMontessori?: string;
 
   @ApiPropertyOptional()

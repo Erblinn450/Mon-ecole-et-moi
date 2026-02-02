@@ -113,6 +113,7 @@ export interface CreatePreinscriptionRequest {
   dateIntegration?: string;
   situationFamiliale?: SituationFamiliale;
   decouverte?: string;
+  attentesStructure?: string;
   pedagogieMontessori?: string;
   difficultes?: string;
   classeActuelle?: string;
@@ -162,6 +163,7 @@ export interface Preinscription {
   // Infos complémentaires
   situationFamiliale?: SituationFamiliale;
   decouverte?: string;
+  attentesStructure?: string;
   pedagogieMontessori?: string;
   difficultes?: string;
   situationAutre?: string;

@@ -112,4 +112,35 @@ export class PersonnesAutoriseesService {
       where: { id },
     });
   }
+
+  /**
+   * Admin - Récupérer toutes les personnes autorisées groupées par enfant
+   */
+  async findAllForAdmin() {
+    const enfants = await this.prisma.enfant.findMany({
+      where: {
+        deletedAt: null,
+      },
+      include: {
+        personnesAutorisees: true,
+        parent1: {
+          select: { id: true, nom: true, prenom: true, email: true, telephone: true },
+        },
+        parent2: {
+          select: { id: true, nom: true, prenom: true, email: true, telephone: true },
+        },
+      },
+      orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
+    });
+
+    return enfants.map((e) => ({
+      enfantId: e.id,
+      enfantNom: e.nom,
+      enfantPrenom: e.prenom,
+      classe: e.classe,
+      parent1: e.parent1,
+      parent2: e.parent2,
+      personnesAutorisees: e.personnesAutorisees,
+    }));
+  }
 }

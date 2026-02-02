@@ -90,6 +90,7 @@ model Preinscription {
   situationFamiliale     SituationFamiliale?  @map("situation_familiale")
   situationAutre         String?              @map("situation_autre")
   decouverte             String?
+  attentesStructure      String?              @map("attentes_structure")
   pedagogieMontessori    String?              @map("pedagogie_montessori")
   difficultes            String?
   createdAt              DateTime             @default(now()) @map("created_at")

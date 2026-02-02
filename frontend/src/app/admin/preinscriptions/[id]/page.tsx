@@ -62,6 +62,7 @@ interface Preinscription {
   situationFamiliale?: SituationFamiliale;
   situationAutre?: string;
   decouverte?: string;
+  attentesStructure?: string;
   pedagogieMontessori?: string;
   difficultes?: string;
   // Statut
@@ -773,15 +774,19 @@ export default function PreinscriptionDetailPage() {
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <p className="text-sm text-gray-500 mb-1">Comment avez-vous découvert notre école ?</p>
+            <p className="text-sm text-gray-500 mb-1">Comment avez vous découvert notre école ?:</p>
             <p className="text-gray-700">{preinscription.decouverte || "Non renseigné"}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 mb-1">Pourquoi la pédagogie Montessori ?</p>
+            <p className="text-sm text-gray-500 mb-1">Qu&apos;attendez vous de notre structure ?:</p>
+            <p className="text-gray-700">{preinscription.attentesStructure || "Non renseigné"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Que représente pour vous la pédagogie Montessori ?:</p>
             <p className="text-gray-700">{preinscription.pedagogieMontessori || "Non renseigné"}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 mb-1">Difficultés particulières ?</p>
+            <p className="text-sm text-gray-500 mb-1">Votre enfant rencontre t&apos;il des difficultés à porter à notre attention afin de l&apos;accompagner au mieux dans sa scolarité ? Si oui, pouvez vous nous en dire plus ?:</p>
             <p className="text-gray-700">{preinscription.difficultes || "Non renseigné"}</p>
           </div>
         </div>

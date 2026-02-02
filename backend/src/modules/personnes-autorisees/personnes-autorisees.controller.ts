@@ -12,6 +12,9 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import { PersonnesAutoriseesService } from './personnes-autorisees.service';
 import { CreatePersonneAutoriseeDto } from './dto/create-personne-autorisee.dto';
 import { UpdatePersonneAutoriseeDto } from './dto/update-personne-autorisee.dto';
@@ -56,5 +59,13 @@ export class PersonnesAutoriseesController {
   @ApiOperation({ summary: 'Supprimer une personne autorisée' })
   remove(@Request() req: ExpressRequest & { user: { id: number } }, @Param('id', ParseIntPipe) id: number) {
     return this.service.remove(req.user.id, id);
+  }
+
+  @Get('admin/all')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Admin - Liste toutes les personnes autorisées par enfant' })
+  findAllAdmin() {
+    return this.service.findAllForAdmin();
   }
 }

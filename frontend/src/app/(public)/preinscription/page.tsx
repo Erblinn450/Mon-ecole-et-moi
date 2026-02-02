@@ -96,6 +96,7 @@ export default function PreinscriptionPage() {
 
   // Questions importantes
   const [decouverte, setDecouverte] = useState("");
+  const [attentesStructure, setAttentesStructure] = useState("");
   const [pedagogieMontessori, setPedagogieMontessori] = useState("");
 
   // Acceptation CGU/RGPD (obligatoire légalement)
@@ -248,6 +249,7 @@ export default function PreinscriptionPage() {
         situationAutre: situationFamiliale === SituationFamiliale.AUTRE ? situationAutre : undefined,
         classeActuelle: classeActuelle || undefined,
         decouverte: decouverte || undefined,
+        attentesStructure: attentesStructure || undefined,
         pedagogieMontessori: pedagogieMontessori || undefined,
         difficultes: difficultes || undefined,
 
@@ -313,9 +315,9 @@ export default function PreinscriptionPage() {
                 <ArrowLeft size={14} /> Retour à l&apos;accueil
               </Link>
             </div>
-            <Link href="/" className="flex-shrink-0">
-              <Image src="/images/logo-montessori.png" alt="Montessori" width={64} height={64} className="h-12 w-auto" />
-            </Link>
+            <a href="https://www.montessori-france.asso.fr/" target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+              <Image src="/images/logo-montessori.png" alt="Association Montessori de France" width={64} height={64} className="h-12 w-auto" />
+            </a>
           </div>
         </div>
       </header>
@@ -688,6 +690,15 @@ export default function PreinscriptionPage() {
                 <textarea
                   value={decouverte}
                   onChange={(e) => setDecouverte(e.target.value)}
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Qu&apos;attendez vous de notre structure ?</label>
+                <textarea
+                  value={attentesStructure}
+                  onChange={(e) => setAttentesStructure(e.target.value)}
                   rows={2}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors resize-none"
                 />

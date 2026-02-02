@@ -15,9 +15,9 @@ export default function MentionsLegalesPage() {
               <Image src="/images/logo.png" alt="Logo" width={64} height={64} className="h-12 w-auto" />
             </Link>
             <div className="text-center">
-              <h1 className="text-lg font-semibold text-gray-900">Mentions Legales</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Mentions Légales</h1>
               <Link href="/" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center justify-center gap-1">
-                <ArrowLeft size={14} /> Retour a l&apos;accueil
+                <ArrowLeft size={14} /> Retour à l&apos;accueil
               </Link>
             </div>
             <Link href="/" className="flex-shrink-0">
@@ -31,8 +31,8 @@ export default function MentionsLegalesPage() {
         {/* Hero */}
         <div className="bg-gradient-to-r from-slate-600 to-slate-700 rounded-2xl p-8 mb-8 text-white text-center">
           <Scale size={48} className="mx-auto mb-4" />
-          <h1 className="text-3xl font-bold mb-2">Mentions Legales</h1>
-          <p className="text-slate-200">Conformement a l&apos;article 6 de la loi n°2004-575 du 21 juin 2004</p>
+          <h1 className="text-3xl font-bold mb-2">Mentions Légales</h1>
+          <p className="text-slate-200">Conformément à l&apos;article 6 de la loi n°2004-575 du 21 juin 2004</p>
         </div>
 
         <div className="space-y-6">
@@ -42,14 +42,14 @@ export default function MentionsLegalesPage() {
               <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <Building2 size={20} className="text-emerald-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">Editeur du site</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Éditeur du site</h2>
             </div>
             <div className="space-y-2 text-gray-600">
-              <p><strong>Raison sociale :</strong> Mon Ecole et Moi</p>
+              <p><strong>Raison sociale :</strong> Mon École et Moi</p>
               <p><strong>Forme juridique :</strong> Association loi 1901</p>
               <p><strong>Adresse :</strong> 58 rue Damberg, 68350 Brunstatt-Didenheim</p>
-              <p><strong>Telephone :</strong> 03 89 06 07 77</p>
-              <p><strong>Email :</strong> <a href="mailto:monecoleetmoibrunstatt@gmail.com" className="text-emerald-600 hover:underline">monecoleetmoibrunstatt@gmail.com</a></p>
+              <p><strong>Téléphone :</strong> 03 89 06 07 77</p>
+              <p><strong>Email :</strong> <a href="mailto:contact@montessorietmoi.com" className="text-emerald-600 hover:underline">contact@montessorietmoi.com</a></p>
             </div>
           </section>
 
@@ -62,7 +62,7 @@ export default function MentionsLegalesPage() {
               <h2 className="text-xl font-semibold text-gray-900">Directrice de la publication</h2>
             </div>
             <p className="text-gray-600">
-              Madame Audrey Ballester, en qualite de directrice de l&apos;ecole Mon Ecole et Moi.
+              Madame Audrey Ballester, en qualité de directrice de l&apos;école Mon École et Moi.
             </p>
           </section>
 
@@ -72,42 +72,42 @@ export default function MentionsLegalesPage() {
               <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
                 <Server size={20} className="text-purple-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">Hebergement</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Hébergement</h2>
             </div>
             <div className="space-y-2 text-gray-600">
-              <p><strong>Hebergeur :</strong> [A completer lors du deploiement]</p>
-              <p><strong>Adresse :</strong> [A completer]</p>
+              <p><strong>Hébergeur :</strong> [À compléter lors du déploiement]</p>
+              <p><strong>Adresse :</strong> [À compléter]</p>
               <p className="text-sm text-gray-500 mt-2">
-                Les serveurs sont situes en France/Union Europeenne conformement au RGPD.
+                Les serveurs sont situés en France/Union Européenne conformément au RGPD.
               </p>
             </div>
           </section>
 
           {/* Propriete intellectuelle */}
           <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Propriete intellectuelle</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Propriété intellectuelle</h2>
             <p className="text-gray-600 mb-4">
-              L&apos;ensemble du contenu de ce site (textes, images, logos, icones, elements graphiques)
-              est la propriete exclusive de Mon Ecole et Moi ou de ses partenaires. Toute reproduction,
-              representation, modification, publication ou adaptation de tout ou partie des elements
-              du site est interdite sans autorisation prealable.
+              L&apos;ensemble du contenu de ce site (textes, images, logos, icônes, éléments graphiques)
+              est la propriété exclusive de Mon École et Moi ou de ses partenaires. Toute reproduction,
+              représentation, modification, publication ou adaptation de tout ou partie des éléments
+              du site est interdite sans autorisation préalable.
             </p>
             <p className="text-gray-600">
-              Le logo Montessori France est utilise avec l&apos;autorisation de l&apos;Association Montessori France.
+              Le logo Montessori France est utilisé avec l&apos;autorisation de l&apos;Association Montessori France.
             </p>
           </section>
 
           {/* Responsabilite */}
           <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Limitation de responsabilite</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Limitation de responsabilité</h2>
             <p className="text-gray-600 mb-4">
-              Mon Ecole et Moi s&apos;efforce de fournir des informations aussi exactes que possible.
-              Toutefois, elle ne pourra etre tenue responsable des omissions, inexactitudes ou
-              carences dans la mise a jour, qu&apos;elles soient de son fait ou du fait des tiers
+              Mon École et Moi s&apos;efforce de fournir des informations aussi exactes que possible.
+              Toutefois, elle ne pourra être tenue responsable des omissions, inexactitudes ou
+              carences dans la mise à jour, qu&apos;elles soient de son fait ou du fait des tiers
               partenaires qui lui fournissent ces informations.
             </p>
             <p className="text-gray-600">
-              L&apos;utilisateur reconnait utiliser ces informations sous sa responsabilite exclusive.
+              L&apos;utilisateur reconnaît utiliser ces informations sous sa responsabilité exclusive.
             </p>
           </section>
 
@@ -115,12 +115,12 @@ export default function MentionsLegalesPage() {
           <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Cookies</h2>
             <p className="text-gray-600 mb-4">
-              Ce site utilise des cookies strictement necessaires au fonctionnement du service
-              (authentification, session utilisateur). Ces cookies ne necessitent pas de consentement
-              prealable conformement a la legislation en vigueur.
+              Ce site utilise des cookies strictement nécessaires au fonctionnement du service
+              (authentification, session utilisateur). Ces cookies ne nécessitent pas de consentement
+              préalable conformément à la législation en vigueur.
             </p>
             <p className="text-gray-600">
-              Aucun cookie publicitaire ou de tracking n&apos;est utilise sur ce site.
+              Aucun cookie publicitaire ou de tracking n&apos;est utilisé sur ce site.
             </p>
           </section>
 
@@ -128,8 +128,8 @@ export default function MentionsLegalesPage() {
           <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Droit applicable</h2>
             <p className="text-gray-600">
-              Les presentes mentions legales sont soumises au droit francais.
-              En cas de litige, les tribunaux francais seront seuls competents.
+              Les présentes mentions légales sont soumises au droit français.
+              En cas de litige, les tribunaux français seront seuls compétents.
             </p>
           </section>
         </div>
@@ -140,7 +140,7 @@ export default function MentionsLegalesPage() {
             href="/politique-confidentialite"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors"
           >
-            Politique de confidentialite
+            Politique de confidentialité
           </Link>
           <Link
             href="/rgpd"
@@ -154,7 +154,7 @@ export default function MentionsLegalesPage() {
       {/* Footer */}
       <footer className="border-t bg-white py-6 mt-12">
         <div className="container mx-auto px-4 text-center text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} Mon Ecole et Moi - Tous droits reserves</p>
+          <p>&copy; {new Date().getFullYear()} Mon École et Moi - Tous droits réservés</p>
         </div>
       </footer>
     </div>
