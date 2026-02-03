@@ -816,6 +816,91 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
+### 🗓️ Dimanche 2 février 2026
+
+**Durée :** ~4h
+
+**✅ Réalisé :**
+
+1. **Module Réinscription Backend (complet)**
+   - Nouveau module NestJS : `reinscriptions/`
+   - Modèle Prisma `Reinscription` avec enum `StatutReinscription` (EN_ATTENTE, VALIDEE, REFUSEE)
+   - Endpoints créés :
+     - `GET /api/reinscriptions/mes-enfants` : Liste enfants éligibles (parent)
+     - `POST /api/reinscriptions` : Créer une demande de réinscription
+     - `POST /api/reinscriptions/bulk` : Réinscription multiple
+     - `GET /api/reinscriptions/mes-reinscriptions` : Mes demandes (parent)
+     - `GET /api/reinscriptions` : Liste toutes (admin)
+     - `GET /api/reinscriptions/stats` : Statistiques (admin)
+     - `PATCH /api/reinscriptions/:id/statut` : Changer statut (admin)
+   - Intégration frontend : page `/reinscription` connectée à l'API
+
+2. **Champ "Qu'attendez-vous de notre structure ?" (préinscription)**
+   - Ajout champ `attentesStructure` dans schema.prisma
+   - Mise à jour DTO `create-preinscription.dto.ts`
+   - Mise à jour service création préinscription
+   - Mise à jour formulaire frontend `/preinscription`
+   - Ajout dans la génération PDF du dossier
+   - Affichage dans la page admin détail préinscription
+
+3. **Endpoint admin personnes autorisées**
+   - Nouvel endpoint `GET /api/personnes-autorisees/admin/all`
+   - Retourne tous les enfants avec leurs personnes autorisées et parents
+   - Protégé par `@Roles(Role.ADMIN)`
+   - Types TypeScript ajoutés dans `lib/api.ts`
+
+4. **Améliorations UI/UX**
+   - Logo Montessori cliquable → lien vers https://www.montessori-france.asso.fr/
+   - Reformulation des 4 questions dans la page admin préinscription détail :
+     - "Comment avez vous découvert notre école ?"
+     - "Qu'attendez vous de notre structure ?"
+     - "Que représente pour vous la pédagogie Montessori ?"
+     - "Votre enfant rencontre t'il des difficultés..."
+
+5. **Tests complets de non-régression**
+   - ✅ Authentification (admin + parent)
+   - ✅ Préinscriptions (stats, liste, détail, création avec attentesStructure)
+   - ✅ Enfants (stats, liste, mes-enfants, par classe)
+   - ✅ Justificatifs (types, par enfant, en attente)
+   - ✅ Signatures (status, enfant, non signées, liste)
+   - ✅ Personnes autorisées (parent, admin/all)
+   - ✅ Réinscriptions (tous endpoints)
+   - ✅ Facturation (mes-factures, liste admin)
+   - ✅ Export CSV (élèves, préinscriptions, parents, factures)
+   - ✅ Documents (règlement PDF, PDF préinscription)
+   - **Aucune régression détectée**
+
+**📁 Fichiers créés :**
+- `backend/src/modules/reinscriptions/reinscriptions.module.ts`
+- `backend/src/modules/reinscriptions/reinscriptions.controller.ts`
+- `backend/src/modules/reinscriptions/reinscriptions.service.ts`
+- `backend/src/modules/reinscriptions/dto/create-reinscription.dto.ts`
+
+**📁 Fichiers modifiés :**
+- `backend/prisma/schema.prisma` (Reinscription, attentesStructure)
+- `backend/src/app.module.ts` (import ReinscriptionsModule)
+- `backend/src/modules/preinscriptions/preinscriptions.service.ts` (attentesStructure)
+- `backend/src/modules/preinscriptions/dto/create-preinscription.dto.ts`
+- `backend/src/modules/personnes-autorisees/personnes-autorisees.controller.ts`
+- `backend/src/modules/personnes-autorisees/personnes-autorisees.service.ts`
+- `frontend/src/app/(parent)/reinscription/page.tsx`
+- `frontend/src/app/(public)/preinscription/page.tsx`
+- `frontend/src/app/admin/preinscriptions/[id]/page.tsx`
+- `frontend/src/lib/api.ts` (reinscriptionsApi, personnesAutoriseesApi)
+- `frontend/src/types/index.ts`
+
+**🔐 Sécurité :**
+- Endpoint admin/all protégé par `@Roles(Role.ADMIN)`
+- Réinscriptions : vérification ownership parent
+- Rate limiting fonctionne correctement (ThrottlerModule)
+
+**⏭️ Prochaines étapes :**
+- [ ] Commencer le module Facturation (priorité Février)
+- [ ] Page admin pour gérer les réinscriptions
+- [ ] Notifications email pour réinscriptions
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -853,6 +938,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 29 janvier 2026
+**Dernière mise à jour :** 2 février 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)
