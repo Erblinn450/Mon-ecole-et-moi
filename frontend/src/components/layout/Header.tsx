@@ -134,7 +134,7 @@ export function Header({ variant = "public" }: HeaderProps) {
         </div>
 
         {/* Logo Montessori */}
-        <Link href="/" className="flex-shrink-0 group">
+        <a href="https://www.montessori-france.asso.fr/" target="_blank" rel="noopener noreferrer" className="flex-shrink-0 group">
           <div className="relative overflow-hidden rounded-xl">
             <Image
               src="/images/logo-montessori.png"
@@ -144,7 +144,7 @@ export function Header({ variant = "public" }: HeaderProps) {
               className="h-12 w-auto md:h-14 transition-transform group-hover:scale-105"
             />
           </div>
-        </Link>
+        </a>
       </div>
     </header>
   );

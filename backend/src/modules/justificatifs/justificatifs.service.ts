@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Role, StatutInscription } from '@prisma/client';
 
 interface UserPayload {
   id: number;
@@ -10,6 +10,8 @@ interface UserPayload {
 
 @Injectable()
 export class JustificatifsService {
+  private readonly logger = new Logger(JustificatifsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -88,19 +90,123 @@ export class JustificatifsService {
   async valider(id: number, valide: boolean, commentaire?: string) {
     const justificatif = await this.prisma.justificatif.findUnique({
       where: { id },
+      include: { enfant: true },
     });
 
     if (!justificatif) {
       throw new NotFoundException('Justificatif non trouvé');
     }
 
-    return this.prisma.justificatif.update({
+    const updated = await this.prisma.justificatif.update({
       where: { id },
       data: {
         valide,
         // On pourrait ajouter dateValidation et commentaireValidation si dans le schéma
       },
     });
+
+    // Si validation acceptée, vérifier si tous les documents sont complets
+    if (valide) {
+      await this.checkAndCreateInscription(justificatif.enfantId);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Vérifie si tous les documents obligatoires sont validés et crée l'inscription
+   */
+  private async checkAndCreateInscription(enfantId: number): Promise<void> {
+    // Récupérer l'enfant avec ses parents
+    const enfant = await this.prisma.enfant.findUnique({
+      where: { id: enfantId },
+      include: { parent1: true, parent2: true },
+    });
+
+    if (!enfant) return;
+
+    // Vérifier s'il y a déjà une inscription active pour cette année
+    const anneeScolaire = this.getAnneeScolaireActuelle();
+    const inscriptionExistante = await this.prisma.inscription.findFirst({
+      where: {
+        enfantId,
+        anneeScolaire,
+        statut: StatutInscription.ACTIVE,
+      },
+    });
+
+    if (inscriptionExistante) {
+      this.logger.debug(`Inscription déjà existante pour enfant #${enfantId}`);
+      return;
+    }
+
+    // Récupérer les types de justificatifs obligatoires (sauf règlement intérieur)
+    const typesObligatoires = await this.prisma.justificatifAttendu.findMany({
+      where: {
+        obligatoire: true,
+        NOT: { nom: { contains: 'Règlement', mode: 'insensitive' } },
+      },
+    });
+
+    // Récupérer les justificatifs validés de l'enfant
+    const justificatifsValides = await this.prisma.justificatif.findMany({
+      where: {
+        enfantId,
+        valide: true,
+      },
+    });
+
+    const typeIdsValides = new Set(justificatifsValides.map(j => j.typeId));
+
+    // Vérifier que chaque type obligatoire a un justificatif validé
+    const tousJustificatifsValides = typesObligatoires.every(type =>
+      typeIdsValides.has(type.id)
+    );
+
+    if (!tousJustificatifsValides) {
+      this.logger.debug(`Justificatifs incomplets pour enfant #${enfantId}`);
+      return;
+    }
+
+    // Vérifier que le règlement intérieur est signé
+    const signatureReglement = await this.prisma.signatureReglement.findFirst({
+      where: { enfantId },
+    });
+
+    if (!signatureReglement) {
+      this.logger.debug(`Règlement non signé pour enfant #${enfantId}`);
+      return;
+    }
+
+    // Tous les documents sont validés + règlement signé → créer l'inscription
+    await this.prisma.inscription.create({
+      data: {
+        enfantId,
+        parentId: enfant.parent1Id,
+        dateInscription: new Date(),
+        statut: StatutInscription.ACTIVE,
+        anneeScolaire,
+        commentaires: 'Inscription finalisée automatiquement (tous documents validés)',
+      },
+    });
+
+    this.logger.log(`✅ Inscription ACTIVE créée pour ${enfant.prenom} ${enfant.nom} (${anneeScolaire})`);
+  }
+
+  /**
+   * Calcule l'année scolaire actuelle (ex: "2025-2026")
+   */
+  private getAnneeScolaireActuelle(): string {
+    const now = new Date();
+    const mois = now.getMonth();
+    const annee = now.getFullYear();
+
+    // Septembre à décembre → année en cours - année suivante
+    // Janvier à août → année précédente - année en cours
+    if (mois >= 8) {
+      return `${annee}-${annee + 1}`;
+    }
+    return `${annee - 1}-${annee}`;
   }
 
   async remove(id: number, user: UserPayload) {

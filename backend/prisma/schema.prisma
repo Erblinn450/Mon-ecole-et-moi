@@ -26,6 +26,14 @@ model User {
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
   deletedAt           DateTime?            @map("deleted_at")
+  // --- Facturation ---
+  frequencePaiement   FrequencePaiement?   @map("frequence_paiement")
+  modePaiementPref    ModePaiement?        @map("mode_paiement_pref")
+  destinataireFacture DestinataireFacture? @map("destinataire_facture")
+  reductionRFR        Boolean              @default(false) @map("reduction_rfr")
+  tauxReductionRFR    Decimal?             @map("taux_reduction_rfr") @db.Decimal(5, 2)
+  ibanParent          String?              @map("iban_parent")
+  mandatSepaRef       String?              @map("mandat_sepa_ref")
   enfantsParent1      Enfant[]             @relation("Parent1")
   enfantsParent2      Enfant[]             @relation("Parent2")
   factures            Facture[]
@@ -129,6 +137,7 @@ model Enfant {
   personnesAutorisees PersonneAutorisee[]
   repas               Repas[]
   signatureReglements SignatureReglement?
+  factures            Facture[]
 
   @@index([classe])
   @@index([parent1Id])
@@ -288,16 +297,26 @@ model Facture {
   description  String?
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
-  statut       StatutFacture  @default(EN_ATTENTE)
-  type         TypeFacture
-  parent       User           @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  lignes       LigneFacture[]
+  statut          StatutFacture       @default(EN_ATTENTE)
+  type            TypeFacture
+  enfantId        Int?                @map("enfant_id")
+  destinataire    DestinataireFacture? @map("destinataire")
+  modePaiement    ModePaiement?       @map("mode_paiement")
+  datePrelevement DateTime?           @map("date_prelevement")
+  commentaire     String?
+  anneeScolaire   String?             @map("annee_scolaire")
+  parent          User                @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  enfant          Enfant?             @relation(fields: [enfantId], references: [id])
+  lignes          LigneFacture[]
+  paiements       Paiement[]
 
   @@index([parentId])
   @@index([statut])
   @@index([dateEcheance])
   @@index([statut, dateEcheance])
   @@index([periode])
+  @@index([enfantId])
+  @@index([anneeScolaire])
   @@map("factures")
 }
 
@@ -307,11 +326,14 @@ model LigneFacture {
   description String
   quantite    Int      @default(1)
   prixUnit    Decimal  @map("prix_unit") @db.Decimal(10, 2)
-  montant     Decimal  @db.Decimal(10, 2)
-  createdAt   DateTime @default(now()) @map("created_at")
-  facture     Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  montant     Decimal    @db.Decimal(10, 2)
+  commentaire String?
+  type        TypeLigne?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  facture     Facture    @relation(fields: [factureId], references: [id], onDelete: Cascade)
 
   @@index([factureId])
+  @@index([type])
   @@map("lignes_factures")
 }
 
@@ -420,4 +442,83 @@ enum StatutReinscription {
   EN_ATTENTE
   VALIDEE
   REFUSEE
+}
+
+enum FrequencePaiement {
+  MENSUEL
+  TRIMESTRIEL
+  SEMESTRIEL
+  ANNUEL
+}
+
+enum ModePaiement {
+  PRELEVEMENT
+  VIREMENT
+}
+
+enum DestinataireFacture {
+  LES_DEUX
+  PARENT1
+  PARENT2
+}
+
+enum TypeLigne {
+  SCOLARITE
+  REPAS
+  PERISCOLAIRE
+  DEPASSEMENT
+  INSCRIPTION
+  MATERIEL
+  REDUCTION
+  PERSONNALISE
+}
+
+// === FACTURATION : Nouvelles tables ===
+
+model ConfigTarif {
+  id            Int      @id @default(autoincrement())
+  cle           String
+  valeur        Decimal  @db.Decimal(10, 2)
+  description   String?
+  anneeScolaire String   @map("annee_scolaire")
+  categorie     String
+  actif         Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([cle, anneeScolaire])
+  @@index([anneeScolaire])
+  @@index([categorie])
+  @@index([actif])
+  @@map("config_tarifs")
+}
+
+model ArticlePersonnalise {
+  id          Int      @id @default(autoincrement())
+  nom         String
+  description String?
+  prixDefaut  Decimal  @map("prix_defaut") @db.Decimal(10, 2)
+  actif       Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([actif])
+  @@map("articles_personnalises")
+}
+
+model Paiement {
+  id           Int          @id @default(autoincrement())
+  factureId    Int          @map("facture_id")
+  montant      Decimal      @db.Decimal(10, 2)
+  datePaiement DateTime     @map("date_paiement")
+  modePaiement ModePaiement @map("mode_paiement")
+  reference    String?
+  commentaire  String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  facture      Facture      @relation(fields: [factureId], references: [id], onDelete: Cascade)
+
+  @@index([factureId])
+  @@index([datePaiement])
+  @@map("paiements")
 }

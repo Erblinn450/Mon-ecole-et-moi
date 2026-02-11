@@ -118,11 +118,11 @@ export function ParentLayout({ children }: ParentLayoutProps) {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-emerald-900">Besoin d&apos;aide ?</p>
-                  <a 
-                    href="mailto:contact@mon-ecole-et-moi.fr" 
+                  <a
+                    href="mailto:contact@montessorietmoi.com"
                     className="text-xs text-emerald-600 hover:text-emerald-700 hover:underline"
                   >
-                    contact@mon-ecole-et-moi.fr
+                    contact@montessorietmoi.com
                   </a>
                 </div>
               </div>

@@ -183,8 +183,8 @@ export default function MesEnfantsPage() {
             <p className="text-sm text-sky-800">
               Pour toute modification d&apos;informations personnelles ou demande de
               désinscription, veuillez contacter l&apos;administration à{" "}
-              <a href="mailto:contact@mon-ecole-et-moi.fr" className="underline">
-                contact@mon-ecole-et-moi.fr
+              <a href="mailto:contact@montessorietmoi.com" className="underline">
+                contact@montessorietmoi.com
               </a>
             </p>
           </div>

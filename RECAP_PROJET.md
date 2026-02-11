@@ -895,9 +895,172 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 - Rate limiting fonctionne correctement (ThrottlerModule)
 
 **⏭️ Prochaines étapes :**
-- [ ] Commencer le module Facturation (priorité Février)
+- [x] Commencer le module Facturation (priorité Février) ✅ Fondations en place
 - [ ] Page admin pour gérer les réinscriptions
 - [ ] Notifications email pour réinscriptions
+
+---
+
+### 🗓️ Mercredi 5 Février 2026
+
+**Durée :** 1h
+
+**✅ Vérification complète des fonctionnalités Claude Code :**
+
+| Fonctionnalité | Statut | Détails |
+|----------------|--------|---------|
+| Réinscription en 3 clics | ✅ | Page `/reinscription` fonctionnelle avec sélection, choix classe, validation |
+| Durée conservation données | ✅ | Documenté dans `/politique-confidentialite` (scolarité: à vie, facturation: 10 ans) |
+| Email contact uniformisé | ✅ | `contact@montessorietmoi.com` présent dans 22 fichiers |
+| Ordre BDD (parent→enfant) | ✅ | Méthode `creerCompteParentEtEnfant()` crée parent puis enfant |
+| Admin personnes autorisées | ✅ | Endpoint `GET /api/personnes-autorisees/admin/all` fonctionnel |
+| Lien parents correct | ✅ | Parent lié à l'enfant via `parent1Id`/`parent2Id` |
+| Questions reformulées | ✅ | Questions pédagogiques claires dans admin préinscription |
+| Fondations facturation | ✅ | Module complet: `config-tarifs`, `articles`, `mes-factures`, `generer` |
+
+**🧪 Tests API réalisés :**
+- `POST /api/auth/login` ✅
+- `GET /api/personnes-autorisees/admin/all` ✅ (retourne enfants + parents)
+- `GET /api/reinscriptions` ✅ (retourne demandes existantes)
+- `GET /api/facturation/config-tarifs` ✅ (retourne tarifs configurés)
+
+**📄 Documentation créée par Claude Code :**
+
+| Fichier | Contenu |
+|---------|---------|
+| `PLAN_FACTURATION.md` | Plan complet de 367 lignes pour le module facturation |
+| `CLAUDE.md` | Guide de référence pour Claude Code (341 lignes) |
+
+**📋 Détails PLAN_FACTURATION.md :**
+- Cahier des charges complet avec tous les tarifs (inscription, scolarité, repas, périscolaire)
+- Réductions documentées : fratrie (-6%), RFR (admin décide au cas par cas)
+- Fréquences de paiement : mensuel, trimestriel, semestriel, annuel
+- Architecture backend complète (service, controller, DTOs)
+- 20+ endpoints API prévus (admin + parent)
+- Pages frontend planifiées (dashboard, config tarifs, SEPA)
+- Planning sur 8 semaines (Février-Mars 2026)
+- Décisions techniques : nouveaux enums, tables Prisma, format PDF facture
+
+**📋 Détails CLAUDE.md :**
+- Stack technique et ports (Frontend :3000, Backend :3001, BDD :5432)
+- Commandes essentielles (démarrage, Prisma, build)
+- Conventions de code strictes (TypeScript, NestJS, Next.js, Git)
+- Flux métier complet : préinscription → inscription
+- Points de sécurité critiques (JWT, validation, ownership)
+- État des modules (terminés vs en cours)
+- Règles de codage niveau senior (15 ans d'expérience exigé)
+- Anti-patterns à éviter
+
+**📊 Conclusion :**
+Toutes les fonctionnalités implémentées par Claude Code sont opérationnelles et conformes aux spécifications. La documentation technique est complète et le module facturation est bien planifié.
+
+---
+
+### 🗓️ Jeudi 6 Février 2026
+
+**Durée :** 4h
+
+**✅ Réalisé - Facturation Phase 1 (Fondations) :**
+
+1. **Schema Prisma mis à jour :**
+   - 4 nouveaux enums : `FrequencePaiement`, `ModePaiement`, `DestinataireFacture`, `TypeLigne`
+   - 3 nouvelles tables : `ConfigTarif`, `ArticlePersonnalise`, `Paiement`
+   - User étendu : +7 champs facturation (frequencePaiement, modePaiementPref, destinataireFacture, reductionRFR, tauxReductionRFR, ibanParent, mandatSepaRef)
+   - Facture étendue : +7 champs (enfantId, destinataire, modePaiement, datePrelevement, commentaire, anneeScolaire, paiements)
+   - LigneFacture : +2 champs (commentaire, type)
+   - Enfant : +relation factures
+
+2. **Backend - Module Facturation complet :**
+   - DTOs créés : `config-tarif.dto.ts`, `article-personnalise.dto.ts`
+   - Service : 11 méthodes (CRUD tarifs + CRUD articles + seed)
+   - Controller : 10 nouveaux endpoints (tous protégés Admin)
+   - Validation : catégories tarifs, prix positifs, clés uniques
+
+3. **Seed mis à jour :**
+   - 23 tarifs par défaut pour 2025-2026 (cahier des charges Audrey)
+   - 3 articles personnalisés de démo (Sortie scolaire, Classe verte, Matériel)
+
+4. **Tests API réussis :**
+   - GET /facturation/config-tarifs → 24 tarifs
+   - GET /facturation/config-tarifs?categorie=SCOLARITE → 12 tarifs
+   - GET /facturation/articles → 3 articles
+   - POST/PUT/DELETE articles → CRUD complet
+   - POST /config-tarifs/upsert → Upsert fonctionne
+   - Validation DTO (400 sur données invalides)
+   - Protection rôles (401 sans token, 403 si pas admin)
+   - Conflit P2002 (409 sur doublon clé+année)
+
+**📁 Fichiers modifiés/créés :**
+- `backend/prisma/schema.prisma` - 4 enums + 3 tables + modifs User/Facture/LigneFacture/Enfant
+- `backend/prisma/seed.ts` - Sections 5 (tarifs) et 6 (articles)
+- `backend/src/modules/facturation/facturation.module.ts` - Import PrismaModule
+- `backend/src/modules/facturation/facturation.service.ts` - 11 méthodes
+- `backend/src/modules/facturation/facturation.controller.ts` - 10 endpoints
+- `backend/src/modules/facturation/dto/config-tarif.dto.ts` - NOUVEAU
+- `backend/src/modules/facturation/dto/article-personnalise.dto.ts` - NOUVEAU
+
+**📊 Tarifs configurés (cahier des charges Audrey) :**
+
+| Catégorie | Nb tarifs | Exemples |
+|-----------|-----------|----------|
+| SCOLARITE | 12 | Mensuel 575€, Collège 710€, Fratrie 540€/640€ |
+| INSCRIPTION | 4 | 1ère année 350€, Suivantes 195€, Fratrie 150€/160€ |
+| FONCTIONNEMENT | 3 | Maternelle 65€, Élémentaire 85€, Collège 95€ |
+| FRATRIE | 2 | Réduction 6% (maison), 19% (collège RFR) |
+| REPAS | 1 | Midi 5.45€ |
+| PERISCOLAIRE | 1 | Séance 6.20€ |
+
+**⚠️ Point à corriger :**
+- Emails non uniformisés : `contact@mon-ecole-et-moi.fr` vs `contact@montessorietmoi.com`
+
+**⏭️ Prochaines étapes (Semaine 2 - Phase 1 suite) :**
+- [ ] Interface admin pour gérer les tarifs
+- [ ] Interface admin pour les articles personnalisés
+- [ ] Bouton "Seed tarifs par défaut" dans l'admin
+
+---
+
+### 🗓️ Samedi 8 Février 2026
+
+**Durée :** 2h
+
+**✅ Réalisé - Inscription automatique + Corrections :**
+
+1. **Inscription automatique quand tous documents validés :**
+   - Modification `justificatifs.service.ts` : méthode `checkAndCreateInscription()`
+   - Vérifie : 5 justificatifs obligatoires validés + règlement signé
+   - Crée automatiquement une `Inscription` avec statut `ACTIVE`
+   - Flux complet : Préinscription → Validation → Documents → Validation docs → **Inscription ACTIVE auto**
+
+2. **Corrections frontend :**
+   - Email uniformisé : `contact@montessorietmoi.com` (au lieu de .fr)
+   - Logo Montessori : lien vers `https://www.montessori-france.asso.fr/`
+
+3. **Tests réussis :**
+   - Créé signature règlement + 5 justificatifs pour enfant test
+   - Validé les 5 docs via API `PATCH /api/justificatifs/:id/valider`
+   - Inscription ACTIVE créée automatiquement ✓
+
+4. **Audit complet BDD :**
+   - Aucune incohérence trouvée
+   - Vérifications : orphelins, doublons, années scolaires, signatures
+
+**📁 Fichiers modifiés :**
+- `backend/src/modules/justificatifs/justificatifs.service.ts` - +100 lignes (auto-inscription)
+- `frontend/src/components/layout/ParentLayout.tsx` - Email corrigé
+- `frontend/src/components/layout/Header.tsx` - Logo link Montessori
+- `frontend/src/app/(parent)/mes-enfants/page.tsx` - Email corrigé
+- `frontend/src/app/page.tsx` - Logo link Montessori
+
+**🔄 Flux d'inscription finalisé :**
+```
+Préinscription (parent)
+    → Validation admin → Compte parent + enfant créés
+    → Parent signe règlement + uploade 5 documents
+    → Admin valide chaque document
+    → Dernier doc validé → INSCRIPTION ACTIVE automatique
+    → Année suivante → Enfant visible dans Réinscription
+```
 
 ---
 
@@ -938,6 +1101,6 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-**Dernière mise à jour :** 2 février 2026
+**Dernière mise à jour :** 8 février 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

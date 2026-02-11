@@ -169,6 +169,78 @@ async function main() {
     data: { preinscriptionId: preinscription.id },
   });
 
+  // ============================================
+  // 5. TARIFS PAR DÉFAUT (2025-2026)
+  // ============================================
+  console.log('💰 Création des tarifs par défaut...');
+
+  const anneeScolaire = '2025-2026';
+  const tarifsDefaut = [
+    { cle: 'SCOLARITE_MENSUEL', valeur: 575.0, description: 'Scolarité mensuelle - 1 enfant (maison/élémentaire)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_TRIMESTRIEL', valeur: 1725.0, description: 'Scolarité trimestrielle - 1 enfant (maison/élémentaire)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_ANNUEL', valeur: 6900.0, description: 'Scolarité annuelle - 1 enfant (maison/élémentaire)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_FRATRIE_MENSUEL', valeur: 540.0, description: 'Scolarité mensuelle - fratrie (maison/élémentaire)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_FRATRIE_TRIMESTRIEL', valeur: 1620.0, description: 'Scolarité trimestrielle - fratrie (maison/élémentaire)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_FRATRIE_ANNUEL', valeur: 6480.0, description: 'Scolarité annuelle - fratrie (maison/élémentaire)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_COLLEGE_MENSUEL', valeur: 710.0, description: 'Scolarité mensuelle - 1 enfant (collège)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_COLLEGE_TRIMESTRIEL', valeur: 2130.0, description: 'Scolarité trimestrielle - 1 enfant (collège)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_COLLEGE_ANNUEL', valeur: 8520.0, description: 'Scolarité annuelle - 1 enfant (collège)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_COLLEGE_FRATRIE_MENSUEL', valeur: 640.0, description: 'Scolarité mensuelle - fratrie (collège)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_COLLEGE_FRATRIE_TRIMESTRIEL', valeur: 1920.0, description: 'Scolarité trimestrielle - fratrie (collège)', categorie: 'SCOLARITE' },
+    { cle: 'SCOLARITE_COLLEGE_FRATRIE_ANNUEL', valeur: 7680.0, description: 'Scolarité annuelle - fratrie (collège)', categorie: 'SCOLARITE' },
+    { cle: 'INSCRIPTION_PREMIERE_ANNEE', valeur: 350.0, description: "Frais d'inscription 1ère année - 1 enfant", categorie: 'INSCRIPTION' },
+    { cle: 'INSCRIPTION_FRATRIE_PREMIERE', valeur: 150.0, description: "Frais d'inscription 1ère année - fratrie", categorie: 'INSCRIPTION' },
+    { cle: 'INSCRIPTION_ANNEES_SUIVANTES', valeur: 195.0, description: "Frais d'inscription années suivantes - 1 enfant", categorie: 'INSCRIPTION' },
+    { cle: 'INSCRIPTION_FRATRIE_SUIVANTES', valeur: 160.0, description: "Frais d'inscription années suivantes - fratrie", categorie: 'INSCRIPTION' },
+    { cle: 'FONCTIONNEMENT_MATERNELLE', valeur: 65.0, description: 'Frais matériel pédagogique - 3 à 6 ans', categorie: 'FONCTIONNEMENT' },
+    { cle: 'FONCTIONNEMENT_ELEMENTAIRE', valeur: 85.0, description: 'Frais matériel pédagogique - 6 à 12 ans', categorie: 'FONCTIONNEMENT' },
+    { cle: 'FONCTIONNEMENT_COLLEGE', valeur: 95.0, description: 'Frais matériel pédagogique - collège', categorie: 'FONCTIONNEMENT' },
+    { cle: 'REDUCTION_FRATRIE_POURCENTAGE', valeur: 6.0, description: 'Réduction fratrie en % (maison/élémentaire)', categorie: 'FRATRIE' },
+    { cle: 'REDUCTION_FRATRIE_COLLEGE_POURCENTAGE', valeur: 19.0, description: 'Réduction fratrie en % (collège) - RFR', categorie: 'FRATRIE' },
+    { cle: 'REPAS_MIDI', valeur: 5.45, description: 'Tarif repas du midi (traiteur)', categorie: 'REPAS' },
+    { cle: 'PERISCOLAIRE_SEANCE', valeur: 6.20, description: 'Tarif périscolaire par séance (16h-17h30, goûter inclus)', categorie: 'PERISCOLAIRE' },
+  ];
+
+  for (const tarif of tarifsDefaut) {
+    await prisma.configTarif.upsert({
+      where: {
+        cle_anneeScolaire: { cle: tarif.cle, anneeScolaire },
+      },
+      update: {
+        valeur: tarif.valeur,
+        description: tarif.description,
+        categorie: tarif.categorie,
+        actif: true,
+      },
+      create: {
+        ...tarif,
+        anneeScolaire,
+      },
+    });
+  }
+  console.log(`✅ ${tarifsDefaut.length} tarifs par défaut créés pour ${anneeScolaire}`);
+
+  // ============================================
+  // 6. ARTICLES PERSONNALISÉS DE DÉMO
+  // ============================================
+  console.log('📦 Création des articles personnalisés de démo...');
+
+  const articlesDemo = [
+    { nom: 'Sortie scolaire - Musée', description: 'Sortie pédagogique au musée', prixDefaut: 25.0 },
+    { nom: 'Classe verte - 3 jours', description: 'Séjour classe verte avec hébergement', prixDefaut: 180.0 },
+    { nom: 'Matériel pédagogique supplémentaire', description: 'Fournitures spécifiques pour activités', prixDefaut: 45.0 },
+  ];
+
+  for (const article of articlesDemo) {
+    const existing = await prisma.articlePersonnalise.findFirst({
+      where: { nom: article.nom },
+    });
+    if (!existing) {
+      await prisma.articlePersonnalise.create({ data: article });
+    }
+  }
+  console.log(`✅ ${articlesDemo.length} articles personnalisés créés`);
+
   console.log('🎉 Seeding terminé avec succès !');
 }
 

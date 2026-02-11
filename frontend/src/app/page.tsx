@@ -263,7 +263,9 @@ export default function Home() {
                     <Image src="/images/logo.png" alt="Logo" width={56} height={56} className="h-12 w-auto" />
                   </div>
                   <div className="h-12 w-px bg-white/10 mx-2 hidden sm:block" />
-                  <Image src="/images/logo-montessori.png" alt="Montessori" width={56} height={56} className="h-10 w-auto brightness-0 invert opacity-60 hover:opacity-100 transition-opacity" />
+                  <a href="https://www.montessori-france.asso.fr/" target="_blank" rel="noopener noreferrer">
+                    <Image src="/images/logo-montessori.png" alt="Montessori" width={56} height={56} className="h-10 w-auto brightness-0 invert opacity-60 hover:opacity-100 transition-opacity" />
+                  </a>
                 </div>
                 <p className="text-emerald-100/60 max-w-md text-lg leading-relaxed font-light">
                   Une école qui cultive la bienveillance et l&apos;autonomie au cœur d&apos;un environnement épanouissant pour les 3-12 ans à Brunstatt.
