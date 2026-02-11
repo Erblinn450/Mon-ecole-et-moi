@@ -1064,6 +1064,68 @@ Préinscription (parent)
 
 ---
 
+### 🗓️ Mardi 11 Février 2026
+
+**Durée :** 2h
+
+**✅ Réalisé - Facturation Phase 2 (Moteur de Calcul) :**
+
+1. **DTOs calcul de facture :**
+   - Nouveau fichier `dto/calcul-facture.dto.ts`
+   - Interfaces : `CalculLignesOptions`, `LigneFactureCalculee`, `ResultatCalculEnfant`, `EnfantFacturable`, `DetailCalculScolarite`, `ResultatComptage`
+
+2. **Méthodes de calcul dans FacturationService :**
+   - `getEnfantsActifs(parentId, anneeScolaire)` - Liste enfants avec rang fratrie
+   - `countFratrie(parentId, anneeScolaire)` - Compte enfants actifs
+   - `isPremiereAnnee(enfantId, anneeScolaire)` - Vérifie 1ère inscription
+   - `calculerScolarite(enfantId, frequence, rangFratrie, anneeScolaire)` - Calcul scolarité avec réductions
+   - `calculerReductionRFR(montant, parentId)` - Réduction Revenu Fiscal de Référence
+   - `calculerInscription(rangFratrie, estPremiereAnnee, anneeScolaire)` - Frais inscription
+   - `calculerFonctionnement(enfantId, anneeScolaire)` - Frais matériel pédagogique
+   - `calculerRepas(enfantId, mois, anneeScolaire)` - Comptage repas × tarif
+   - `calculerPeriscolaire(enfantId, mois, anneeScolaire)` - Comptage séances × tarif
+   - `calculerLignesFacture(enfantId, mois, options)` - **Orchestrateur principal**
+
+3. **Logique métier implémentée :**
+   - Fratrie : rang > 1 → tarifs réduits (540€ au lieu de 575€)
+   - RFR : si `user.reductionRFR = true`, applique `user.tauxReductionRFR`%
+   - Inscription septembre : 350€ (1ère année) ou 195€ (réinscription)
+   - Fonctionnement selon classe : 65€ (maternelle), 85€ (élémentaire), 95€ (collège)
+   - Fréquences : MENSUEL (tous les mois), TRIMESTRIEL (sep/déc/mar/juin), SEMESTRIEL (sep/mar), ANNUEL (août)
+
+4. **Tests unitaires complets :**
+   - 26 tests qui passent tous ✓
+   - Tests : isPremiereAnnee, countFratrie, calculerScolarite, calculerReductionRFR, calculerInscription, calculerFonctionnement, calculerRepas, calculerPeriscolaire, calculerLignesFacture
+
+**📁 Fichiers créés :**
+- `backend/src/modules/facturation/dto/calcul-facture.dto.ts`
+- `backend/src/modules/facturation/facturation.service.spec.ts`
+
+**📁 Fichiers modifiés :**
+- `backend/src/modules/facturation/facturation.service.ts` (+300 lignes - moteur de calcul)
+
+**📊 Exemples de calculs testés :**
+| Calcul | Résultat |
+|--------|----------|
+| Scolarité mensuelle 1 enfant maternelle | 575.00€ |
+| Scolarité mensuelle fratrie maternelle | 540.00€ |
+| Scolarité mensuelle collège | 710.00€ |
+| Réduction RFR 6% sur 710€ | 42.60€ |
+| Inscription 1ère année | 350.00€ |
+| Inscription fratrie 1ère année | 150.00€ |
+| Réinscription | 195.00€ |
+| Réinscription fratrie | 160.00€ |
+| 15 repas × 5.45€ | 81.75€ |
+| 7 périscolaire × 6.20€ | 43.40€ |
+
+**⏭️ Prochaines étapes (Semaine 3 - Génération factures) :**
+- [ ] Création facture individuelle avec toutes les lignes
+- [ ] Génération batch (toutes les familles en un clic)
+- [ ] Numérotation automatique (format FA-YYYYMM-XXXX)
+- [ ] Gestion destinataire (2 parents / 1 seul)
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -1101,6 +1163,6 @@ Préinscription (parent)
 
 ---
 
-**Dernière mise à jour :** 8 février 2026
+**Dernière mise à jour :** 11 février 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)
