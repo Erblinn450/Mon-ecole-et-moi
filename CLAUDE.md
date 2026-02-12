@@ -127,7 +127,7 @@ enum Role { PARENT, ADMIN }
 enum StatutPreinscription { EN_ATTENTE, EN_COURS, VALIDE, REFUSE, LISTE_ATTENTE }
 
 // Classes
-enum Classe { MATERNELLE, ELEMENTAIRE }
+enum Classe { MATERNELLE, ELEMENTAIRE, COLLEGE }
 
 // Situation familiale
 enum SituationFamiliale { MARIES, PACSES, CONCUBINAGE, SEPARES, DIVORCES, AUTRE }
@@ -227,7 +227,7 @@ const token = localStorage.getItem("auth_token");
 - Attestation de responsabilité civile (à renouveler chaque année)
 - ~~Règlement intérieur signé~~ (géré via signature électronique, exclu de la liste)
 
-## État du Projet (Janvier 2026)
+## État du Projet (Février 2026)
 
 ### ✅ Modules Terminés
 - Préinscription complète avec workflow email
@@ -238,9 +238,10 @@ const token = localStorage.getItem("auth_token");
 - Personnes autorisées (récupération enfants)
 - Relance documents manquants par email
 - Génération PDF des dossiers
+- Réinscription (backend : module + endpoint)
 
 ### 🚧 En Cours / Prévu
-- **Facturation** (Février - PRIORITÉ)
+- **Facturation** (Février-Mars - PRIORITÉ) → voir `PLAN_FACTURATION.md` pour le plan détaillé
 - Repas / Périscolaire (Avril)
 - Communication parents (Mai)
 - PWA Mobile (Juin si temps)
@@ -259,6 +260,7 @@ const token = localStorage.getItem("auth_token");
 ## Documentation Complète
 
 - `RECAP_PROJET.md` : **IMPORTANT** - Historique détaillé de chaque session
+- `PLAN_FACTURATION.md` : **IMPORTANT** - Plan détaillé module facturation (cahier des charges, tarifs, planning, décisions techniques)
 - `PLANNING_REALISTE.md` : Planning semaine par semaine
 - `MEMOIRE_L3.md` : Notes pour le mémoire de fin d'études
 - `backend/README.md` : Documentation API détaillée
