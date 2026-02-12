@@ -171,6 +171,13 @@ export class ReinscriptionsService {
 
     return this.prisma.reinscription.findMany({
       where,
+      include: {
+        enfant: {
+          include: {
+            parent1: true,
+          },
+        },
+      },
       orderBy: { dateDemande: 'desc' },
     });
   }

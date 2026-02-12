@@ -12,7 +12,8 @@ import {
   Users,
   BarChart3,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from "lucide-react";
 
 // Menu admin
@@ -30,6 +31,12 @@ const menuItems = [
     label: "Préinscriptions",
     icon: FileText,
     description: "Demandes en cours",
+  },
+  {
+    href: "/admin/reinscriptions",
+    label: "Réinscriptions",
+    icon: RefreshCw,
+    description: "Année prochaine",
   },
   {
     href: "/admin/eleves",

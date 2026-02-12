@@ -41,6 +41,7 @@ model User {
   pdfOuvertures       PdfOuverture[]
   sessions            Session[]
   signatureReglements SignatureReglement[]
+  reinscriptions      Reinscription[]
 
   @@index([role])
   @@index([actif])
@@ -138,6 +139,7 @@ model Enfant {
   repas               Repas[]
   signatureReglements SignatureReglement?
   factures            Facture[]
+  reinscriptions      Reinscription[]
 
   @@index([classe])
   @@index([parent1Id])
@@ -366,6 +368,8 @@ model Reinscription {
   dateTraitement  DateTime?            @map("date_traitement")
   createdAt       DateTime             @default(now()) @map("created_at")
   updatedAt       DateTime             @updatedAt @map("updated_at")
+  enfant          Enfant               @relation(fields: [enfantId], references: [id])
+  parent          User                 @relation(fields: [parentId], references: [id])
 
   @@unique([enfantId, anneeScolaire])
   @@index([parentId])

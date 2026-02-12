@@ -17,9 +17,12 @@ import {
   GraduationCap,
   FileCheck,
   FileText,
-  Shield
+  Shield,
+  RefreshCw
 } from "lucide-react";
 import { StatutPreinscription, Classe } from "@/types";
+
+type TabType = "preinscriptions" | "reinscriptions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
@@ -48,6 +51,31 @@ interface Stats {
   piecesAValider: number;
   valide: number;
   refuse: number;
+}
+
+interface Reinscription {
+  id: number;
+  enfantId: number;
+  anneeScolaire: string;
+  classeActuelle: Classe;
+  classeSouhaitee: Classe;
+  statut: string;
+  createdAt: string;
+  enfant: {
+    nom: string;
+    prenom: string;
+    parent1: {
+      email: string;
+      telephone: string;
+    };
+  };
+}
+
+interface ReinscriptionStats {
+  total: number;
+  enAttente: number;
+  acceptees: number;
+  refusees: number;
 }
 
 const statutConfig = {
@@ -90,8 +118,11 @@ const classeLabels: Record<Classe, string> = {
 };
 
 export default function PreinscriptionsAdminPage() {
+  const [activeTab, setActiveTab] = useState<TabType>("preinscriptions");
   const [preinscriptions, setPreinscriptions] = useState<Preinscription[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [reinscriptions, setReinscriptions] = useState<Reinscription[]>([]);
+  const [reinscriptionStats, setReinscriptionStats] = useState<ReinscriptionStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");

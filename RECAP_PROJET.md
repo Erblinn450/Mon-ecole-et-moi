@@ -1126,6 +1126,89 @@ Préinscription (parent)
 
 ---
 
+### 🗓️ Mercredi 12 Février 2026
+
+**Durée :** 3h
+
+**✅ Réalisé - Interface Admin Réinscriptions + Corrections :**
+
+1. **🐛 Correction problème PostgreSQL (CRITIQUE) :**
+   - Diagnostic : 2 instances PostgreSQL sur port 5432 (Homebrew PG15 + Docker PG16)
+   - Solution : `brew services stop postgresql@15`
+   - Base de données migrée et synchronisée avec succès
+
+2. **Backend - Relations Prisma Réinscriptions :**
+   - Ajout relations manquantes dans `schema.prisma` :
+     - `Reinscription.enfant` → `Enfant`
+     - `Reinscription.parent` → `User`
+     - `Enfant.reinscriptions` → `Reinscription[]`
+     - `User.reinscriptions` → `Reinscription[]`
+   - Modification `reinscriptions.service.ts` :
+     - Méthode `findAll()` inclut maintenant `enfant` + `parent1` (relations complètes)
+     - Stats retournent `validees` au lieu de `acceptees` (cohérence enum)
+
+3. **Frontend - Interface Admin Réinscriptions :**
+   - **Nouvelle page** `/admin/reinscriptions` (347 lignes)
+   - **Fonctionnalités complètes** :
+     - Tableau avec toutes les demandes de réinscription
+     - Stats temps réel (Total, En attente, Validées, Refusées)
+     - Recherche par nom/email parent
+     - Boutons Accepter/Refuser (si EN_ATTENTE)
+     - **Confirmation avant annulation** (popup confirm)
+     - **Commentaire lors du refus** (popup prompt)
+     - **Annulation validation** (bouton "Annuler" si VALIDEE/REFUSEE)
+     - **Affichage commentaires** (icône 💬 avec tooltip)
+     - **Bouton "Voir le dossier"** (lien vers page élèves)
+   - **Correction enums** : ACCEPTEE → VALIDEE (alignement backend)
+   - **Optimisation visuelle** :
+     - Réduction 8 → 6 colonnes (fusion Classes)
+     - Padding px-6 → px-4 (gain espace horizontal)
+     - Boutons compacts avec couleurs pleines (vert/rouge)
+     - Responsive : boutons Accepter/Refuser entièrement visibles
+
+4. **Corrections formulaire préinscription :**
+   - Question 1 : "Qu'est-ce qui vous attire..." → "Que représente pour vous la pédagogie Montessori ?"
+   - Question 2 : "Difficultés particulières..." → "Votre enfant rencontre-t-il des difficultés..."
+   - Demandes spécifiques d'Audrey
+
+5. **Navigation Admin :**
+   - Ajout menu "Réinscriptions" dans `AdminLayout.tsx`
+   - Icône `RefreshCw` + description "Année prochaine"
+
+**📁 Fichiers créés :**
+- `frontend/src/app/admin/reinscriptions/page.tsx` (interface admin complète)
+
+**📁 Fichiers modifiés :**
+- `backend/prisma/schema.prisma` (relations Reinscription)
+- `backend/src/modules/reinscriptions/reinscriptions.service.ts` (include relations)
+- `frontend/src/components/layout/AdminLayout.tsx` (menu réinscriptions)
+- `frontend/src/app/(public)/preinscription/page.tsx` (questions corrigées)
+
+**🐛 Bugs corrigés :**
+- Connexion PostgreSQL (2 instances en conflit)
+- TypeError `reinscription.enfant.prenom` (relations manquantes)
+- Statuts incohérents ACCEPTEE vs VALIDEE
+- Bouton "Refuser" coupé à droite (tableau trop large)
+
+**🎨 Améliorations UX :**
+- Confirmations utilisateur (annulation, refus)
+- Commentaires traçables (historique)
+- Interface responsive et optimisée
+- Boutons visuellement distincts (vert/rouge)
+
+**⏭️ Améliorations possibles (optionnelles) :**
+- [ ] Page détails dédiée `/admin/reinscriptions/[id]` avec historique complet
+- [ ] Email automatique aux parents lors changement statut
+- [ ] Filtrage par année scolaire
+- [ ] Export CSV des réinscriptions
+
+**✅ Tests :**
+- Backend : 26/26 tests facturation passent ✓
+- Build backend sans erreur ✓
+- Build frontend sans erreur ✓
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -1163,6 +1246,6 @@ Préinscription (parent)
 
 ---
 
-**Dernière mise à jour :** 11 février 2026
+**Dernière mise à jour :** 12 février 2026
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

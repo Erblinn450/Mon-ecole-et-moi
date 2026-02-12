@@ -704,7 +704,7 @@ export default function PreinscriptionPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Qu&apos;est-ce qui vous attire dans la pédagogie Montessori ?</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Que représente pour vous la pédagogie Montessori ?</label>
                 <textarea
                   value={pedagogieMontessori}
                   onChange={(e) => setPedagogieMontessori(e.target.value)}
@@ -713,7 +713,7 @@ export default function PreinscriptionPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Y a-t-il des difficultés particulières à signaler ?</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Votre enfant rencontre-t-il des difficultés à porter à notre attention afin de l&apos;accompagner au mieux dans sa scolarité ? Si oui, pouvez-vous nous en dire plus ?</label>
                 <textarea
                   value={difficultes}
                   onChange={(e) => setDifficultes(e.target.value)}

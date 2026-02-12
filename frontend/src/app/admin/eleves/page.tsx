@@ -98,7 +98,6 @@ export default function AdminElevesPage() {
     const data = allPersonnesData.find(d => d.enfantId === enfant.id);
     if (data) {
       setDetailData(data);
-      setIsLoadingDetail(false);
     } else {
       // Fallback: create basic data from enfant
       setDetailData({
@@ -110,8 +109,8 @@ export default function AdminElevesPage() {
         parent2: null,
         personnesAutorisees: []
       });
-      setIsLoadingDetail(false);
     }
+    setIsLoadingDetail(false);
   };
 
   const handleUpdateClasse = async () => {
@@ -268,11 +267,10 @@ export default function AdminElevesPage() {
                         )}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-sm font-medium ${
-                          nbPersonnes > 0
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-amber-100 text-amber-700"
-                        }`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-sm font-medium ${nbPersonnes > 0
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                          }`}>
                           {nbPersonnes} personne{nbPersonnes !== 1 ? "s" : ""}
                         </span>
                       </td>
