@@ -95,6 +95,7 @@ export class EmailService {
 
   async sendPreinscriptionValidated(data: PreinscriptionEmailData) {
     const { emailParent, emailParent2, motDePasse, ...rest } = data;
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
 
     // Formater la date d'intégration
     const dateIntegration = data.dateIntegration
@@ -113,6 +114,7 @@ export class EmailService {
           emailParent,
           dateIntegration,
           motDePasse, // Inclure le mot de passe pour l'afficher dans l'email
+          frontendUrl,
           year: new Date().getFullYear(),
         },
       });
@@ -128,6 +130,7 @@ export class EmailService {
             emailParent: emailParent2,
             dateIntegration,
             motDePasse: null, // Pas de mot de passe pour le parent 2
+            frontendUrl,
             year: new Date().getFullYear(),
           },
         });
