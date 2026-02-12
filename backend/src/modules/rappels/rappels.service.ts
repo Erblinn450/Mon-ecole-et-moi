@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StatutInscription } from '@prisma/client';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -46,7 +47,7 @@ export class RappelsService {
           deletedAt: null,
           inscriptions: {
             some: {
-              statut: 'ACTIVE',
+              statut: StatutInscription.ACTIVE,
             },
           },
         },
@@ -203,7 +204,7 @@ export class RappelsService {
           deletedAt: null,
           inscriptions: {
             some: {
-              statut: 'ACTIVE',
+              statut: StatutInscription.ACTIVE,
             },
           },
         },

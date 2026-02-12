@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FacturationService } from './facturation.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
+import { StatutInscription } from '@prisma/client';
 
 describe('FacturationService - Moteur de Calcul', () => {
   let service: FacturationService;
@@ -33,7 +34,7 @@ describe('FacturationService - Moteur de Calcul', () => {
     classe: 'MATERNELLE',
     parent1Id: 1,
     parent1: mockParent,
-    inscriptions: [{ anneeScolaire: '2025-2026', statut: 'ACTIVE' }],
+    inscriptions: [{ anneeScolaire: '2025-2026', statut: StatutInscription.ACTIVE }],
     deletedAt: null,
   };
 
@@ -45,7 +46,7 @@ describe('FacturationService - Moteur de Calcul', () => {
     classe: 'MATERNELLE',
     parent1Id: 1,
     parent1: mockParent,
-    inscriptions: [{ anneeScolaire: '2025-2026', statut: 'ACTIVE' }],
+    inscriptions: [{ anneeScolaire: '2025-2026', statut: StatutInscription.ACTIVE }],
     deletedAt: null,
   };
 
@@ -57,7 +58,7 @@ describe('FacturationService - Moteur de Calcul', () => {
     classe: 'COLLEGE',
     parent1Id: 2,
     parent1: mockParentRFR,
-    inscriptions: [{ anneeScolaire: '2025-2026', statut: 'ACTIVE' }],
+    inscriptions: [{ anneeScolaire: '2025-2026', statut: StatutInscription.ACTIVE }],
     deletedAt: null,
   };
 
@@ -160,7 +161,7 @@ describe('FacturationService - Moteur de Calcul', () => {
       expect(mockPrismaService.inscription.count).toHaveBeenCalledWith({
         where: {
           enfantId: 1,
-          statut: { in: ['ACTIVE', 'TERMINEE'] },
+          statut: { in: [StatutInscription.ACTIVE, StatutInscription.TERMINEE] },
           anneeScolaire: { lt: '2025-2026' },
         },
       });

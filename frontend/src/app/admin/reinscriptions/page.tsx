@@ -13,7 +13,7 @@ import {
   Eye,
   MessageSquare,
 } from "lucide-react";
-import { Classe } from "@/types";
+import { Classe, StatutReinscription } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
@@ -23,7 +23,7 @@ interface Reinscription {
   anneeScolaire: string;
   classeActuelle: Classe;
   classeSouhaitee: Classe;
-  statut: string;
+  statut: StatutReinscription;
   commentaire: string | null;
   createdAt: string;
   enfant: {
@@ -49,20 +49,20 @@ const classeLabels: Record<Classe, string> = {
   [Classe.COLLEGE]: "Collège",
 };
 
-const statutConfig: Record<string, { label: string; bg: string; text: string; icon: any }> = {
-  EN_ATTENTE: {
+const statutConfig: Record<StatutReinscription, { label: string; bg: string; text: string; icon: typeof Clock }> = {
+  [StatutReinscription.EN_ATTENTE]: {
     label: "En attente",
     bg: "bg-amber-100",
     text: "text-amber-800",
     icon: Clock,
   },
-  VALIDEE: {
+  [StatutReinscription.VALIDEE]: {
     label: "Validée",
     bg: "bg-emerald-100",
     text: "text-emerald-800",
     icon: CheckCircle,
   },
-  REFUSEE: {
+  [StatutReinscription.REFUSEE]: {
     label: "Refusée",
     bg: "bg-rose-100",
     text: "text-rose-800",
@@ -113,10 +113,10 @@ export default function ReinscriptionsAdminPage() {
     }
   };
 
-  const handleChangeStatut = async (id: number, newStatut: string) => {
+  const handleChangeStatut = async (id: number, newStatut: StatutReinscription) => {
     try {
       // Confirmation pour annulation
-      if (newStatut === "EN_ATTENTE") {
+      if (newStatut === StatutReinscription.EN_ATTENTE) {
         const confirmer = confirm(
           "Êtes-vous sûr de vouloir annuler cette validation et remettre la demande en attente ?"
         );
@@ -125,7 +125,7 @@ export default function ReinscriptionsAdminPage() {
 
       // Demander un commentaire pour le refus
       let commentaire: string | null = null;
-      if (newStatut === "REFUSEE") {
+      if (newStatut === StatutReinscription.REFUSEE) {
         commentaire = prompt(
           "Pourquoi refusez-vous cette réinscription ? (optionnel)\nCe commentaire sera visible dans l'historique."
         );
@@ -134,7 +134,7 @@ export default function ReinscriptionsAdminPage() {
       }
 
       const token = localStorage.getItem("auth_token");
-      const body: { statut: string; commentaire?: string } = { statut: newStatut };
+      const body: { statut: StatutReinscription; commentaire?: string } = { statut: newStatut };
       if (commentaire) {
         body.commentaire = commentaire;
       }
@@ -264,7 +264,7 @@ export default function ReinscriptionsAdminPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredReinscriptions.map((reinscription) => {
-                  const statut = statutConfig[reinscription.statut] || statutConfig.EN_ATTENTE;
+                  const statut = statutConfig[reinscription.statut] || statutConfig[StatutReinscription.EN_ATTENTE];
                   const StatutIcon = statut.icon;
 
                   return (
@@ -323,17 +323,17 @@ export default function ReinscriptionsAdminPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5">
-                          {reinscription.statut === "EN_ATTENTE" ? (
+                          {reinscription.statut === StatutReinscription.EN_ATTENTE ? (
                             <>
                               <button
-                                onClick={() => handleChangeStatut(reinscription.id, "VALIDEE")}
+                                onClick={() => handleChangeStatut(reinscription.id, StatutReinscription.VALIDEE)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors text-sm font-medium shadow-sm"
                               >
                                 <CheckCircle size={14} />
                                 Accepter
                               </button>
                               <button
-                                onClick={() => handleChangeStatut(reinscription.id, "REFUSEE")}
+                                onClick={() => handleChangeStatut(reinscription.id, StatutReinscription.REFUSEE)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-colors text-sm font-medium shadow-sm"
                               >
                                 <XCircle size={14} />
@@ -342,7 +342,7 @@ export default function ReinscriptionsAdminPage() {
                             </>
                           ) : (
                             <button
-                              onClick={() => handleChangeStatut(reinscription.id, "EN_ATTENTE")}
+                              onClick={() => handleChangeStatut(reinscription.id, StatutReinscription.EN_ATTENTE)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm font-medium"
                               title="Remettre en attente"
                             >

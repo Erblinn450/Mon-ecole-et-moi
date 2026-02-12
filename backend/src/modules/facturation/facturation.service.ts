@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Classe, FrequencePaiement, TypeLigne } from '@prisma/client';
+import { Classe, FrequencePaiement, StatutInscription, TypeLigne } from '@prisma/client';
 import {
   CreateConfigTarifDto,
   UpdateConfigTarifDto,
@@ -296,13 +296,13 @@ export class FacturationService {
         inscriptions: {
           some: {
             anneeScolaire,
-            statut: 'ACTIVE',
+            statut: StatutInscription.ACTIVE,
           },
         },
       },
       include: {
         inscriptions: {
-          where: { anneeScolaire, statut: 'ACTIVE' },
+          where: { anneeScolaire, statut: StatutInscription.ACTIVE },
         },
       },
       orderBy: { dateNaissance: 'asc' }, // Aîné en premier
@@ -345,7 +345,7 @@ export class FacturationService {
         inscriptions: {
           some: {
             anneeScolaire,
-            statut: 'ACTIVE',
+            statut: StatutInscription.ACTIVE,
           },
         },
       },
@@ -363,7 +363,7 @@ export class FacturationService {
     const previousInscriptions = await this.prisma.inscription.count({
       where: {
         enfantId,
-        statut: { in: ['ACTIVE', 'TERMINEE'] },
+        statut: { in: [StatutInscription.ACTIVE, StatutInscription.TERMINEE] },
         anneeScolaire: {
           lt: anneeScolaire,
         },
@@ -678,7 +678,7 @@ export class FacturationService {
       where: { id: enfantId },
       include: {
         parent1: true,
-        inscriptions: { where: { anneeScolaire, statut: 'ACTIVE' } },
+        inscriptions: { where: { anneeScolaire, statut: StatutInscription.ACTIVE } },
       },
     });
 

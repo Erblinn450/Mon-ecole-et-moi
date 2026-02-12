@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Classe } from '@prisma/client';
+import { Classe, StatutInscription } from '@prisma/client';
 
 @Injectable()
 export class EnfantsService {
@@ -66,7 +66,7 @@ export class EnfantsService {
       },
       include: {
         inscriptions: {
-          where: { statut: 'ACTIVE' },
+          where: { statut: StatutInscription.ACTIVE },
         },
         signatureReglements: true,
       },

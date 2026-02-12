@@ -121,16 +121,30 @@ Conteneur Docker : `monecole-postgres-dev`
 
 ```typescript
 // Rôles utilisateurs
-enum Role { PARENT, ADMIN }
+enum Role { PARENT, ADMIN, EDUCATEUR }
 
 // Statuts préinscription
-enum StatutPreinscription { EN_ATTENTE, EN_COURS, VALIDE, REFUSE, LISTE_ATTENTE }
+enum StatutPreinscription { EN_ATTENTE, DEJA_CONTACTE, VALIDE, REFUSE, ANNULE }
+
+// Statuts inscription
+enum StatutInscription { EN_COURS, ACTIVE, TERMINEE, ANNULEE }
+
+// Statuts réinscription
+enum StatutReinscription { EN_ATTENTE, VALIDEE, REFUSEE }
 
 // Classes
 enum Classe { MATERNELLE, ELEMENTAIRE, COLLEGE }
 
 // Situation familiale
-enum SituationFamiliale { MARIES, PACSES, CONCUBINAGE, SEPARES, DIVORCES, AUTRE }
+enum SituationFamiliale { MARIES, PACSES, UNION_LIBRE, SEPARES, DIVORCES, FAMILLE_MONOPARENTALE, AUTRE }
+
+// Facturation
+enum FrequencePaiement { MENSUEL, TRIMESTRIEL, SEMESTRIEL, ANNUEL }
+enum ModePaiement { PRELEVEMENT, VIREMENT }
+enum StatutFacture { EN_ATTENTE, ENVOYEE, PAYEE, PARTIELLE, EN_RETARD, ANNULEE }
+enum TypeFacture { MENSUELLE, PONCTUELLE, AVOIR }
+enum TypeLigne { SCOLARITE, REPAS, PERISCOLAIRE, DEPASSEMENT, INSCRIPTION, MATERIEL, REDUCTION, PERSONNALISE }
+enum DestinataireFacture { LES_DEUX, PARENT1, PARENT2 }
 ```
 
 ## Conventions de Code

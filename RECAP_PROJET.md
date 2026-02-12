@@ -1209,6 +1209,54 @@ Préinscription (parent)
 
 ---
 
+### 🗓️ Mercredi 12 février 2026 (suite - session 2)
+
+**Durée :** 1h
+
+**✅ Réalisé :**
+- **Audit complet du projet** : analyse backend, frontend et documentation en parallèle
+- **Correction critique : enums hardcodés dans le backend** (15+ occurrences)
+  - `'ACTIVE'` → `StatutInscription.ACTIVE` dans 5 fichiers
+  - `'EN_ATTENTE'`, `'VALIDEE'`, `'REFUSEE'` → `StatutReinscription.*` dans reinscriptions.service.ts
+  - Import `StatutInscription` ajouté dans facturation, enfants, rappels, reinscriptions
+  - Tests spec mis à jour avec les enums Prisma
+- **Correction critique : CLAUDE.md enums obsolètes**
+  - `Role` : ajout `EDUCATEUR`
+  - `StatutPreinscription` : `EN_COURS` → `DEJA_CONTACTE`, `LISTE_ATTENTE` → `ANNULE`
+  - `SituationFamiliale` : `CONCUBINAGE` → `UNION_LIBRE`, ajout `FAMILLE_MONOPARENTALE`
+  - Ajout de tous les enums facturation (FrequencePaiement, StatutFacture, TypeLigne, etc.)
+- **Ajout 9 enums manquants dans frontend/src/types/index.ts** :
+  - `StatutReinscription`, `StatutInscription`, `FrequencePaiement`, `ModePaiement`
+  - `StatutFacture`, `TypeFacture`, `TypeLigne`, `DestinataireFacture`
+- **Typage strict page réinscriptions admin** :
+  - `Record<string, ...>` → `Record<StatutReinscription, ...>`
+  - Handlers et interface typés avec l'enum
+  - Plus aucune string hardcodée dans le frontend réinscriptions
+- **Remplacement type `any`** dans `validerReinscription()` par interface typée
+
+**📁 Fichiers modifiés :**
+- `CLAUDE.md` (enums corrigés + ajout enums facturation)
+- `backend/src/modules/facturation/facturation.service.ts` (5 enums corrigés)
+- `backend/src/modules/facturation/facturation.service.spec.ts` (enums dans tests)
+- `backend/src/modules/reinscriptions/reinscriptions.service.ts` (5 enums + typage)
+- `backend/src/modules/enfants/enfants.service.ts` (1 enum corrigé)
+- `backend/src/modules/rappels/rappels.service.ts` (3 enums corrigés)
+- `frontend/src/types/index.ts` (9 enums ajoutés)
+- `frontend/src/app/admin/reinscriptions/page.tsx` (typage strict)
+
+**✅ Vérifications :**
+- Build backend : OK ✓
+- Tests facturation : 26/26 passent ✓
+- Aucune string hardcodée restante pour les statuts ✓
+
+**⏭️ Prochaines étapes :**
+- [ ] Génération PDF factures (Semaine 7-8)
+- [ ] Interface admin facturation
+- [ ] Centraliser les appels API (getAuthHeaders) dans la page réinscriptions
+- [ ] Masquer bouton "Pré-remplir (test)" en production
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown

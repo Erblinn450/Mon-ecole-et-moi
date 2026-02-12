@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { CreateReinscriptionDto } from './dto/create-reinscription.dto';
-import { StatutReinscription, Role } from '@prisma/client';
+import { StatutReinscription, StatutInscription, Role } from '@prisma/client';
 
 @Injectable()
 export class ReinscriptionsService {
@@ -48,7 +48,7 @@ export class ReinscriptionsService {
       },
       include: {
         inscriptions: {
-          where: { statut: 'ACTIVE' },
+          where: { statut: StatutInscription.ACTIVE },
           orderBy: { dateInscription: 'desc' },
           take: 1,
         },
@@ -226,14 +226,19 @@ export class ReinscriptionsService {
   /**
    * Valide une réinscription et crée l'inscription
    */
-  private async validerReinscription(reinscription: any) {
+  private async validerReinscription(reinscription: {
+    enfantId: number;
+    parentId: number;
+    anneeScolaire: string;
+    classeSouhaitee?: string | null;
+  }) {
     // Créer une nouvelle inscription pour l'année scolaire
     await this.prisma.inscription.create({
       data: {
         enfantId: reinscription.enfantId,
         parentId: reinscription.parentId,
         dateInscription: new Date(),
-        statut: 'ACTIVE',
+        statut: StatutInscription.ACTIVE,
         anneeScolaire: reinscription.anneeScolaire,
         commentaires: 'Réinscription validée',
       },
@@ -257,9 +262,9 @@ export class ReinscriptionsService {
 
     const [total, enAttente, validees, refusees] = await Promise.all([
       this.prisma.reinscription.count({ where: { anneeScolaire: annee } }),
-      this.prisma.reinscription.count({ where: { anneeScolaire: annee, statut: 'EN_ATTENTE' } }),
-      this.prisma.reinscription.count({ where: { anneeScolaire: annee, statut: 'VALIDEE' } }),
-      this.prisma.reinscription.count({ where: { anneeScolaire: annee, statut: 'REFUSEE' } }),
+      this.prisma.reinscription.count({ where: { anneeScolaire: annee, statut: StatutReinscription.EN_ATTENTE } }),
+      this.prisma.reinscription.count({ where: { anneeScolaire: annee, statut: StatutReinscription.VALIDEE } }),
+      this.prisma.reinscription.count({ where: { anneeScolaire: annee, statut: StatutReinscription.REFUSEE } }),
     ]);
 
     return {

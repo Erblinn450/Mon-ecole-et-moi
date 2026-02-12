@@ -37,6 +37,63 @@ export enum TypeRepas {
   GOUTER = "GOUTER",
 }
 
+export enum StatutReinscription {
+  EN_ATTENTE = "EN_ATTENTE",
+  VALIDEE = "VALIDEE",
+  REFUSEE = "REFUSEE",
+}
+
+export enum StatutInscription {
+  EN_COURS = "EN_COURS",
+  ACTIVE = "ACTIVE",
+  TERMINEE = "TERMINEE",
+  ANNULEE = "ANNULEE",
+}
+
+export enum FrequencePaiement {
+  MENSUEL = "MENSUEL",
+  TRIMESTRIEL = "TRIMESTRIEL",
+  SEMESTRIEL = "SEMESTRIEL",
+  ANNUEL = "ANNUEL",
+}
+
+export enum ModePaiement {
+  PRELEVEMENT = "PRELEVEMENT",
+  VIREMENT = "VIREMENT",
+}
+
+export enum StatutFacture {
+  EN_ATTENTE = "EN_ATTENTE",
+  ENVOYEE = "ENVOYEE",
+  PAYEE = "PAYEE",
+  PARTIELLE = "PARTIELLE",
+  EN_RETARD = "EN_RETARD",
+  ANNULEE = "ANNULEE",
+}
+
+export enum TypeFacture {
+  MENSUELLE = "MENSUELLE",
+  PONCTUELLE = "PONCTUELLE",
+  AVOIR = "AVOIR",
+}
+
+export enum TypeLigne {
+  SCOLARITE = "SCOLARITE",
+  REPAS = "REPAS",
+  PERISCOLAIRE = "PERISCOLAIRE",
+  DEPASSEMENT = "DEPASSEMENT",
+  INSCRIPTION = "INSCRIPTION",
+  MATERIEL = "MATERIEL",
+  REDUCTION = "REDUCTION",
+  PERSONNALISE = "PERSONNALISE",
+}
+
+export enum DestinataireFacture {
+  LES_DEUX = "LES_DEUX",
+  PARENT1 = "PARENT1",
+  PARENT2 = "PARENT2",
+}
+
 // ============================================
 // USER & AUTH
 // ============================================
