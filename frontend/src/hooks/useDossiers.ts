@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { preinscriptionsApi } from "@/lib/api";
+import { preinscriptionsApi, API_URL } from "@/lib/api";
 import { Preinscription } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 // Hook pour récupérer les dossiers du parent connecté
 export function useDossiers() {

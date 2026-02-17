@@ -1255,6 +1255,153 @@ Préinscription (parent)
 - [ ] Centraliser les appels API (getAuthHeaders) dans la page réinscriptions
 - [ ] Masquer bouton "Pré-remplir (test)" en production
 
+### 🗓️ Mercredi 12 février 2026 (session 3)
+
+**Durée :** 3h
+
+**✅ Réalisé :**
+
+**1. Correction préinscription 2ème enfant (parent connecté)**
+- Correction CRITIQUE : le mot de passe était renvoyé par email même quand le parent existait déjà
+  - Ajout variable `motDePasseParent1` dans `preinscriptions.service.ts`, retourne `null` si parent existant
+- Nouveau endpoint `POST /api/preinscriptions/enfant` avec `JwtAuthGuard` (au lieu de RecaptchaGuard)
+  - Le parent connecté n'a plus besoin de passer le reCAPTCHA
+  - L'email du parent est automatiquement pris depuis le token JWT
+- Frontend `preinscription-enfant/page.tsx` mis à jour pour utiliser le nouvel endpoint
+
+**2. Correction module réinscription (cohérence Montessori)**
+- Page parent : remplacement des classes traditionnelles (PS/MS/GS/CP/CE1) par classes Montessori (MATERNELLE, ELEMENTAIRE)
+- Backend `validerReinscription()` :
+  - Ajout prévention doublons d'inscription (`findFirst` avant `create`)
+  - Ajout mise à jour classe de l'enfant quand la réinscription est validée
+  - Typage fort : remplacement de `any` par interface typée
+- Page admin réinscriptions : affichage parent2, colonne date, labels de classe avec fallback
+
+**3. Emails réinscription**
+- Création template `reinscription-validee.hbs` (thème vert, prochaines étapes, lien dashboard)
+- Création template `reinscription-refusee.hbs` (thème neutre, commentaire conditionnel)
+- Ajout méthodes `sendReinscriptionValidated()` et `sendReinscriptionRefused()` dans `email.service.ts`
+- Branchement dans `updateStatut()` : email envoyé automatiquement à la validation/refus
+
+**4. Tests end-to-end réinscription (curl)**
+- Login admin + parent → création inscription active → soumission réinscription → validation admin
+- Vérifications : inscription créée en BDD, classe enfant mise à jour, email visible dans MailHog
+- 8/8 tests passés
+
+**5. Tests end-to-end préinscription enfant (curl)**
+- Parent connecté → préinscription pour "Emma Dupont" → validation admin
+- Vérifications : enfant créé, rattaché au parent existant, pas de doublon de compte, email SANS mot de passe
+- 8/8 tests passés
+
+**6. Audit complet du projet**
+- Analyse exhaustive avec 6 agents parallèles (backend, frontend, documentation, réinscription, emails, facturation)
+- Résultat : 2 critiques, 4 importants, 4 mineurs identifiés
+- Correction immédiate : dernier `'ACTIVE'` hardcodé dans `rappels.service.ts:343`
+
+**📁 Fichiers modifiés :**
+- `backend/src/modules/preinscriptions/preinscriptions.service.ts` (fix password leak)
+- `backend/src/modules/preinscriptions/preinscriptions.controller.ts` (nouvel endpoint `/enfant`)
+- `frontend/src/app/(parent)/preinscription-enfant/page.tsx` (utilise nouvel endpoint)
+- `frontend/src/app/(parent)/reinscription/page.tsx` (classes Montessori)
+- `backend/src/modules/reinscriptions/reinscriptions.service.ts` (doublons, classe, emails, typage)
+- `frontend/src/app/admin/reinscriptions/page.tsx` (parent2, date, labels)
+- `backend/src/modules/email/email.service.ts` (2 nouvelles méthodes)
+- `backend/src/modules/email/templates/reinscription-validee.hbs` (NOUVEAU)
+- `backend/src/modules/email/templates/reinscription-refusee.hbs` (NOUVEAU)
+- `backend/src/modules/rappels/rappels.service.ts` (fix dernier enum hardcodé)
+
+**🐛 Bugs corrigés :**
+- Mot de passe envoyé par email pour parent existant (CRITIQUE)
+- RecaptchaGuard bloquait le formulaire parent connecté
+- Classes traditionnelles au lieu de Montessori dans réinscription
+- Doublons d'inscription possibles à la validation
+- Classe de l'enfant non mise à jour après réinscription validée
+- Pas d'email envoyé à la validation/refus de réinscription
+- `'ACTIVE'` hardcodé dans rappels.service.ts
+
+**⏭️ Prochaines étapes :**
+- [ ] Génération PDF factures (Semaine 7-8)
+- [ ] Interface admin facturation (frontend)
+- [ ] Page admin personnes autorisées
+- [ ] Masquer bouton "Pré-remplir (test)" avant mise en prod
+
+---
+
+### 🗓️ Lundi 17 février 2026
+
+**Durée :** ~3h (Session IA)
+
+**✅ Réalisé : Polish complet du code (qualité professionnelle)**
+
+1. **Nettoyage général**
+   - Suppression `console.log/warn/error` dans 6+ fichiers frontend
+   - Remplacement `console.log` par `Logger` NestJS dans `main.ts`
+   - Suppression emoji dans tous les `logger.log()` backend
+   - Suppression imports inutilisés (4+ fichiers)
+   - Suppression fichier debug `test-prisma.js`
+
+2. **Corrections backend (qualité de code)**
+   - Hack `emailService['mailerService']` remplacé par méthode publique `sendTemplateEmail()` (3 fichiers)
+   - `preinscription: any` → `preinscription: Preinscription` (type Prisma)
+   - `enfant: any`, `parent: any` → `Enfant`, `User` (types Prisma dans rappels.service.ts)
+   - `as any` → `as Classe` avec validation `Object.values(Classe)`
+   - `'PARENT'` string hardcodée → `Role.PARENT` enum
+   - `AuthenticatedRequest` dupliqué → import partagé depuis `common/interfaces/`
+   - `getStats()` corrigé pour filtrer les soft deletes (`deletedAt: null`)
+   - Méthodes `testEnvoiRappels()` et `testEnvoiRappelsReinscription()` supprimées
+   - Import `Role` manquant ajouté dans `reinscriptions.controller.ts`
+
+3. **Centralisation frontend**
+   - `API_URL` centralisé : 14 redéfinitions locales → 1 export dans `lib/api.ts`
+   - `classeLabels` centralisé : 6 copies → 1 export dans `lib/labels.ts`
+   - Pattern `catch (err) { throw err }` inutile supprimé dans 4 hooks
+   - Année scolaire hardcodée `2024-2025` → calcul dynamique
+   - Credentials test protégés par `process.env.NODE_ENV === 'development'`
+
+4. **Templates email (.hbs)**
+   - 4 templates créés : `password-reset`, `relance-documents`, `rappel-attestation`, `rappel-reinscription`
+   - HTML inline remplacé par appels template Handlebars dans 3 services
+   - Méthode `sendRawMail()` remplacée par `sendTemplateEmail()` propre
+
+**📁 Fichiers créés :**
+- `frontend/src/lib/labels.ts`
+- `backend/src/modules/email/templates/password-reset.hbs`
+- `backend/src/modules/email/templates/relance-documents.hbs`
+- `backend/src/modules/email/templates/rappel-attestation.hbs`
+- `backend/src/modules/email/templates/rappel-reinscription.hbs`
+
+**📁 Fichiers supprimés :**
+- `backend/test-prisma.js`
+
+**📁 Fichiers modifiés (backend) :**
+- `email.service.ts` (template password-reset + sendTemplateEmail)
+- `rappels.service.ts` (templates + types Prisma + suppression méthodes test)
+- `preinscriptions.service.ts` (template relance + type Preinscription)
+- `reinscriptions.service.ts` (enum Classe + suppression as any)
+- `reinscriptions.controller.ts` (import Role + AuthenticatedRequest)
+- `enfants.service.ts` (soft delete dans getStats)
+- `users.service.ts` (Role.PARENT enum)
+- `email.module.ts` (suppression emoji logs)
+- `main.ts` (Logger NestJS)
+
+**📁 Fichiers modifiés (frontend) :**
+- `lib/api.ts` (export API_URL)
+- 14 pages (import API_URL centralisé)
+- 6 pages (import classeLabels centralisé)
+- 4 hooks (suppression catch/throw + console.error)
+- `useRecaptcha.ts` (cleanup + console)
+- `admin/login/page.tsx` (NODE_ENV protection)
+- `mes-enfants/page.tsx` (année dynamique)
+
+**✅ Vérification :**
+- Build backend : ✅ (0 erreur TypeScript)
+- Build frontend : ✅ (0 erreur, 30 pages générées)
+
+**⏭️ Prochaines étapes :**
+- [ ] Module Facturation : interface admin frontend
+- [ ] Génération PDF factures
+- [ ] Module Repas / Périscolaire (avril)
+
 ---
 
 ### 📝 Template pour nouvelles entrées
@@ -1294,6 +1441,6 @@ Préinscription (parent)
 
 ---
 
-**Dernière mise à jour :** 12 février 2026
+**Dernière mise à jour :** 17 février 2026 (session polish)
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

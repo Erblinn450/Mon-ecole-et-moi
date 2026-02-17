@@ -9,45 +9,26 @@ interface EnfantSelection {
   classeSouhaitee: string;
 }
 
+// Classes multi-âges Montessori (cohérent avec le reste de l'application)
 const CLASSES = [
-  { group: "🎨 Maternelle", options: [
-    { value: "PS", label: "Petite Section (PS)" },
-    { value: "MS", label: "Moyenne Section (MS)" },
-    { value: "GS", label: "Grande Section (GS)" },
-  ]},
-  { group: "📖 Primaire", options: [
-    { value: "CP", label: "CP" },
-    { value: "CE1", label: "CE1" },
-    { value: "CE2", label: "CE2" },
-    { value: "CM1", label: "CM1" },
-    { value: "CM2", label: "CM2" },
-  ]},
-  { group: "📚 Collège", options: [
-    { value: "6eme", label: "6ème" },
-    { value: "5eme", label: "5ème" },
-    { value: "4eme", label: "4ème" },
-    { value: "3eme", label: "3ème" },
+  { group: "Classes multi-âges Montessori", options: [
+    { value: "MATERNELLE", label: "Maternelle (3-6 ans)" },
+    { value: "ELEMENTAIRE", label: "Élémentaire (6-12 ans, CP au CM2)" },
   ]},
 ];
 
-// Fonction pour déterminer la classe suivante
+const CLASSE_LABELS: Record<string, string> = {
+  MATERNELLE: "Maternelle (3-6 ans)",
+  ELEMENTAIRE: "Élémentaire (6-12 ans)",
+  COLLEGE: "Collège",
+};
+
+// Fonction pour déterminer la classe suivante dans la progression Montessori
 function getClasseSuivante(classeActuelle: string | null): string {
   if (!classeActuelle) return "";
-  const progression: { [key: string]: string } = {
-    "PS": "MS",
-    "MS": "GS",
-    "GS": "CP",
-    "CP": "CE1",
-    "CE1": "CE2",
-    "CE2": "CM1",
-    "CM1": "CM2",
-    "CM2": "6eme",
-    "6eme": "5eme",
-    "5eme": "4eme",
-    "4eme": "3eme",
-    "3eme": "3eme",
-    "MATERNELLE": "ELEMENTAIRE",
-    "ELEMENTAIRE": "COLLEGE",
+  const progression: Record<string, string> = {
+    MATERNELLE: "ELEMENTAIRE",
+    ELEMENTAIRE: "ELEMENTAIRE", // Reste en élémentaire par défaut
   };
   return progression[classeActuelle] || classeActuelle;
 }
@@ -264,7 +245,7 @@ export default function ReinscriptionPage() {
                           {enfant.prenom} {enfant.nom}
                         </label>
                         <p className="text-sm text-gray-500 mt-1">
-                          Classe actuelle : <strong>{enfant.classe || "Non définie"}</strong>
+                          Classe actuelle : <strong>{CLASSE_LABELS[enfant.classe || ""] || enfant.classe || "Non définie"}</strong>
                           {enfant.dateNaissance && (
                             <> | Date de naissance : {new Date(enfant.dateNaissance).toLocaleDateString("fr-FR")}</>
                           )}
@@ -293,7 +274,7 @@ export default function ReinscriptionPage() {
                               ))}
                             </select>
                             <p className="text-xs text-gray-500 mt-1">
-                              💡 Classe suggérée : {getClasseSuivante(enfant.classe) || "À définir"}
+                              Classe suggérée : {CLASSE_LABELS[getClasseSuivante(enfant.classe)] || getClasseSuivante(enfant.classe) || "À définir"}
                             </p>
                           </div>
                         )}
@@ -314,7 +295,7 @@ export default function ReinscriptionPage() {
                   const enfant = enfants.find(e => e.id === sel.enfantId);
                   return (
                     <li key={sel.enfantId} className="text-emerald-700 text-sm">
-                      • <strong>{enfant?.prenom} {enfant?.nom}</strong> : {enfant?.classe || "?"} → {sel.classeSouhaitee}
+                      • <strong>{enfant?.prenom} {enfant?.nom}</strong> : {CLASSE_LABELS[enfant?.classe || ""] || enfant?.classe || "?"} → {CLASSE_LABELS[sel.classeSouhaitee] || sel.classeSouhaitee}
                     </li>
                   );
                 })}

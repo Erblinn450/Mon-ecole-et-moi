@@ -9,30 +9,33 @@ import {
   XCircle,
   Loader2,
   AlertCircle,
-  GraduationCap,
   Eye,
   MessageSquare,
 } from "lucide-react";
 import { Classe, StatutReinscription } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { classeLabels } from "@/lib/labels";
+import { API_URL } from "@/lib/api";
 
 interface Reinscription {
   id: number;
   enfantId: number;
   anneeScolaire: string;
-  classeActuelle: Classe;
-  classeSouhaitee: Classe;
+  classeActuelle: string | null;
+  classeSouhaitee: string | null;
   statut: StatutReinscription;
   commentaire: string | null;
-  createdAt: string;
+  dateDemande: string;
   enfant: {
     nom: string;
     prenom: string;
     parent1: {
       email: string;
       telephone: string | null;
-    };
+    } | null;
+    parent2: {
+      email: string;
+      telephone: string | null;
+    } | null;
   };
 }
 
@@ -43,11 +46,6 @@ interface Stats {
   refusees: number;
 }
 
-const classeLabels: Record<Classe, string> = {
-  [Classe.MATERNELLE]: "Maternelle",
-  [Classe.ELEMENTAIRE]: "Élémentaire",
-  [Classe.COLLEGE]: "Collège",
-};
 
 const statutConfig: Record<StatutReinscription, { label: string; bg: string; text: string; icon: typeof Clock }> = {
   [StatutReinscription.EN_ATTENTE]: {
@@ -159,14 +157,30 @@ export default function ReinscriptionsAdminPage() {
     }
   };
 
+  // Helper pour afficher le label d'une classe (enum ou string libre)
+  const getClasseLabel = (classe: string | null): string => {
+    if (!classe) return "N/A";
+    return classeLabels[classe as Classe] || classe;
+  };
+
+  // Helper pour récupérer le contact parent
+  const getParentContact = (r: Reinscription) => {
+    const parent = r.enfant.parent1 || r.enfant.parent2;
+    return {
+      email: parent?.email || "N/A",
+      telephone: parent?.telephone || "N/A",
+    };
+  };
+
   // Filtrer par recherche
   const filteredReinscriptions = reinscriptions.filter((r) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
+    const contact = getParentContact(r);
     return (
       r.enfant.nom.toLowerCase().includes(query) ||
       r.enfant.prenom.toLowerCase().includes(query) ||
-      r.enfant.parent1.email.toLowerCase().includes(query)
+      contact.email.toLowerCase().includes(query)
     );
   });
 
@@ -257,6 +271,7 @@ export default function ReinscriptionsAdminPage() {
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Enfant</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Contact</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Classe</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Date</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Statut</th>
                   <th className="text-center px-4 py-3 text-sm font-medium text-gray-500">Dossier</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Actions</th>
@@ -280,20 +295,29 @@ export default function ReinscriptionsAdminPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm text-gray-900">{reinscription.enfant.parent1.email}</p>
-                        <p className="text-xs text-gray-500">{reinscription.enfant.parent1.telephone || "N/A"}</p>
+                        {(() => { const c = getParentContact(reinscription); return (<>
+                          <p className="text-sm text-gray-900">{c.email}</p>
+                          <p className="text-xs text-gray-500">{c.telephone}</p>
+                        </>); })()}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 text-sm">
                           <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-medium">
-                            {classeLabels[reinscription.classeActuelle]}
+                            {getClasseLabel(reinscription.classeActuelle)}
                           </span>
                           <span className="text-gray-400">→</span>
                           <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium">
-                            {classeLabels[reinscription.classeSouhaitee]}
+                            {getClasseLabel(reinscription.classeSouhaitee)}
                           </span>
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">{reinscription.anneeScolaire}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-sm text-gray-700">
+                          {reinscription.dateDemande
+                            ? new Date(reinscription.dateDemande).toLocaleDateString("fr-FR")
+                            : "N/A"}
+                        </p>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">

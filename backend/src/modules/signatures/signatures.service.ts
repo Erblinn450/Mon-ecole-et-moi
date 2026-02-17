@@ -6,8 +6,8 @@ export class SignaturesService {
   constructor(private prisma: PrismaService) { }
 
   /**
-   * Obtenir le statut de signature pour un enfant OU une préinscription
-   * Accepte enfantId ou preinscriptionId (comme Laravel)
+   * Obtenir le statut de signature pour un enfant OU une préinscription.
+   * Accepte enfantId ou preinscriptionId.
    */
   async getSignatureStatus(idOrPreinscriptionId: number, parentEmail: string) {
     let enfantId: number | null = null;
@@ -71,8 +71,8 @@ export class SignaturesService {
   }
 
   /**
-   * Signer le règlement
-   * Accepte enfant_id OU preinscription_id (comme Laravel SignatureController.parentAccepte)
+   * Signer le règlement.
+   * Accepte enfantId ou preinscriptionId.
    */
   async signerReglement(
     data: { enfantId?: number; preinscriptionId?: number },

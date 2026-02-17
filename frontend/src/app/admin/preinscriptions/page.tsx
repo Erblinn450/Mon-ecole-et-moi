@@ -21,10 +21,10 @@ import {
   RefreshCw
 } from "lucide-react";
 import { StatutPreinscription, Classe } from "@/types";
+import { classeLabels } from "@/lib/labels";
+import { API_URL } from "@/lib/api";
 
 type TabType = "preinscriptions" | "reinscriptions";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 interface Preinscription {
   id: number;
@@ -111,11 +111,6 @@ const statutConfig = {
   },
 };
 
-const classeLabels: Record<Classe, string> = {
-  [Classe.MATERNELLE]: "Maternelle",
-  [Classe.ELEMENTAIRE]: "Élémentaire",
-  [Classe.COLLEGE]: "Collège",
-};
 
 export default function PreinscriptionsAdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>("preinscriptions");

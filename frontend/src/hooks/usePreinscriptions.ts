@@ -33,21 +33,13 @@ export function usePreinscriptions(statut?: StatutPreinscription) {
   }, [fetchPreinscriptions]);
 
   const updateStatut = async (id: number, newStatut: StatutPreinscription, commentaire?: string) => {
-    try {
-      await preinscriptionsApi.updateStatut(id, newStatut, commentaire);
-      await fetchPreinscriptions();
-    } catch (err) {
-      throw err;
-    }
+    await preinscriptionsApi.updateStatut(id, newStatut, commentaire);
+    await fetchPreinscriptions();
   };
 
   const deletePreinscription = async (id: number) => {
-    try {
-      await preinscriptionsApi.delete(id);
-      await fetchPreinscriptions();
-    } catch (err) {
-      throw err;
-    }
+    await preinscriptionsApi.delete(id);
+    await fetchPreinscriptions();
   };
 
   return {

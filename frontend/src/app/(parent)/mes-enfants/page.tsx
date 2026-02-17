@@ -11,13 +11,8 @@ import {
   Mail
 } from "lucide-react";
 import { useEnfants } from "@/hooks/useEnfants";
-import { Classe } from "@/types";
+import { classeLabels } from "@/lib/labels";
 
-const classeLabels: Record<Classe, string> = {
-  [Classe.MATERNELLE]: "Maternelle",
-  [Classe.ELEMENTAIRE]: "Élémentaire",
-  [Classe.COLLEGE]: "Collège",
-};
 
 export default function MesEnfantsPage() {
   const { enfants, isLoading, error } = useEnfants();
@@ -151,7 +146,7 @@ export default function MesEnfantsPage() {
                           Inscription active
                         </p>
                         <p className="text-sm text-emerald-600">
-                          Année scolaire 2024-2025
+                          Année scolaire {new Date().getMonth() >= 8 ? `${new Date().getFullYear()}-${new Date().getFullYear() + 1}` : `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}
                         </p>
                       </div>
                     </div>

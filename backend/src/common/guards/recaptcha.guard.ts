@@ -6,7 +6,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Reflector } from '@nestjs/core';
 
 /**
  * Guard pour valider le token reCAPTCHA v3
@@ -16,10 +15,7 @@ import { Reflector } from '@nestjs/core';
 export class RecaptchaGuard implements CanActivate {
   private readonly logger = new Logger(RecaptchaGuard.name);
 
-  constructor(
-    private configService: ConfigService,
-    private reflector: Reflector,
-  ) {}
+  constructor(private configService: ConfigService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const secretKey = this.configService.get('RECAPTCHA_SECRET_KEY');

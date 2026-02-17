@@ -59,21 +59,13 @@ export function useAdminEnfants(classe?: Classe) {
   }, [fetchEnfants]);
 
   const updateEnfant = async (id: number, data: Partial<Enfant>) => {
-    try {
-      await enfantsApi.update(id, data);
-      await fetchEnfants();
-    } catch (err) {
-      throw err;
-    }
+    await enfantsApi.update(id, data);
+    await fetchEnfants();
   };
 
   const deleteEnfant = async (id: number) => {
-    try {
-      await enfantsApi.delete(id);
-      await fetchEnfants();
-    } catch (err) {
-      throw err;
-    }
+    await enfantsApi.delete(id);
+    await fetchEnfants();
   };
 
   return {

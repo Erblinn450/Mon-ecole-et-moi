@@ -121,10 +121,10 @@ export class EnfantsService {
 
   async getStats() {
     const [total, maternelle, elementaire, college] = await Promise.all([
-      this.prisma.enfant.count(),
-      this.prisma.enfant.count({ where: { classe: 'MATERNELLE' } }),
-      this.prisma.enfant.count({ where: { classe: 'ELEMENTAIRE' } }),
-      this.prisma.enfant.count({ where: { classe: 'COLLEGE' } }),
+      this.prisma.enfant.count({ where: { deletedAt: null } }),
+      this.prisma.enfant.count({ where: { deletedAt: null, classe: Classe.MATERNELLE } }),
+      this.prisma.enfant.count({ where: { deletedAt: null, classe: Classe.ELEMENTAIRE } }),
+      this.prisma.enfant.count({ where: { deletedAt: null, classe: Classe.COLLEGE } }),
     ]);
 
     return { total, maternelle, elementaire, college };

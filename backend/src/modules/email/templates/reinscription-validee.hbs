@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réinscription acceptée</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            margin: -30px -30px 30px -30px;
+            padding: 30px;
+            border-radius: 12px 12px 0 0;
+        }
+        .header h1 {
+            color: #047857;
+            margin: 0;
+            font-size: 26px;
+        }
+        .header .icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .success-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #10b981;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .success-box h2 {
+            color: #047857;
+            margin-top: 0;
+        }
+        .next-steps {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .next-steps h3 {
+            color: #1d4ed8;
+            margin-top: 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .signature {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #fef3c7;
+            border-radius: 8px;
+            font-style: italic;
+        }
+        a {
+            color: #10b981;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #10b981;
+            color: white !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .btn:hover {
+            background-color: #059669;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">&#x1F389;</div>
+            <h1>Mon &eacute;cole Montessori et Moi</h1>
+            <p style="color: #047857; margin: 10px 0 0 0; font-size: 18px; font-weight: bold;">La r&eacute;inscription de {{prenomEnfant}} est accept&eacute;e !</p>
+        </div>
+
+        <div class="content">
+            <p><strong>Bonjour {{prenomParent}} {{nomParent}},</strong></p>
+
+            <p>Nous avons le plaisir de vous confirmer que la demande de r&eacute;inscription de <strong>{{prenomEnfant}} {{nomEnfant}}</strong> pour l'ann&eacute;e scolaire <strong>{{anneeScolaire}}</strong> a &eacute;t&eacute; accept&eacute;e.</p>
+
+            <div class="success-box">
+                <h2>&#x2705; R&eacute;inscription valid&eacute;e</h2>
+                <p><strong>{{prenomEnfant}} {{nomEnfant}}</strong></p>
+                <p>Classe : <strong>{{classeSouhaitee}}</strong></p>
+                <p>Ann&eacute;e scolaire : <strong>{{anneeScolaire}}</strong></p>
+            </div>
+
+            <div class="next-steps">
+                <h3>&#x1F4CB; Prochaines &eacute;tapes</h3>
+                <p>Afin de finaliser la r&eacute;inscription, merci de v&eacute;rifier que les documents suivants sont &agrave; jour dans votre espace parent :</p>
+                <ul>
+                    <li>Attestation de responsabilit&eacute; civile (renouvellement annuel)</li>
+                    <li>Carnet de vaccination &agrave; jour</li>
+                    <li>Justificatif de domicile r&eacute;cent</li>
+                </ul>
+                <p style="text-align: center;">
+                    <a href="{{frontendUrl}}/dashboard" class="btn">Acc&eacute;der &agrave; mon espace</a>
+                </p>
+            </div>
+
+            <p>Nous nous r&eacute;jouissons de retrouver {{prenomEnfant}} l'ann&eacute;e prochaine !</p>
+
+            <div class="signature">
+                <p><strong>Cordialement,</strong><br>
+                L'&eacute;quipe p&eacute;dagogique de Mon &Eacute;cole Montessori et Moi</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Pour toute question, contactez-nous &agrave; : <a href="mailto:contact@montessorietmoi.com">contact@montessorietmoi.com</a></p>
+            <p>&copy; {{year}} Mon &Eacute;cole et Moi - Tous droits r&eacute;serv&eacute;s</p>
+        </div>
+    </div>
+</body>
+</html>

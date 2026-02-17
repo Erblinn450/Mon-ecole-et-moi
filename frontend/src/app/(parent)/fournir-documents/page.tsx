@@ -16,8 +16,7 @@ import {
   Trash2,
   Eye,
 } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { API_URL } from "@/lib/api";
 
 interface TypeJustificatif {
   id: number;

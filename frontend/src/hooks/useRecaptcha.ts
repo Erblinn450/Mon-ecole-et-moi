@@ -54,9 +54,7 @@ export function useRecaptcha(action: string = 'submit') {
 
     document.body.appendChild(script);
 
-    return () => {
-      // Cleanup si nécessaire
-    };
+    return () => {};
   }, [siteKey]);
 
   /**
@@ -70,15 +68,13 @@ export function useRecaptcha(action: string = 'submit') {
     }
 
     if (!window.grecaptcha) {
-      console.warn('reCAPTCHA non chargé');
       return null;
     }
 
     try {
       const token = await window.grecaptcha.execute(siteKey, { action });
       return token;
-    } catch (err) {
-      console.error('Erreur reCAPTCHA:', err);
+    } catch {
       setError('Erreur de validation reCAPTCHA');
       return null;
     }

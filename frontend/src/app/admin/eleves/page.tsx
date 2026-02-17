@@ -20,12 +20,8 @@ import {
 import { useAdminEnfants } from "@/hooks/useEnfants";
 import { Enfant, Classe } from "@/types";
 import { personnesAutoriseesApi, EnfantPersonnesAutorisees } from "@/lib/api";
+import { classeLabels } from "@/lib/labels";
 
-const classeLabels: Record<Classe, string> = {
-  [Classe.MATERNELLE]: "Maternelle",
-  [Classe.ELEMENTAIRE]: "Élémentaire",
-  [Classe.COLLEGE]: "Collège",
-};
 
 const classeColors: Record<Classe, { bg: string; text: string }> = {
   [Classe.MATERNELLE]: { bg: "bg-pink-100", text: "text-pink-700" },
@@ -57,8 +53,8 @@ export default function AdminElevesPage() {
       try {
         const data = await personnesAutoriseesApi.getAllAdmin();
         setAllPersonnesData(data);
-      } catch (err) {
-        console.error("Erreur chargement personnes autorisées:", err);
+      } catch {
+        // Erreur silencieuse - les personnes autorisées restent vides
       }
     };
     loadPersonnesData();

@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { CreateReinscriptionDto } from './dto/create-reinscription.dto';
-import { StatutReinscription, StatutInscription, Role } from '@prisma/client';
+import { StatutReinscription, StatutInscription, Classe } from '@prisma/client';
 
 @Injectable()
 export class ReinscriptionsService {
@@ -37,7 +37,6 @@ export class ReinscriptionsService {
   async getEnfantsEligibles(parentId: number) {
     const anneeScolaire = this.getAnneeScolaireProchaine();
 
-    // Récupérer les enfants du parent qui ont une inscription active
     const enfants = await this.prisma.enfant.findMany({
       where: {
         deletedAt: null,
@@ -52,12 +51,9 @@ export class ReinscriptionsService {
           orderBy: { dateInscription: 'desc' },
           take: 1,
         },
-        // Vérifier si une réinscription existe déjà pour cette année
-        // Prisma ne supporte pas les relations non définies, on le fera manuellement
       },
     });
 
-    // Filtrer les enfants qui n'ont pas déjà de réinscription pour cette année
     const enfantsAvecStatut = await Promise.all(
       enfants.map(async (enfant) => {
         const reinscriptionExistante = await this.prisma.reinscription.findUnique({
@@ -94,7 +90,6 @@ export class ReinscriptionsService {
   async create(dto: CreateReinscriptionDto, parentId: number) {
     const anneeScolaire = this.getAnneeScolaireProchaine();
 
-    // Vérifier que l'enfant appartient bien au parent
     const enfant = await this.prisma.enfant.findFirst({
       where: {
         id: dto.enfantId,
@@ -140,7 +135,7 @@ export class ReinscriptionsService {
       },
     });
 
-    this.logger.log(`✅ Réinscription créée pour ${enfant.prenom} ${enfant.nom} (${anneeScolaire})`);
+    this.logger.log(`Réinscription créée pour ${enfant.prenom} ${enfant.nom} (${anneeScolaire})`);
 
     return reinscription;
   }
@@ -175,6 +170,7 @@ export class ReinscriptionsService {
         enfant: {
           include: {
             parent1: true,
+            parent2: true,
           },
         },
       },
@@ -198,6 +194,14 @@ export class ReinscriptionsService {
   async updateStatut(id: number, statut: StatutReinscription, commentaire?: string) {
     const reinscription = await this.prisma.reinscription.findUnique({
       where: { id },
+      include: {
+        enfant: {
+          include: {
+            parent1: true,
+            parent2: true,
+          },
+        },
+      },
     });
 
     if (!reinscription) {
@@ -218,7 +222,36 @@ export class ReinscriptionsService {
       await this.validerReinscription(reinscription);
     }
 
-    this.logger.log(`📝 Réinscription #${id} mise à jour: ${statut}`);
+    // Envoyer email au parent
+    const parent = reinscription.enfant?.parent1 || reinscription.enfant?.parent2;
+    if (parent) {
+      const emailData = {
+        emailParent: parent.email,
+        nomParent: parent.nom || parent.name || '',
+        prenomParent: parent.prenom || '',
+        nomEnfant: reinscription.enfant.nom,
+        prenomEnfant: reinscription.enfant.prenom,
+        anneeScolaire: reinscription.anneeScolaire,
+      };
+
+      try {
+        if (statut === StatutReinscription.VALIDEE) {
+          await this.emailService.sendReinscriptionValidated({
+            ...emailData,
+            classeSouhaitee: reinscription.classeSouhaitee,
+          });
+        } else if (statut === StatutReinscription.REFUSEE) {
+          await this.emailService.sendReinscriptionRefused({
+            ...emailData,
+            commentaire,
+          });
+        }
+      } catch (error) {
+        this.logger.error(`Erreur envoi email réinscription: ${error.message}`);
+      }
+    }
+
+    this.logger.log(`Réinscription #${id} mise à jour: ${statut}`);
 
     return updated;
   }
@@ -232,26 +265,42 @@ export class ReinscriptionsService {
     anneeScolaire: string;
     classeSouhaitee?: string | null;
   }) {
-    // Créer une nouvelle inscription pour l'année scolaire
-    await this.prisma.inscription.create({
-      data: {
+    // Vérifier qu'une inscription n'existe pas déjà pour cet enfant et cette année
+    const inscriptionExistante = await this.prisma.inscription.findFirst({
+      where: {
         enfantId: reinscription.enfantId,
-        parentId: reinscription.parentId,
-        dateInscription: new Date(),
-        statut: StatutInscription.ACTIVE,
         anneeScolaire: reinscription.anneeScolaire,
-        commentaires: 'Réinscription validée',
       },
     });
 
-    // Mettre à jour la classe de l'enfant si une classe souhaitée a été spécifiée
-    if (reinscription.classeSouhaitee) {
-      // Note: On ne met pas à jour la classe directement car c'est un enum
-      // et la classe souhaitée peut être "CP", "CE1", etc.
-      // L'admin devra le faire manuellement si nécessaire
+    if (!inscriptionExistante) {
+      // Créer une nouvelle inscription pour l'année scolaire
+      await this.prisma.inscription.create({
+        data: {
+          enfantId: reinscription.enfantId,
+          parentId: reinscription.parentId,
+          dateInscription: new Date(),
+          statut: StatutInscription.ACTIVE,
+          anneeScolaire: reinscription.anneeScolaire,
+          commentaires: 'Réinscription validée',
+        },
+      });
+      this.logger.log(`Inscription créée pour l'année ${reinscription.anneeScolaire}`);
+    } else {
+      this.logger.log(`Inscription existante trouvée pour l'année ${reinscription.anneeScolaire} - pas de doublon`);
     }
 
-    this.logger.log(`✅ Inscription créée pour l'année ${reinscription.anneeScolaire}`);
+    // Mettre à jour la classe de l'enfant si une classe souhaitée a été spécifiée
+    if (reinscription.classeSouhaitee) {
+      const validClasses: string[] = Object.values(Classe);
+      if (validClasses.includes(reinscription.classeSouhaitee)) {
+        await this.prisma.enfant.update({
+          where: { id: reinscription.enfantId },
+          data: { classe: reinscription.classeSouhaitee as Classe },
+        });
+        this.logger.log(`Classe de l'enfant mise à jour: ${reinscription.classeSouhaitee}`);
+      }
+    }
   }
 
   /**

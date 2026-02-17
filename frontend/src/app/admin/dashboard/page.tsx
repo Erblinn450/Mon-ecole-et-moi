@@ -15,10 +15,8 @@ import {
   Download,
   ChevronDown
 } from "lucide-react";
-import { preinscriptionsApi, enfantsApi } from "@/lib/api";
+import { preinscriptionsApi, enfantsApi, API_URL } from "@/lib/api";
 import { PreinscriptionStats, EnfantStats, Classe } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 export default function AdminDashboardPage() {
   const [preinscriptionStats, setPreinscriptionStats] = useState<PreinscriptionStats | null>(null);

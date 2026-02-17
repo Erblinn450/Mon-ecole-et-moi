@@ -122,17 +122,18 @@ export default function AdminLoginPage() {
                 </div>
               )}
 
-              {/* Bouton identifiants de test */}
-              <div className="mb-6 p-4 bg-violet-50 rounded-xl border border-violet-200">
-                <p className="text-sm text-violet-700 mb-2 font-medium">Identifiants de test :</p>
-                <button
-                  type="button"
-                  onClick={fillTestCredentials}
-                  className="w-full py-2 px-4 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg font-medium text-sm transition-colors"
-                >
-                  Remplir avec admin@ecole.fr
-                </button>
-              </div>
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mb-6 p-4 bg-violet-50 rounded-xl border border-violet-200">
+                  <p className="text-sm text-violet-700 mb-2 font-medium">Identifiants de test :</p>
+                  <button
+                    type="button"
+                    onClick={fillTestCredentials}
+                    className="w-full py-2 px-4 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg font-medium text-sm transition-colors"
+                  >
+                    Remplir avec admin@ecole.fr
+                  </button>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-5" aria-label="Formulaire de connexion administrateur">
                 <div>

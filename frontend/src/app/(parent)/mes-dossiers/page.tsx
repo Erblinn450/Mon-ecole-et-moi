@@ -17,8 +17,8 @@ import {
   FileSignature
 } from "lucide-react";
 import { StatutPreinscription, Classe } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { classeLabels } from "@/lib/labels";
+import { API_URL } from "@/lib/api";
 
 interface Dossier {
   id: number;
@@ -82,11 +82,6 @@ const statutConfig = {
   },
 };
 
-const classeLabels: Record<Classe, string> = {
-  [Classe.MATERNELLE]: "Maternelle",
-  [Classe.ELEMENTAIRE]: "Élémentaire",
-  [Classe.COLLEGE]: "Collège",
-};
 
 export default function MesDossiersPage() {
   const [dossiers, setDossiers] = useState<Dossier[]>([]);

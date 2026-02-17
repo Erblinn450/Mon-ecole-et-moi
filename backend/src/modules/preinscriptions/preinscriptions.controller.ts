@@ -35,12 +35,12 @@ export class PreinscriptionsController {
   @UseGuards(RecaptchaGuard) // Protection reCAPTCHA (désactivé si pas de clé configurée)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // Max 5 préinscriptions par minute par IP
   @ApiOperation({ summary: 'Créer une nouvelle préinscription (public)' })
-  @ApiBody({ 
+  @ApiBody({
     description: 'Données de préinscription + token reCAPTCHA optionnel',
     schema: {
       allOf: [
         { $ref: '#/components/schemas/CreatePreinscriptionDto' },
-        { 
+        {
           type: 'object',
           properties: {
             recaptchaToken: { type: 'string', description: 'Token reCAPTCHA v3 (requis en production)' }
@@ -50,6 +50,17 @@ export class PreinscriptionsController {
     }
   })
   create(@Body() createDto: CreatePreinscriptionDto) {
+    return this.preinscriptionsService.create(createDto);
+  }
+
+  @Post('enfant')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Préinscrire un nouvel enfant (Parent authentifié)' })
+  createForParent(@Body() createDto: CreatePreinscriptionDto, @Request() req: AuthenticatedRequest) {
+    // Sécurité : forcer l'email du parent connecté
+    createDto.emailParent = req.user.email;
     return this.preinscriptionsService.create(createDto);
   }
 

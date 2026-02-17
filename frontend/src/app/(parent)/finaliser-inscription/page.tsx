@@ -19,8 +19,7 @@ import {
 } from "lucide-react";
 import { useEnfants } from "@/hooks/useEnfants";
 import { JustificatifUploadItem } from "@/components/justificatifs/JustificatifUploadItem";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { API_URL } from "@/lib/api";
 
 interface SignatureStatus {
   signed: boolean;
@@ -119,8 +118,8 @@ export default function FinaliserInscriptionPage() {
         const data = await response.json();
         setSignatureStatus(data);
       }
-    } catch (err) {
-      console.error("Erreur chargement statut signature:", err);
+    } catch {
+      // Erreur silencieuse - le statut reste null
     } finally {
       setIsLoadingStatus(false);
     }
@@ -143,8 +142,8 @@ export default function FinaliserInscriptionPage() {
       if (resDocs.ok) {
         setJustificatifsEnfant(await resDocs.json());
       }
-    } catch (err) {
-      console.error("Erreur chargement justificatifs:", err);
+    } catch {
+      // Erreur silencieuse - les justificatifs restent vides
     } finally {
       setIsLoadingDocs(false);
     }

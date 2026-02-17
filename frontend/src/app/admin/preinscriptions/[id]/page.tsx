@@ -23,8 +23,8 @@ import {
   Mail,
 } from "lucide-react";
 import { Classe, StatutPreinscription, SituationFamiliale } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { classeLabels } from "@/lib/labels";
+import { API_URL } from "@/lib/api";
 
 interface Preinscription {
   id: number;
@@ -101,11 +101,6 @@ interface TypeJustificatif {
   obligatoire: boolean;
 }
 
-const classeLabels: Record<Classe, string> = {
-  [Classe.MATERNELLE]: "Maternelle",
-  [Classe.ELEMENTAIRE]: "Élémentaire",
-  [Classe.COLLEGE]: "Collège",
-};
 
 const statutConfig: Record<StatutPreinscription, { label: string; bg: string; text: string }> = {
   [StatutPreinscription.EN_ATTENTE]: { label: "En attente", bg: "bg-amber-100", text: "text-amber-800" },

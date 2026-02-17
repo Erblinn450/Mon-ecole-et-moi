@@ -28,7 +28,7 @@ import { EmailService } from './email.service';
         switch (provider) {
           case 'sendgrid':
             // SendGrid SMTP
-            logger.log('📧 Configuration SMTP: SendGrid');
+            logger.log('Configuration SMTP: SendGrid');
             transport = {
               host: 'smtp.sendgrid.net',
               port: 587,
@@ -42,7 +42,7 @@ import { EmailService } from './email.service';
             
           case 'mailgun':
             // Mailgun SMTP
-            logger.log('📧 Configuration SMTP: Mailgun');
+            logger.log('Configuration SMTP: Mailgun');
             transport = {
               host: configService.get('MAILGUN_HOST', 'smtp.mailgun.org'),
               port: 587,
@@ -56,7 +56,7 @@ import { EmailService } from './email.service';
             
           case 'smtp':
             // SMTP générique (OVH, Gmail, etc.)
-            logger.log('📧 Configuration SMTP: Générique');
+            logger.log('Configuration SMTP: Générique');
             const port = parseInt(configService.get('MAIL_PORT', '587'), 10);
             transport = {
               host: configService.get('MAIL_HOST'),
@@ -76,7 +76,7 @@ import { EmailService } from './email.service';
           case 'mailhog':
           default:
             // MailHog pour le développement (pas d'auth, pas de TLS)
-            logger.log('📧 Configuration SMTP: MailHog (développement)');
+            logger.log('Configuration SMTP: MailHog (développement)');
             transport = {
               host: configService.get('MAIL_HOST', 'localhost'),
               port: parseInt(configService.get('MAIL_PORT', '1025'), 10),

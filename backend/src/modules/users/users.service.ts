@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -81,7 +81,7 @@ export class UsersService {
 
   async getParents() {
     return this.prisma.user.findMany({
-      where: { role: 'PARENT', actif: true },
+      where: { role: Role.PARENT, actif: true },
       select: {
         id: true,
         email: true,

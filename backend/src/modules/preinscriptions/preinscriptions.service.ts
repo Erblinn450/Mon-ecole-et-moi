@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { CreatePreinscriptionDto } from './dto/create-preinscription.dto';
 import { UpdatePreinscriptionDto } from './dto/update-preinscription.dto';
-import { StatutPreinscription, Role } from '@prisma/client';
+import { StatutPreinscription, Role, type Preinscription } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -68,10 +68,8 @@ export class PreinscriptionsService {
       },
     });
 
-    // Envoyer l'email approprié
     try {
       if (requireEmailVerification) {
-        // Envoyer email de vérification
         await this.emailService.sendEmailVerification({
           numeroDossier: preinscription.numeroDossier,
           nomEnfant: preinscription.nomEnfant,
@@ -128,7 +126,6 @@ export class PreinscriptionsService {
       return { success: false, message: 'Lien de vérification expiré. Veuillez soumettre une nouvelle demande.' };
     }
 
-    // Marquer l'email comme vérifié
     await this.prisma.preinscription.update({
       where: { id: preinscription.id },
       data: {
@@ -138,7 +135,6 @@ export class PreinscriptionsService {
       },
     });
 
-    // Envoyer l'email de confirmation maintenant que l'email est vérifié
     try {
       await this.emailService.sendPreinscriptionConfirmation({
         numeroDossier: preinscription.numeroDossier,
@@ -202,7 +198,6 @@ export class PreinscriptionsService {
       throw new NotFoundException('Préinscription non trouvée');
     }
 
-    // Ajouter l'enfantId s'il existe
     const enfant = preinscription.enfants?.[0];
     return {
       ...preinscription,
@@ -248,7 +243,6 @@ export class PreinscriptionsService {
    * Inclut l'enfant associé si la préinscription est validée
    */
   async findByParentEmailWithEnfants(email: string) {
-    // Récupérer les préinscriptions du parent
     const preinscriptions = await this.prisma.preinscription.findMany({
       where: {
         OR: [
@@ -257,12 +251,11 @@ export class PreinscriptionsService {
         ],
       },
       include: {
-        enfants: true, // Inclure les enfants liés
+        enfants: true,
       },
       orderBy: { dateDemande: 'desc' },
     });
 
-    // Formater la réponse pour inclure l'enfant associé
     return preinscriptions.map(p => {
       const enfant = p.enfants?.[0] || null;
       return {
@@ -329,7 +322,6 @@ export class PreinscriptionsService {
       },
     });
 
-    // Envoyer les emails selon le nouveau statut
     const emailData = {
       numeroDossier: preinscription.numeroDossier,
       nomEnfant: preinscription.nomEnfant,
@@ -344,24 +336,22 @@ export class PreinscriptionsService {
 
     try {
       if (statut === StatutPreinscription.VALIDE) {
-        // Email de validation avec les identifiants si nouveau compte (Parent 1)
         await this.emailService.sendPreinscriptionValidated({
           ...emailData,
           dateIntegration: preinscription.dateIntegration,
           motDePasse: motDePasseGenere,
-        } as any);
+        });
         this.logger.log(`Email de validation envoyé pour ${preinscription.numeroDossier}`);
 
-        // Email au parent 2 avec ses identifiants s'il a été créé
         if (preinscription.emailParent2 && motDePasseParent2Genere) {
           await this.emailService.sendPreinscriptionValidated({
             ...emailData,
             civiliteParent: preinscription.civiliteParent2,
-            nomParent: preinscription.nomParent2,
+            nomParent: preinscription.nomParent2 || preinscription.nomParent,
             emailParent: preinscription.emailParent2,
             dateIntegration: preinscription.dateIntegration,
             motDePasse: motDePasseParent2Genere,
-          } as any);
+          });
           this.logger.log(`Email de validation envoyé au parent 2: ${preinscription.emailParent2}`);
         }
       } else if (statut === StatutPreinscription.REFUSE) {
@@ -383,7 +373,7 @@ export class PreinscriptionsService {
    * En production: mot de passe aléatoire sécurisé
    * En développement: mot de passe fixe 'parent1234' pour faciliter les tests
    */
-  private async creerCompteParentEtEnfant(preinscription: any) {
+  private async creerCompteParentEtEnfant(preinscription: Preinscription) {
     // Utiliser un mot de passe aléatoire en production
     const useRandomPassword = this.configService.get('USE_RANDOM_PASSWORD', 'false') === 'true'
       || this.configService.get('NODE_ENV') === 'production';
@@ -398,13 +388,13 @@ export class PreinscriptionsService {
 
     const hashedPassword = await bcrypt.hash(motDePasse, 10);
 
-    // Vérifier si le parent existe déjà
     let parent = await this.prisma.user.findUnique({
       where: { email: preinscription.emailParent },
     });
 
+    let motDePasseParent1: string | null = null;
+
     if (!parent) {
-      // Créer le compte parent
       parent = await this.prisma.user.create({
         data: {
           email: preinscription.emailParent,
@@ -419,9 +409,11 @@ export class PreinscriptionsService {
           premiereConnexion: true,
         },
       });
+      motDePasseParent1 = motDePasse;
+    } else {
+      this.logger.log(`Parent existant trouvé: ${preinscription.emailParent} - pas de nouveau mot de passe`);
     }
 
-    // Créer le parent 2 s'il existe
     let parent2 = null;
     let motDePasseParent2: string | null = null;
     if (preinscription.emailParent2) {
@@ -454,13 +446,11 @@ export class PreinscriptionsService {
       }
     }
 
-    // Vérifier si l'enfant existe déjà pour cette préinscription
     let enfant = await this.prisma.enfant.findFirst({
       where: { preinscriptionId: preinscription.id },
     });
 
     if (!enfant) {
-      // Créer l'enfant lié aux parents ET à la préinscription
       enfant = await this.prisma.enfant.create({
         data: {
           nom: preinscription.nomEnfant,
@@ -470,12 +460,12 @@ export class PreinscriptionsService {
           classe: preinscription.classeSouhaitee,
           parent1Id: parent.id,
           parent2Id: parent2?.id || null,
-          preinscriptionId: preinscription.id, // Lier à la préinscription
+          preinscriptionId: preinscription.id,
         },
       });
     }
 
-    return { parent, parent2, enfant, password: motDePasse, passwordParent2: motDePasseParent2 };
+    return { parent, parent2, enfant, password: motDePasseParent1, passwordParent2: motDePasseParent2 };
   }
 
   /**
@@ -534,66 +524,27 @@ export class PreinscriptionsService {
     const enfant = preinscription.enfants?.[0];
     const signatureMissing = !enfant?.signatureReglements?.parentAccepte;
 
-    // Construire la liste des documents manquants pour l'email
     let listeDocuments = documentsManquants.map(doc => `<li>${doc}</li>`).join('');
     if (signatureMissing) {
       listeDocuments += '<li>Signature du règlement intérieur</li>';
     }
 
-    const subject = `📋 Rappel : Documents manquants pour ${preinscription.prenomEnfant} ${preinscription.nomEnfant}`;
-    const html = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: Arial, sans-serif;line-height: 1.6;color: #333;max-width: 600px;margin: 0 auto;padding: 20px;background-color: #f4f4f4;">
-    <div style="background-color: #ffffff;border-radius: 12px;padding: 30px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <div style="text-align: center;margin-bottom: 30px;padding-bottom: 20px;border-bottom: 3px solid #f59e0b;">
-            <div style="font-size: 48px;margin-bottom: 10px;">📋</div>
-            <h1 style="color: #f59e0b;margin: 0;font-size: 24px;">Documents manquants</h1>
-        </div>
-
-        <div style="margin-bottom: 30px;">
-            <p><strong>Bonjour ${preinscription.prenomParent} ${preinscription.nomParent},</strong></p>
-            <p>Nous vous rappelons que le dossier d'inscription de <strong>${preinscription.prenomEnfant} ${preinscription.nomEnfant}</strong> est incomplet.</p>
-
-            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);border-left: 4px solid #f59e0b;padding: 15px 20px;margin: 20px 0;border-radius: 0 8px 8px 0;">
-                <p style="margin: 5px 0;font-weight: bold;">📌 Documents manquants :</p>
-                <ul style="margin: 10px 0;padding-left: 20px;">
-                    ${listeDocuments}
-                </ul>
-            </div>
-
-            <p>Merci de vous connecter à votre espace parent pour compléter le dossier :</p>
-
-            <div style="text-align: center;margin: 30px 0;">
-                <a href="${frontendUrl}/fournir-documents" style="display: inline-block;padding: 15px 30px;background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);color: white;text-decoration: none;border-radius: 12px;font-weight: bold;font-size: 16px;">
-                    📤 Compléter mon dossier
-                </a>
-            </div>
-
-            <p style="color: #6b7280;font-size: 14px;">Ces documents sont obligatoires pour finaliser l'inscription de votre enfant.</p>
-        </div>
-
-        <div style="margin-top: 30px;padding-top: 20px;border-top: 1px solid #e5e7eb;text-align: center;font-size: 12px;color: #6b7280;">
-            <p>Pour toute question, contactez-nous à : <a href="mailto:contact@montessorietmoi.com">contact@montessorietmoi.com</a></p>
-            <p>© ${new Date().getFullYear()} Mon École et Moi - Tous droits réservés</p>
-        </div>
-    </div>
-</body>
-</html>
-    `;
-
-    // Envoyer l'email
-    await this.emailService['mailerService'].sendMail({
+    await this.emailService.sendTemplateEmail({
       to: preinscription.emailParent,
-      subject,
-      html,
+      subject: `Rappel : Documents manquants pour ${preinscription.prenomEnfant} ${preinscription.nomEnfant}`,
+      template: 'relance-documents',
+      context: {
+        prenomParent: preinscription.prenomParent,
+        nomParent: preinscription.nomParent,
+        prenomEnfant: preinscription.prenomEnfant,
+        nomEnfant: preinscription.nomEnfant,
+        listeDocuments,
+        frontendUrl,
+        year: new Date().getFullYear(),
+      },
     });
 
-    this.logger.log(`📧 Email de relance envoyé pour le dossier ${preinscription.numeroDossier}`);
+    this.logger.log(`Email de relance envoye pour le dossier ${preinscription.numeroDossier}`);
 
     return { success: true, message: 'Email de relance envoyé avec succès' };
   }

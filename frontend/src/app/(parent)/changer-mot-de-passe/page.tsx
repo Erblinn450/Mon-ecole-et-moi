@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff, CheckCircle, Loader2 } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { API_URL } from "@/lib/api";
 
 export default function ChangerMotDePassePage() {
   const router = useRouter();

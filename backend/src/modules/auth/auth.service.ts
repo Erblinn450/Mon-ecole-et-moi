@@ -87,18 +87,15 @@ export class AuthService {
       throw new UnauthorizedException('Utilisateur non trouvé');
     }
 
-    // Vérifier le mot de passe actuel
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
       throw new BadRequestException('Mot de passe actuel incorrect');
     }
 
-    // Valider le nouveau mot de passe
     if (newPassword.length < 8) {
       throw new BadRequestException('Le nouveau mot de passe doit contenir au moins 8 caractères');
     }
 
-    // Hasher et mettre à jour
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const updatedUser = await this.usersService.updatePassword(userId, hashedPassword);
 
@@ -117,13 +114,9 @@ export class AuthService {
       return { message: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.' };
     }
 
-    // Générer un token unique
     const resetToken = crypto.randomBytes(32).toString('hex');
-
-    // Sauvegarder le token
     await this.usersService.setResetToken(user.id, resetToken);
 
-    // Envoyer l'email
     await this.emailService.sendPasswordResetEmail(
       user.email,
       resetToken,
@@ -134,19 +127,15 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string) {
-    // Trouver l'utilisateur avec ce token
     const user = await this.usersService.findByResetToken(token);
-
     if (!user) {
       throw new BadRequestException('Lien invalide ou expiré');
     }
 
-    // Valider le nouveau mot de passe
     if (newPassword.length < 8) {
       throw new BadRequestException('Le nouveau mot de passe doit contenir au moins 8 caractères');
     }
 
-    // Hasher et mettre à jour
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersService.resetPasswordWithToken(user.id, hashedPassword);
 

@@ -18,8 +18,7 @@ import {
   ApiError,
 } from "@/types";
 
-// Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -50,7 +49,7 @@ function getAuthHeaders(): HeadersInit {
 
 export const authApi = {
   async login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -59,7 +58,7 @@ export const authApi = {
   },
 
   async register(data: RegisterRequest): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -68,14 +67,14 @@ export const authApi = {
   },
 
   async getProfile(): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+    const response = await fetch(`${API_URL}/auth/profile`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<User>(response);
   },
 
   async logout(): Promise<void> {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
+    await fetch(`${API_URL}/auth/logout`, {
       method: "POST",
       headers: getAuthHeaders(),
     });
@@ -91,7 +90,7 @@ export const authApi = {
 export const preinscriptionsApi = {
   // Public - Créer une préinscription
   async create(data: CreatePreinscriptionRequest): Promise<Preinscription> {
-    const response = await fetch(`${API_BASE_URL}/preinscriptions`, {
+    const response = await fetch(`${API_URL}/preinscriptions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -101,13 +100,13 @@ export const preinscriptionsApi = {
 
   // Public - Récupérer par numéro de dossier
   async getByNumeroDossier(numeroDossier: string): Promise<Preinscription> {
-    const response = await fetch(`${API_BASE_URL}/preinscriptions/dossier/${numeroDossier}`);
+    const response = await fetch(`${API_URL}/preinscriptions/dossier/${numeroDossier}`);
     return handleResponse<Preinscription>(response);
   },
 
   // Admin - Liste toutes les préinscriptions
   async getAll(statut?: StatutPreinscription): Promise<Preinscription[]> {
-    const url = new URL(`${API_BASE_URL}/preinscriptions`);
+    const url = new URL(`${API_URL}/preinscriptions`);
     if (statut) url.searchParams.append("statut", statut);
     
     const response = await fetch(url.toString(), {
@@ -118,7 +117,7 @@ export const preinscriptionsApi = {
 
   // Admin - Statistiques
   async getStats(): Promise<PreinscriptionStats> {
-    const response = await fetch(`${API_BASE_URL}/preinscriptions/stats`, {
+    const response = await fetch(`${API_URL}/preinscriptions/stats`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<PreinscriptionStats>(response);
@@ -126,7 +125,7 @@ export const preinscriptionsApi = {
 
   // Admin - Récupérer une préinscription par ID
   async getById(id: number): Promise<Preinscription> {
-    const response = await fetch(`${API_BASE_URL}/preinscriptions/${id}`, {
+    const response = await fetch(`${API_URL}/preinscriptions/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Preinscription>(response);
@@ -138,7 +137,7 @@ export const preinscriptionsApi = {
     statut: StatutPreinscription,
     commentaire?: string
   ): Promise<Preinscription> {
-    const response = await fetch(`${API_BASE_URL}/preinscriptions/${id}/statut`, {
+    const response = await fetch(`${API_URL}/preinscriptions/${id}/statut`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ statut, commentaire }),
@@ -148,7 +147,7 @@ export const preinscriptionsApi = {
 
   // Admin - Supprimer
   async delete(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/preinscriptions/${id}`, {
+    const response = await fetch(`${API_URL}/preinscriptions/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -165,7 +164,7 @@ export const preinscriptionsApi = {
 export const enfantsApi = {
   // Parent - Mes enfants
   async getMesEnfants(): Promise<Enfant[]> {
-    const response = await fetch(`${API_BASE_URL}/enfants/mes-enfants`, {
+    const response = await fetch(`${API_URL}/enfants/mes-enfants`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Enfant[]>(response);
@@ -173,7 +172,7 @@ export const enfantsApi = {
 
   // Admin - Tous les enfants
   async getAll(classe?: Classe): Promise<Enfant[]> {
-    const url = new URL(`${API_BASE_URL}/enfants`);
+    const url = new URL(`${API_URL}/enfants`);
     if (classe) url.searchParams.append("classe", classe);
     
     const response = await fetch(url.toString(), {
@@ -184,7 +183,7 @@ export const enfantsApi = {
 
   // Admin - Statistiques
   async getStats(): Promise<EnfantStats> {
-    const response = await fetch(`${API_BASE_URL}/enfants/stats`, {
+    const response = await fetch(`${API_URL}/enfants/stats`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<EnfantStats>(response);
@@ -192,7 +191,7 @@ export const enfantsApi = {
 
   // Admin - Par classe
   async getByClasse(classe: Classe): Promise<Enfant[]> {
-    const response = await fetch(`${API_BASE_URL}/enfants/classe/${classe}`, {
+    const response = await fetch(`${API_URL}/enfants/classe/${classe}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Enfant[]>(response);
@@ -200,7 +199,7 @@ export const enfantsApi = {
 
   // Récupérer un enfant par ID
   async getById(id: number): Promise<Enfant> {
-    const response = await fetch(`${API_BASE_URL}/enfants/${id}`, {
+    const response = await fetch(`${API_URL}/enfants/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Enfant>(response);
@@ -208,7 +207,7 @@ export const enfantsApi = {
 
   // Admin - Créer
   async create(data: Partial<Enfant>): Promise<Enfant> {
-    const response = await fetch(`${API_BASE_URL}/enfants`, {
+    const response = await fetch(`${API_URL}/enfants`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -218,7 +217,7 @@ export const enfantsApi = {
 
   // Admin - Modifier
   async update(id: number, data: Partial<Enfant>): Promise<Enfant> {
-    const response = await fetch(`${API_BASE_URL}/enfants/${id}`, {
+    const response = await fetch(`${API_URL}/enfants/${id}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -228,7 +227,7 @@ export const enfantsApi = {
 
   // Admin - Supprimer
   async delete(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/enfants/${id}`, {
+    const response = await fetch(`${API_URL}/enfants/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -245,7 +244,7 @@ export const enfantsApi = {
 export const repasApi = {
   // Commander un repas
   async commander(data: CommanderRepasRequest): Promise<Repas> {
-    const response = await fetch(`${API_BASE_URL}/repas/commander`, {
+    const response = await fetch(`${API_URL}/repas/commander`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -255,7 +254,7 @@ export const repasApi = {
 
   // Commander plusieurs repas
   async commanderMultiple(data: CommanderRepasMultipleRequest): Promise<Repas[]> {
-    const response = await fetch(`${API_BASE_URL}/repas/commander-multiple`, {
+    const response = await fetch(`${API_URL}/repas/commander-multiple`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -265,7 +264,7 @@ export const repasApi = {
 
   // Annuler un repas
   async annuler(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/repas/${id}`, {
+    const response = await fetch(`${API_URL}/repas/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -276,7 +275,7 @@ export const repasApi = {
 
   // Repas d'un enfant
   async getByEnfant(enfantId: number, mois?: string): Promise<Repas[]> {
-    const url = new URL(`${API_BASE_URL}/repas/enfant/${enfantId}`);
+    const url = new URL(`${API_URL}/repas/enfant/${enfantId}`);
     if (mois) url.searchParams.append("mois", mois);
     
     const response = await fetch(url.toString(), {
@@ -287,7 +286,7 @@ export const repasApi = {
 
   // Admin - Repas par date
   async getByDate(date: string): Promise<Repas[]> {
-    const response = await fetch(`${API_BASE_URL}/repas/date/${date}`, {
+    const response = await fetch(`${API_URL}/repas/date/${date}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Repas[]>(response);
@@ -295,7 +294,7 @@ export const repasApi = {
 
   // Admin - Enfants non inscrits pour une date
   async getEnfantsNonInscrits(date: string): Promise<Enfant[]> {
-    const response = await fetch(`${API_BASE_URL}/repas/non-inscrits/${date}`, {
+    const response = await fetch(`${API_URL}/repas/non-inscrits/${date}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Enfant[]>(response);
@@ -303,7 +302,7 @@ export const repasApi = {
 
   // Admin - Statistiques
   async getStats(mois: string): Promise<RepasStats> {
-    const response = await fetch(`${API_BASE_URL}/repas/stats?mois=${mois}`, {
+    const response = await fetch(`${API_URL}/repas/stats?mois=${mois}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<RepasStats>(response);
@@ -317,7 +316,7 @@ export const repasApi = {
 export const periscolaireApi = {
   // Commander
   async commander(data: { enfantId: number; date: string }): Promise<Periscolaire> {
-    const response = await fetch(`${API_BASE_URL}/periscolaire/commander`, {
+    const response = await fetch(`${API_URL}/periscolaire/commander`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -327,7 +326,7 @@ export const periscolaireApi = {
 
   // Commander plusieurs dates
   async commanderMultiple(data: { enfantId: number; dates: string[] }): Promise<Periscolaire[]> {
-    const response = await fetch(`${API_BASE_URL}/periscolaire/commander-multiple`, {
+    const response = await fetch(`${API_URL}/periscolaire/commander-multiple`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -337,7 +336,7 @@ export const periscolaireApi = {
 
   // Annuler
   async annuler(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/periscolaire/${id}`, {
+    const response = await fetch(`${API_URL}/periscolaire/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -348,7 +347,7 @@ export const periscolaireApi = {
 
   // Par enfant
   async getByEnfant(enfantId: number, mois?: string): Promise<Periscolaire[]> {
-    const url = new URL(`${API_BASE_URL}/periscolaire/enfant/${enfantId}`);
+    const url = new URL(`${API_URL}/periscolaire/enfant/${enfantId}`);
     if (mois) url.searchParams.append("mois", mois);
     
     const response = await fetch(url.toString(), {
@@ -359,7 +358,7 @@ export const periscolaireApi = {
 
   // Admin - Par date
   async getByDate(date: string): Promise<Periscolaire[]> {
-    const response = await fetch(`${API_BASE_URL}/periscolaire/date/${date}`, {
+    const response = await fetch(`${API_URL}/periscolaire/date/${date}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Periscolaire[]>(response);
@@ -373,7 +372,7 @@ export const periscolaireApi = {
 export const usersApi = {
   // Liste tous les utilisateurs
   async getAll(): Promise<User[]> {
-    const response = await fetch(`${API_BASE_URL}/users`, {
+    const response = await fetch(`${API_URL}/users`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<User[]>(response);
@@ -381,7 +380,7 @@ export const usersApi = {
 
   // Récupérer un utilisateur
   async getById(id: number): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    const response = await fetch(`${API_URL}/users/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<User>(response);
@@ -389,7 +388,7 @@ export const usersApi = {
 
   // Mettre à jour
   async update(id: number, data: Partial<User>): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    const response = await fetch(`${API_URL}/users/${id}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -399,7 +398,7 @@ export const usersApi = {
 
   // Réinitialiser mot de passe
   async resetPassword(id: number): Promise<{ temporaryPassword: string }> {
-    const response = await fetch(`${API_BASE_URL}/users/${id}/reset-password`, {
+    const response = await fetch(`${API_URL}/users/${id}/reset-password`, {
       method: "POST",
       headers: getAuthHeaders(),
     });
@@ -408,7 +407,7 @@ export const usersApi = {
 
   // Activer/Désactiver
   async toggleActive(id: number): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/users/${id}/toggle-active`, {
+    const response = await fetch(`${API_URL}/users/${id}/toggle-active`, {
       method: "PATCH",
       headers: getAuthHeaders(),
     });
@@ -451,7 +450,7 @@ export interface EnfantPersonnesAutorisees {
 export const personnesAutoriseesApi = {
   // Parent - Mes personnes autorisées
   async getAll(): Promise<{ enfantId: number; enfantNom: string; personnesAutorisees: PersonneAutorisee[] }[]> {
-    const response = await fetch(`${API_BASE_URL}/personnes-autorisees`, {
+    const response = await fetch(`${API_URL}/personnes-autorisees`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -459,7 +458,7 @@ export const personnesAutoriseesApi = {
 
   // Parent - Par enfant
   async getByEnfant(enfantId: number): Promise<PersonneAutorisee[]> {
-    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/enfant/${enfantId}`, {
+    const response = await fetch(`${API_URL}/personnes-autorisees/enfant/${enfantId}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -467,7 +466,7 @@ export const personnesAutoriseesApi = {
 
   // Parent - Créer
   async create(data: { enfantId: number; nom: string; prenom: string; telephone: string; lienParente: string }): Promise<PersonneAutorisee> {
-    const response = await fetch(`${API_BASE_URL}/personnes-autorisees`, {
+    const response = await fetch(`${API_URL}/personnes-autorisees`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -477,7 +476,7 @@ export const personnesAutoriseesApi = {
 
   // Parent - Modifier
   async update(id: number, data: Partial<{ nom: string; prenom: string; telephone: string; lienParente: string }>): Promise<PersonneAutorisee> {
-    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/${id}`, {
+    const response = await fetch(`${API_URL}/personnes-autorisees/${id}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -487,7 +486,7 @@ export const personnesAutoriseesApi = {
 
   // Parent - Supprimer
   async delete(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/${id}`, {
+    const response = await fetch(`${API_URL}/personnes-autorisees/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -498,7 +497,7 @@ export const personnesAutoriseesApi = {
 
   // Admin - Toutes les personnes autorisées
   async getAllAdmin(): Promise<EnfantPersonnesAutorisees[]> {
-    const response = await fetch(`${API_BASE_URL}/personnes-autorisees/admin/all`, {
+    const response = await fetch(`${API_URL}/personnes-autorisees/admin/all`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -533,7 +532,7 @@ export interface CreateReinscriptionRequest {
 export const reinscriptionsApi = {
   // Récupère les enfants éligibles à la réinscription
   async getMesEnfants(): Promise<ReinscriptionData> {
-    const response = await fetch(`${API_BASE_URL}/reinscriptions/mes-enfants`, {
+    const response = await fetch(`${API_URL}/reinscriptions/mes-enfants`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<ReinscriptionData>(response);
@@ -541,7 +540,7 @@ export const reinscriptionsApi = {
 
   // Crée une demande de réinscription
   async create(data: CreateReinscriptionRequest): Promise<unknown> {
-    const response = await fetch(`${API_BASE_URL}/reinscriptions`, {
+    const response = await fetch(`${API_URL}/reinscriptions`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -551,7 +550,7 @@ export const reinscriptionsApi = {
 
   // Crée plusieurs réinscriptions en une fois
   async createBulk(reinscriptions: CreateReinscriptionRequest[]): Promise<unknown> {
-    const response = await fetch(`${API_BASE_URL}/reinscriptions/bulk`, {
+    const response = await fetch(`${API_URL}/reinscriptions/bulk`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ reinscriptions }),
@@ -561,7 +560,7 @@ export const reinscriptionsApi = {
 
   // Récupère les réinscriptions du parent
   async getMesReinscriptions(): Promise<unknown[]> {
-    const response = await fetch(`${API_BASE_URL}/reinscriptions/mes-reinscriptions`, {
+    const response = await fetch(`${API_URL}/reinscriptions/mes-reinscriptions`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<unknown[]>(response);

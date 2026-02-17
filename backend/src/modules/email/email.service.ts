@@ -219,6 +219,81 @@ export class EmailService {
   }
 
   /**
+   * Email de réinscription validée
+   */
+  async sendReinscriptionValidated(data: {
+    emailParent: string;
+    nomParent: string;
+    prenomParent: string;
+    nomEnfant: string;
+    prenomEnfant: string;
+    anneeScolaire: string;
+    classeSouhaitee: string | null;
+  }) {
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+    const classeLabels: Record<string, string> = {
+      MATERNELLE: 'Maternelle (3-6 ans)',
+      ELEMENTAIRE: 'Élémentaire (6-12 ans)',
+      COLLEGE: 'Collège',
+    };
+
+    try {
+      await this.mailerService.sendMail({
+        to: data.emailParent,
+        subject: `Mon école Montessori et Moi - Réinscription de ${data.prenomEnfant} acceptée !`,
+        template: 'reinscription-validee',
+        context: {
+          ...data,
+          classeSouhaitee: classeLabels[data.classeSouhaitee || ''] || data.classeSouhaitee || 'Non définie',
+          frontendUrl,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      this.logger.log(`Email de réinscription validée envoyé à ${data.emailParent}`);
+      return true;
+    } catch (error) {
+      this.logger.error("Erreur lors de l'envoi de l'email de réinscription validée", {
+        error: error.message,
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Email de réinscription refusée
+   */
+  async sendReinscriptionRefused(data: {
+    emailParent: string;
+    nomParent: string;
+    prenomParent: string;
+    nomEnfant: string;
+    prenomEnfant: string;
+    anneeScolaire: string;
+    commentaire?: string | null;
+  }) {
+    try {
+      await this.mailerService.sendMail({
+        to: data.emailParent,
+        subject: `Mon école Montessori et Moi - Statut de la réinscription de ${data.prenomEnfant}`,
+        template: 'reinscription-refusee',
+        context: {
+          ...data,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      this.logger.log(`Email de réinscription refusée envoyé à ${data.emailParent}`);
+      return true;
+    } catch (error) {
+      this.logger.error("Erreur lors de l'envoi de l'email de réinscription refusée", {
+        error: error.message,
+      });
+      return false;
+    }
+  }
+
+  /**
    * Envoie un email de vérification avec un lien unique
    */
   async sendEmailVerification(data: EmailVerificationData) {
@@ -262,43 +337,13 @@ export class EmailService {
     try {
       await this.mailerService.sendMail({
         to: email,
-        subject: '🔐 Réinitialisation de votre mot de passe - Mon École et Moi',
-        html: `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: Arial, sans-serif;line-height: 1.6;color: #333;max-width: 600px;margin: 0 auto;padding: 20px;background-color: #f4f4f4;">
-    <div style="background-color: #ffffff;border-radius: 12px;padding: 30px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <div style="text-align: center;margin-bottom: 30px;padding-bottom: 20px;border-bottom: 3px solid #f59e0b;">
-            <div style="font-size: 48px;margin-bottom: 10px;">🔐</div>
-            <h1 style="color: #f59e0b;margin: 0;font-size: 24px;">Réinitialisation de mot de passe</h1>
-        </div>
-
-        <div style="margin-bottom: 30px;">
-            <p><strong>Bonjour ${userName},</strong></p>
-            <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
-            <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
-
-            <div style="text-align: center;margin: 30px 0;">
-                <a href="${resetUrl}" style="display: inline-block;padding: 15px 30px;background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);color: white;text-decoration: none;border-radius: 12px;font-weight: bold;font-size: 16px;">
-                    Réinitialiser mon mot de passe
-                </a>
-            </div>
-
-            <p style="color: #6b7280;font-size: 14px;">Ce lien expire dans <strong>1 heure</strong>.</p>
-            <p style="color: #6b7280;font-size: 14px;">Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.</p>
-        </div>
-
-        <div style="margin-top: 30px;padding-top: 20px;border-top: 1px solid #e5e7eb;text-align: center;font-size: 12px;color: #6b7280;">
-            <p>© ${new Date().getFullYear()} Mon École et Moi - Tous droits réservés</p>
-        </div>
-    </div>
-</body>
-</html>
-        `,
+        subject: 'Réinitialisation de votre mot de passe - Mon École et Moi',
+        template: 'password-reset',
+        context: {
+          userName,
+          resetUrl,
+          year: new Date().getFullYear(),
+        },
       });
 
       this.logger.log(`Email de réinitialisation envoyé à ${email}`);
@@ -310,5 +355,12 @@ export class EmailService {
       });
       return false;
     }
+  }
+
+  /**
+   * Envoie un email via un template Handlebars
+   */
+  async sendTemplateEmail(options: { to: string; subject: string; template: string; context: Record<string, any> }) {
+    return this.mailerService.sendMail(options);
   }
 }

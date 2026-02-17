@@ -35,25 +35,17 @@ export function useRepas(enfantId: number | null, mois?: string) {
   const commanderRepas = async (dates: string[], type: TypeRepas = TypeRepas.MIDI) => {
     if (!enfantId) throw new Error("Aucun enfant sélectionné");
 
-    try {
-      if (dates.length === 1) {
-        await repasApi.commander({ enfantId, date: dates[0], type });
-      } else {
-        await repasApi.commanderMultiple({ enfantId, dates, type });
-      }
-      await fetchRepas();
-    } catch (err) {
-      throw err;
+    if (dates.length === 1) {
+      await repasApi.commander({ enfantId, date: dates[0], type });
+    } else {
+      await repasApi.commanderMultiple({ enfantId, dates, type });
     }
+    await fetchRepas();
   };
 
   const annulerRepas = async (repasId: number) => {
-    try {
-      await repasApi.annuler(repasId);
-      await fetchRepas();
-    } catch (err) {
-      throw err;
-    }
+    await repasApi.annuler(repasId);
+    await fetchRepas();
   };
 
   return {

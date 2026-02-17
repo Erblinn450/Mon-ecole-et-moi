@@ -14,13 +14,10 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { Role, StatutReinscription } from '@prisma/client';
+import { StatutReinscription, Role } from '@prisma/client';
 import { ReinscriptionsService } from './reinscriptions.service';
 import { CreateReinscriptionDto, CreateReinscriptionBulkDto } from './dto/create-reinscription.dto';
-
-interface AuthenticatedRequest extends Request {
-  user: { id: number; email: string; role: Role };
-}
+import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
 @ApiTags('Réinscriptions')
 @ApiBearerAuth()

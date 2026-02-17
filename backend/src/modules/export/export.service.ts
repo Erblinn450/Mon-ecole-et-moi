@@ -14,16 +14,9 @@ export class ExportService {
     parents: string;
     factures: string;
   }> {
-    // Export des élèves
     const eleves = await this.exportElevesCSV();
-    
-    // Export des préinscriptions
     const preinscriptions = await this.exportPreinscriptionsCSV();
-    
-    // Export des parents (users)
     const parents = await this.exportParentsCSV();
-    
-    // Export des factures
     const factures = await this.exportFacturesCSV();
 
     return { eleves, preinscriptions, parents, factures };

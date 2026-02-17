@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Upload, CheckCircle, XCircle, Loader2, FileText, AlertCircle } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 interface JustificatifUploadItemProps {
     typeId: number;
@@ -50,7 +51,6 @@ export function JustificatifUploadItem({
             formData.append("typeId", typeId.toString());
 
             const token = localStorage.getItem("auth_token");
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
             const response = await fetch(`${API_URL}/justificatifs/upload`, {
                 method: "POST",
@@ -67,7 +67,6 @@ export function JustificatifUploadItem({
             onUploadSuccess();
         } catch (err) {
             setError("Erreur lors de l'envoi. Veuillez réessayer.");
-            console.error(err);
         } finally {
             setIsUploading(false);
         }

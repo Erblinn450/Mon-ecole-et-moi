@@ -35,25 +35,17 @@ export function usePeriscolaire(enfantId: number | null, mois?: string) {
   const commanderPeriscolaire = async (dates: string[]) => {
     if (!enfantId) throw new Error("Aucun enfant sélectionné");
 
-    try {
-      if (dates.length === 1) {
-        await periscolaireApi.commander({ enfantId, date: dates[0] });
-      } else {
-        await periscolaireApi.commanderMultiple({ enfantId, dates });
-      }
-      await fetchPeriscolaires();
-    } catch (err) {
-      throw err;
+    if (dates.length === 1) {
+      await periscolaireApi.commander({ enfantId, date: dates[0] });
+    } else {
+      await periscolaireApi.commanderMultiple({ enfantId, dates });
     }
+    await fetchPeriscolaires();
   };
 
   const annulerPeriscolaire = async (periscolaireId: number) => {
-    try {
-      await periscolaireApi.annuler(periscolaireId);
-      await fetchPeriscolaires();
-    } catch (err) {
-      throw err;
-    }
+    await periscolaireApi.annuler(periscolaireId);
+    await fetchPeriscolaires();
   };
 
   return {

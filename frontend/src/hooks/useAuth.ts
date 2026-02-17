@@ -47,7 +47,6 @@ export function useAuthProvider() {
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
     } catch (error) {
-      console.error("Erreur refresh user:", error);
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
       setUser(null);
@@ -86,8 +85,6 @@ export function useAuthProvider() {
       } else {
         router.push("/dashboard");
       }
-    } catch (error) {
-      throw error;
     } finally {
       setIsLoading(false);
     }
