@@ -16,6 +16,12 @@ import {
   Periscolaire,
   Classe,
   ApiError,
+  Facture,
+  FactureStats,
+  BatchResult,
+  StatutFacture,
+  ModePaiement,
+  TypeLigne,
 } from "@/types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -564,6 +570,156 @@ export const reinscriptionsApi = {
       headers: getAuthHeaders(),
     });
     return handleResponse<unknown[]>(response);
+  },
+};
+
+// ============================================
+// FACTURATION API
+// ============================================
+
+export const facturationApi = {
+  // Parent - Mes factures
+  async getMesFactures(): Promise<Facture[]> {
+    const response = await fetch(`${API_URL}/facturation/mes-factures`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<Facture[]>(response);
+  },
+
+  // Parent - Détail facture
+  async getMaFacture(id: number): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/mes-factures/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<Facture>(response);
+  },
+
+  // Admin - Toutes les factures
+  async getAll(mois?: string): Promise<Facture[]> {
+    const url = new URL(`${API_URL}/facturation`);
+    if (mois) url.searchParams.append("mois", mois);
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<Facture[]>(response);
+  },
+
+  // Admin - Détail facture
+  async getById(id: number): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<Facture>(response);
+  },
+
+  // Admin - Stats
+  async getStats(): Promise<FactureStats> {
+    const response = await fetch(`${API_URL}/facturation/stats`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<FactureStats>(response);
+  },
+
+  // Admin - Générer une facture individuelle
+  async generer(data: {
+    parentId: number;
+    periode: string;
+    anneeScolaire: string;
+    inclureScolarite?: boolean;
+    inclureRepas?: boolean;
+    inclurePeriscolaire?: boolean;
+    inclureInscription?: boolean;
+    inclureFonctionnement?: boolean;
+  }): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/generer`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Facture>(response);
+  },
+
+  // Admin - Générer batch
+  async genererBatch(data: {
+    periode: string;
+    anneeScolaire: string;
+    inclureScolarite?: boolean;
+    inclureRepas?: boolean;
+    inclurePeriscolaire?: boolean;
+    inclureInscription?: boolean;
+    inclureFonctionnement?: boolean;
+  }): Promise<BatchResult> {
+    const response = await fetch(`${API_URL}/facturation/generer-batch`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<BatchResult>(response);
+  },
+
+  // Admin - Prévisualiser
+  async previsualiser(data: {
+    parentId: number;
+    periode: string;
+    anneeScolaire: string;
+  }): Promise<unknown> {
+    const response = await fetch(`${API_URL}/facturation/previsualiser`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<unknown>(response);
+  },
+
+  // Admin - Modifier statut
+  async updateStatut(id: number, statut: StatutFacture, commentaire?: string): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/${id}/statut`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ statut, commentaire }),
+    });
+    return handleResponse<Facture>(response);
+  },
+
+  // Admin - Enregistrer paiement
+  async enregistrerPaiement(factureId: number, data: {
+    montant: number;
+    datePaiement: string;
+    modePaiement: ModePaiement;
+    reference?: string;
+    commentaire?: string;
+  }): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/paiement`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Facture>(response);
+  },
+
+  // Admin - Ajouter ligne
+  async ajouterLigne(factureId: number, data: {
+    description: string;
+    quantite: number;
+    prixUnit: number;
+    type: TypeLigne;
+    commentaire?: string;
+  }): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/lignes`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Facture>(response);
+  },
+
+  // Admin - Supprimer ligne
+  async supprimerLigne(factureId: number, ligneId: number): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/lignes/${ligneId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<Facture>(response);
   },
 };
 

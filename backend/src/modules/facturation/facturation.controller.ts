@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -32,6 +33,11 @@ import {
   CreateArticlePersonnaliseDto,
   UpdateArticlePersonnaliseDto,
 } from './dto/article-personnalise.dto';
+import { GenererFactureDto } from './dto/generer-facture.dto';
+import { GenererBatchDto } from './dto/generer-batch.dto';
+import { EnregistrerPaiementDto } from './dto/enregistrer-paiement.dto';
+import { AjouterLigneDto, ModifierLigneDto } from './dto/ajouter-ligne.dto';
+import { UpdateStatutDto } from './dto/update-statut.dto';
 
 @ApiTags('facturation')
 @Controller('facturation')
@@ -40,9 +46,7 @@ import {
 export class FacturationController {
   constructor(private readonly facturationService: FacturationService) {}
 
-  // ============================================
-  // FACTURES - Parent
-  // ============================================
+  // --- Factures : Parent ---
 
   @Get('mes-factures')
   @ApiOperation({ summary: 'Liste mes factures (Parent)' })
@@ -50,9 +54,24 @@ export class FacturationController {
     return this.facturationService.getFacturesParent(req.user.id);
   }
 
-  // ============================================
-  // FACTURES - Admin
-  // ============================================
+  @Get('mes-factures/:id')
+  @ApiOperation({ summary: "Détail d'une de mes factures (Parent)" })
+  getFactureParentById(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.facturationService.getFactureParentById(id, req.user.id);
+  }
+
+  // --- Factures : Admin ---
+
+  @Get('stats')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Statistiques de facturation (Admin)' })
+  getStats() {
+    return this.facturationService.getStats();
+  }
 
   @Get()
   @UseGuards(RolesGuard)
@@ -63,20 +82,95 @@ export class FacturationController {
     return this.facturationService.getAllFactures(mois);
   }
 
+  @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Détail d'une facture (Admin)" })
+  getFactureById(@Param('id', ParseIntPipe) id: number) {
+    return this.facturationService.getFactureById(id);
+  }
+
   @Post('generer')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Générer une facture mensuelle (Admin)' })
-  genererFacture(@Body() body: { parentId: number; periode: string }) {
-    return this.facturationService.genererFactureMensuelle(
-      body.parentId,
-      body.periode,
-    );
+  @ApiOperation({ summary: 'Générer une facture pour un parent (Admin)' })
+  genererFacture(@Body() dto: GenererFactureDto) {
+    return this.facturationService.genererFacture(dto);
   }
 
-  // ============================================
-  // CONFIG TARIFS - Admin
-  // ============================================
+  @Post('generer-batch')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Générer les factures de toutes les familles (Admin)' })
+  genererBatch(@Body() dto: GenererBatchDto) {
+    return this.facturationService.genererBatch(dto);
+  }
+
+  @Post('previsualiser')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Prévisualiser une facture sans la persister (Admin)' })
+  previsualiserFacture(@Body() dto: GenererFactureDto) {
+    return this.facturationService.previsualiserFacture(dto);
+  }
+
+  @Patch(':id/statut')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Modifier le statut d'une facture (Admin)" })
+  updateStatutFacture(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatutDto,
+  ) {
+    return this.facturationService.updateStatutFacture(id, dto);
+  }
+
+  @Post(':id/paiement')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Enregistrer un paiement sur une facture (Admin)' })
+  enregistrerPaiement(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: EnregistrerPaiementDto,
+  ) {
+    return this.facturationService.enregistrerPaiement(id, dto);
+  }
+
+  @Post(':id/lignes')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Ajouter une ligne à une facture (Admin)' })
+  ajouterLigne(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AjouterLigneDto,
+  ) {
+    return this.facturationService.ajouterLigne(id, dto);
+  }
+
+  @Patch(':id/lignes/:ligneId')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Modifier une ligne de facture (Admin)' })
+  modifierLigne(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('ligneId', ParseIntPipe) ligneId: number,
+    @Body() dto: ModifierLigneDto,
+  ) {
+    return this.facturationService.modifierLigne(id, ligneId, dto);
+  }
+
+  @Delete(':id/lignes/:ligneId')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Supprimer une ligne de facture (Admin)' })
+  supprimerLigne(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('ligneId', ParseIntPipe) ligneId: number,
+  ) {
+    return this.facturationService.supprimerLigne(id, ligneId);
+  }
+
+  // --- Config Tarifs : Admin ---
 
   @Get('config-tarifs')
   @UseGuards(RolesGuard)
@@ -126,9 +220,7 @@ export class FacturationController {
     return this.facturationService.seedDefaultTarifs(body.anneeScolaire);
   }
 
-  // ============================================
-  // ARTICLES PERSONNALISÉS - Admin
-  // ============================================
+  // --- Articles Personnalisés : Admin ---
 
   @Get('articles')
   @UseGuards(RolesGuard)

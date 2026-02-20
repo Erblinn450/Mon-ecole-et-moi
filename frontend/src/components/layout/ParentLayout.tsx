@@ -11,7 +11,8 @@ import {
   FolderOpen,
   Mail,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  Receipt,
 } from "lucide-react";
 
 // Menu parent
@@ -47,6 +48,12 @@ const menuItems = [
     label: "Personnes autorisées",
     icon: UserPlus,
     description: "Récupérer les enfants",
+  },
+  {
+    href: "/mes-factures",
+    label: "Mes factures",
+    icon: Receipt,
+    description: "Factures & paiements",
   },
   {
     href: "/mes-dossiers",

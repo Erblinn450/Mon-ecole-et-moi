@@ -308,6 +308,79 @@ export interface Periscolaire {
 }
 
 // ============================================
+// FACTURATION
+// ============================================
+
+export interface LigneFacture {
+  id: number;
+  factureId: number;
+  description: string;
+  quantite: number;
+  prixUnit: number;
+  montant: number;
+  commentaire?: string;
+  type?: TypeLigne;
+  createdAt: string;
+}
+
+export interface Paiement {
+  id: number;
+  factureId: number;
+  montant: number;
+  datePaiement: string;
+  modePaiement: ModePaiement;
+  reference?: string;
+  commentaire?: string;
+  createdAt: string;
+}
+
+export interface Facture {
+  id: number;
+  numero: string;
+  parentId: number;
+  enfantId?: number;
+  montantTotal: number;
+  montantPaye: number;
+  dateEmission: string;
+  dateEcheance: string;
+  periode?: string;
+  description?: string;
+  statut: StatutFacture;
+  type: TypeFacture;
+  destinataire?: DestinataireFacture;
+  modePaiement?: ModePaiement;
+  datePrelevement?: string;
+  commentaire?: string;
+  anneeScolaire?: string;
+  createdAt: string;
+  updatedAt: string;
+  lignes: LigneFacture[];
+  paiements: Paiement[];
+  parent?: { id: number; nom?: string; prenom?: string; email: string };
+  enfant?: { id: number; nom: string; prenom: string; classe?: Classe };
+}
+
+export interface FactureStats {
+  totalFactures: number;
+  montantTotal: number;
+  montantPaye: number;
+  enAttente: { count: number; montant: number };
+  payees: { count: number; montant: number };
+  partielles: { count: number; montant: number };
+  enRetard: { count: number; montant: number };
+  annulees: { count: number; montant: number };
+}
+
+export interface BatchResult {
+  periode: string;
+  anneeScolaire: string;
+  facturesCreees: number;
+  erreurs: number;
+  totalFacture: number;
+  details: { parentId: number; parentNom: string; numero?: string; erreur?: string }[];
+}
+
+// ============================================
 // API RESPONSE
 // ============================================
 

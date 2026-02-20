@@ -13,7 +13,8 @@ import {
   BarChart3,
   ExternalLink,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Receipt,
 } from "lucide-react";
 
 // Menu admin
@@ -37,6 +38,12 @@ const menuItems = [
     label: "Réinscriptions",
     icon: RefreshCw,
     description: "Année prochaine",
+  },
+  {
+    href: "/admin/facturation",
+    label: "Facturation",
+    icon: Receipt,
+    description: "Factures & paiements",
   },
   {
     href: "/admin/eleves",

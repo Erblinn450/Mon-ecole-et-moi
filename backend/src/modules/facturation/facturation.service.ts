@@ -2,10 +2,16 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Classe, FrequencePaiement, StatutInscription, TypeLigne } from '@prisma/client';
+import { Classe, FrequencePaiement, StatutFacture, StatutInscription, TypeLigne } from '@prisma/client';
+import { GenererFactureDto } from './dto/generer-facture.dto';
+import { GenererBatchDto } from './dto/generer-batch.dto';
+import { EnregistrerPaiementDto } from './dto/enregistrer-paiement.dto';
+import { AjouterLigneDto, ModifierLigneDto } from './dto/ajouter-ligne.dto';
+import { UpdateStatutDto } from './dto/update-statut.dto';
 import {
   CreateConfigTarifDto,
   UpdateConfigTarifDto,
@@ -59,28 +65,553 @@ export class FacturationService {
     });
   }
 
-  async genererFactureMensuelle(parentId: number, periode: string) {
-    const numero = this.generateNumeroFacture();
+  async genererFacture(dto: GenererFactureDto) {
+    const { parentId, periode, anneeScolaire } = dto;
 
-    return this.prisma.facture.create({
-      data: {
-        numero,
-        parentId,
-        montantTotal: 0,
-        dateEmission: new Date(),
-        dateEcheance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        type: 'MENSUELLE',
-        periode,
-        description: `Facture mensuelle ${periode}`,
+    const parent = await this.prisma.user.findUnique({
+      where: { id: parentId },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        frequencePaiement: true,
+        modePaiementPref: true,
+        destinataireFacture: true,
       },
+    });
+
+    if (!parent) {
+      throw new NotFoundException(`Parent #${parentId} non trouvé`);
+    }
+
+    const enfantsActifs = await this.getEnfantsActifs(parentId, anneeScolaire);
+    if (enfantsActifs.length === 0) {
+      throw new BadRequestException(
+        `Aucun enfant actif pour le parent #${parentId} en ${anneeScolaire}`,
+      );
+    }
+
+    const existante = await this.prisma.facture.findFirst({
+      where: { parentId, periode, anneeScolaire },
+      include: { lignes: true },
+    });
+    if (existante) {
+      // Si la facture existante est vide (placeholder de l'ancien code), on la supprime pour régénérer
+      if (existante.lignes.length === 0 && Number(existante.montantTotal) === 0) {
+        await this.prisma.facture.delete({ where: { id: existante.id } });
+        this.logger.warn(
+          `Facture vide #${existante.id} supprimée pour régénération (parent #${parentId}, période ${periode})`,
+        );
+      } else {
+        throw new ConflictException(
+          `Une facture existe déjà pour le parent #${parentId} sur la période ${periode}`,
+        );
+      }
+    }
+
+    const options: CalculLignesOptions = {
+      anneeScolaire,
+      frequence: dto.frequence,
+      inclureScolarite: dto.inclureScolarite,
+      inclureRepas: dto.inclureRepas,
+      inclurePeriscolaire: dto.inclurePeriscolaire,
+      inclureInscription: dto.inclureInscription,
+      inclureFonctionnement: dto.inclureFonctionnement,
+    };
+
+    const resultatsEnfants: ResultatCalculEnfant[] = [];
+    for (const enfant of enfantsActifs) {
+      const resultat = await this.calculerLignesFacture(
+        enfant.id,
+        periode,
+        options,
+      );
+      resultatsEnfants.push(resultat);
+    }
+
+    const toutesLignes = resultatsEnfants.flatMap((r) => r.lignes);
+    if (toutesLignes.length === 0) {
+      throw new BadRequestException(
+        'Aucune ligne à facturer pour cette période',
+      );
+    }
+
+    const montantTotal = toutesLignes.reduce((sum, l) => sum + l.montant, 0);
+
+    const dateEcheance = new Date();
+    dateEcheance.setDate(5);
+    const [year, month] = periode.split('-').map(Number);
+    dateEcheance.setFullYear(year);
+    dateEcheance.setMonth(month - 1);
+
+    const facture = await this.prisma.$transaction(async (tx) => {
+      // Génération du numéro DANS la transaction pour éviter les doublons
+      const numero = await this.generateNumeroFacture(periode, tx);
+
+      const created = await tx.facture.create({
+        data: {
+          numero,
+          parentId,
+          enfantId: enfantsActifs.length === 1 ? enfantsActifs[0].id : null,
+          montantTotal: Math.round(montantTotal * 100) / 100,
+          dateEmission: new Date(),
+          dateEcheance,
+          type: 'MENSUELLE',
+          periode,
+          anneeScolaire,
+          destinataire: parent.destinataireFacture ?? undefined,
+          modePaiement: parent.modePaiementPref ?? undefined,
+          description: `Facture ${periode} - ${parent.prenom ?? ''} ${parent.nom ?? ''}`.trim(),
+        },
+      });
+
+      const lignesData = toutesLignes.map((ligne) => ({
+        factureId: created.id,
+        description: ligne.description,
+        quantite: ligne.quantite,
+        prixUnit: ligne.prixUnit,
+        montant: ligne.montant,
+        type: ligne.type,
+        commentaire: ligne.commentaire ?? null,
+      }));
+
+      await tx.ligneFacture.createMany({ data: lignesData });
+
+      return tx.facture.findUnique({
+        where: { id: created.id },
+        include: {
+          lignes: true,
+          parent: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+          enfant: { select: { id: true, nom: true, prenom: true, classe: true } },
+        },
+      });
+    });
+
+    this.logger.log(
+      `Facture ${facture?.numero} générée pour parent #${parentId} - ${toutesLignes.length} lignes - ${montantTotal.toFixed(2)}€`,
+    );
+
+    return facture;
+  }
+
+  async genererBatch(dto: GenererBatchDto) {
+    const { periode, anneeScolaire } = dto;
+
+    const parentsAvecEnfantsActifs = await this.prisma.user.findMany({
+      where: {
+        role: 'PARENT',
+        actif: true,
+        deletedAt: null,
+        enfantsParent1: {
+          some: {
+            deletedAt: null,
+            inscriptions: {
+              some: {
+                anneeScolaire,
+                statut: StatutInscription.ACTIVE,
+              },
+            },
+          },
+        },
+      },
+      select: { id: true, nom: true, prenom: true },
+    });
+
+    const resultats: { parentId: number; parentNom: string; numero?: string; erreur?: string }[] = [];
+    let totalFacture = 0;
+
+    for (const parent of parentsAvecEnfantsActifs) {
+      try {
+        const facture = await this.genererFacture({
+          parentId: parent.id,
+          periode,
+          anneeScolaire,
+          inclureScolarite: dto.inclureScolarite,
+          inclureRepas: dto.inclureRepas,
+          inclurePeriscolaire: dto.inclurePeriscolaire,
+          inclureInscription: dto.inclureInscription,
+          inclureFonctionnement: dto.inclureFonctionnement,
+        });
+        resultats.push({
+          parentId: parent.id,
+          parentNom: `${parent.prenom ?? ''} ${parent.nom ?? ''}`.trim(),
+          numero: facture?.numero,
+        });
+        totalFacture += Number(facture?.montantTotal ?? 0);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Erreur inconnue';
+        resultats.push({
+          parentId: parent.id,
+          parentNom: `${parent.prenom ?? ''} ${parent.nom ?? ''}`.trim(),
+          erreur: message,
+        });
+        this.logger.warn(
+          `Erreur génération facture parent #${parent.id}: ${message}`,
+        );
+      }
+    }
+
+    const factureesCrees = resultats.filter((r) => r.numero);
+    const erreurs = resultats.filter((r) => r.erreur);
+
+    this.logger.log(
+      `Batch ${periode}: ${factureesCrees.length} factures créées, ${erreurs.length} erreurs, total ${totalFacture.toFixed(2)}€`,
+    );
+
+    return {
+      periode,
+      anneeScolaire,
+      facturesCreees: factureesCrees.length,
+      erreurs: erreurs.length,
+      totalFacture: Math.round(totalFacture * 100) / 100,
+      details: resultats,
+    };
+  }
+
+  async previsualiserFacture(dto: GenererFactureDto) {
+    const { parentId, periode, anneeScolaire } = dto;
+
+    const parent = await this.prisma.user.findUnique({
+      where: { id: parentId },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        email: true,
+        frequencePaiement: true,
+      },
+    });
+
+    if (!parent) {
+      throw new NotFoundException(`Parent #${parentId} non trouvé`);
+    }
+
+    const enfantsActifs = await this.getEnfantsActifs(parentId, anneeScolaire);
+
+    const options: CalculLignesOptions = {
+      anneeScolaire,
+      frequence: dto.frequence,
+      inclureScolarite: dto.inclureScolarite,
+      inclureRepas: dto.inclureRepas,
+      inclurePeriscolaire: dto.inclurePeriscolaire,
+      inclureInscription: dto.inclureInscription,
+      inclureFonctionnement: dto.inclureFonctionnement,
+    };
+
+    const enfants: ResultatCalculEnfant[] = [];
+    for (const enfant of enfantsActifs) {
+      const resultat = await this.calculerLignesFacture(
+        enfant.id,
+        periode,
+        options,
+      );
+      enfants.push(resultat);
+    }
+
+    const totalFamille = enfants.reduce((sum, e) => sum + e.totalNet, 0);
+
+    return {
+      parentId: parent.id,
+      parentNom: `${parent.prenom ?? ''} ${parent.nom ?? ''}`.trim(),
+      parentEmail: parent.email,
+      frequencePaiement: parent.frequencePaiement ?? 'MENSUEL',
+      enfants,
+      totalFamille: Math.round(totalFamille * 100) / 100,
+      periode,
+    };
+  }
+
+  async getFactureById(id: number) {
+    const facture = await this.prisma.facture.findUnique({
+      where: { id },
+      include: {
+        lignes: { orderBy: { id: 'asc' } },
+        paiements: { orderBy: { datePaiement: 'desc' } },
+        parent: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+        enfant: { select: { id: true, nom: true, prenom: true, classe: true } },
+      },
+    });
+    if (!facture) {
+      throw new NotFoundException(`Facture #${id} non trouvée`);
+    }
+    return facture;
+  }
+
+  async getFactureParentById(id: number, parentId: number) {
+    const facture = await this.prisma.facture.findFirst({
+      where: { id, parentId },
+      include: {
+        lignes: { orderBy: { id: 'asc' } },
+        paiements: { orderBy: { datePaiement: 'desc' } },
+        enfant: { select: { id: true, nom: true, prenom: true, classe: true } },
+      },
+    });
+    if (!facture) {
+      throw new NotFoundException(`Facture #${id} non trouvée`);
+    }
+    return facture;
+  }
+
+  // Transitions de statut autorisées
+  private static readonly TRANSITIONS_VALIDES: Record<StatutFacture, StatutFacture[]> = {
+    [StatutFacture.EN_ATTENTE]: [StatutFacture.ENVOYEE, StatutFacture.ANNULEE],
+    [StatutFacture.ENVOYEE]: [StatutFacture.EN_ATTENTE, StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.EN_RETARD, StatutFacture.ANNULEE],
+    [StatutFacture.PARTIELLE]: [StatutFacture.PAYEE, StatutFacture.EN_RETARD, StatutFacture.ANNULEE],
+    [StatutFacture.PAYEE]: [StatutFacture.EN_ATTENTE], // Permet de remettre en attente si erreur
+    [StatutFacture.EN_RETARD]: [StatutFacture.EN_ATTENTE, StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.ANNULEE],
+    [StatutFacture.ANNULEE]: [], // État terminal
+  };
+
+  async updateStatutFacture(id: number, dto: UpdateStatutDto) {
+    const facture = await this.prisma.facture.findUnique({ where: { id } });
+    if (!facture) {
+      throw new NotFoundException(`Facture #${id} non trouvée`);
+    }
+
+    const transitionsPermises = FacturationService.TRANSITIONS_VALIDES[facture.statut];
+    if (!transitionsPermises.includes(dto.statut)) {
+      throw new BadRequestException(
+        `Transition impossible : ${facture.statut} → ${dto.statut}. Transitions autorisées : ${transitionsPermises.join(', ') || 'aucune'}`,
+      );
+    }
+
+    const data: Record<string, unknown> = { statut: dto.statut };
+    if (dto.commentaire) {
+      data.commentaire = dto.commentaire;
+    }
+
+    return this.prisma.facture.update({
+      where: { id },
+      data,
+      include: { lignes: true, paiements: true },
     });
   }
 
-  private generateNumeroFacture(): string {
-    const year = new Date().getFullYear();
-    const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `FA-${year}${month}-${random}`;
+  async enregistrerPaiement(factureId: number, dto: EnregistrerPaiementDto) {
+    return this.prisma.$transaction(async (tx) => {
+      // Lecture DANS la transaction pour éviter les race conditions
+      const facture = await tx.facture.findUnique({
+        where: { id: factureId },
+      });
+      if (!facture) {
+        throw new NotFoundException(`Facture #${factureId} non trouvée`);
+      }
+
+      if (facture.statut === StatutFacture.ANNULEE) {
+        throw new BadRequestException('Impossible d\'enregistrer un paiement sur une facture annulée');
+      }
+
+      const resteAPayer = Number(facture.montantTotal) - Number(facture.montantPaye);
+      if (dto.montant > resteAPayer) {
+        throw new BadRequestException(
+          `Le montant (${dto.montant}€) dépasse le reste à payer (${resteAPayer.toFixed(2)}€)`,
+        );
+      }
+
+      await tx.paiement.create({
+        data: {
+          factureId,
+          montant: dto.montant,
+          datePaiement: new Date(dto.datePaiement),
+          modePaiement: dto.modePaiement,
+          reference: dto.reference,
+          commentaire: dto.commentaire,
+        },
+      });
+
+      const totalPaye = Number(facture.montantPaye) + dto.montant;
+      const montantTotal = Number(facture.montantTotal);
+      let nouveauStatut: StatutFacture;
+      if (totalPaye >= montantTotal) {
+        nouveauStatut = StatutFacture.PAYEE;
+      } else if (totalPaye > 0) {
+        nouveauStatut = StatutFacture.PARTIELLE;
+      } else {
+        nouveauStatut = facture.statut;
+      }
+
+      return tx.facture.update({
+        where: { id: factureId },
+        data: {
+          montantPaye: Math.round(totalPaye * 100) / 100,
+          statut: nouveauStatut,
+        },
+        include: {
+          lignes: true,
+          paiements: true,
+          parent: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+        },
+      });
+    });
+  }
+
+  async ajouterLigne(factureId: number, dto: AjouterLigneDto) {
+    const montantLigne = Math.round(dto.quantite * dto.prixUnit * 100) / 100;
+
+    return this.prisma.$transaction(async (tx) => {
+      const facture = await tx.facture.findUnique({ where: { id: factureId } });
+      if (!facture) {
+        throw new NotFoundException(`Facture #${factureId} non trouvée`);
+      }
+
+      await tx.ligneFacture.create({
+        data: {
+          factureId,
+          description: dto.description,
+          quantite: dto.quantite,
+          prixUnit: dto.prixUnit,
+          montant: montantLigne,
+          type: dto.type,
+          commentaire: dto.commentaire,
+        },
+      });
+
+      const nouveauTotal = Number(facture.montantTotal) + montantLigne;
+      return tx.facture.update({
+        where: { id: factureId },
+        data: { montantTotal: Math.round(nouveauTotal * 100) / 100 },
+        include: { lignes: true },
+      });
+    });
+  }
+
+  async modifierLigne(factureId: number, ligneId: number, dto: ModifierLigneDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const ligne = await tx.ligneFacture.findFirst({
+        where: { id: ligneId, factureId },
+      });
+      if (!ligne) {
+        throw new NotFoundException(
+          `Ligne #${ligneId} non trouvée sur la facture #${factureId}`,
+        );
+      }
+
+      const quantite = dto.quantite ?? ligne.quantite;
+      const prixUnit = dto.prixUnit ?? Number(ligne.prixUnit);
+      const nouveauMontant = Math.round(quantite * prixUnit * 100) / 100;
+      const diffMontant = nouveauMontant - Number(ligne.montant);
+
+      await tx.ligneFacture.update({
+        where: { id: ligneId },
+        data: {
+          description: dto.description,
+          quantite: dto.quantite,
+          prixUnit: dto.prixUnit,
+          montant: nouveauMontant,
+          commentaire: dto.commentaire,
+        },
+      });
+
+      const facture = await tx.facture.findUnique({ where: { id: factureId } });
+      const nouveauTotal = Number(facture!.montantTotal) + diffMontant;
+
+      return tx.facture.update({
+        where: { id: factureId },
+        data: { montantTotal: Math.round(nouveauTotal * 100) / 100 },
+        include: { lignes: true },
+      });
+    });
+  }
+
+  async supprimerLigne(factureId: number, ligneId: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const ligne = await tx.ligneFacture.findFirst({
+        where: { id: ligneId, factureId },
+      });
+      if (!ligne) {
+        throw new NotFoundException(
+          `Ligne #${ligneId} non trouvée sur la facture #${factureId}`,
+        );
+      }
+
+      await tx.ligneFacture.delete({ where: { id: ligneId } });
+
+      const facture = await tx.facture.findUnique({ where: { id: factureId } });
+      const nouveauTotal = Number(facture!.montantTotal) - Number(ligne.montant);
+
+      return tx.facture.update({
+        where: { id: factureId },
+        data: { montantTotal: Math.max(0, Math.round(nouveauTotal * 100) / 100) },
+        include: { lignes: true },
+      });
+    });
+  }
+
+  async getStats() {
+    const [total, enAttente, payees, partielles, enRetard, annulees] =
+      await Promise.all([
+        this.prisma.facture.aggregate({ _sum: { montantTotal: true }, _count: true }),
+        this.prisma.facture.aggregate({
+          where: { statut: StatutFacture.EN_ATTENTE },
+          _sum: { montantTotal: true },
+          _count: true,
+        }),
+        this.prisma.facture.aggregate({
+          where: { statut: StatutFacture.PAYEE },
+          _sum: { montantTotal: true },
+          _count: true,
+        }),
+        this.prisma.facture.aggregate({
+          where: { statut: StatutFacture.PARTIELLE },
+          _sum: { montantTotal: true },
+          _count: true,
+        }),
+        this.prisma.facture.aggregate({
+          where: { statut: StatutFacture.EN_RETARD },
+          _sum: { montantTotal: true },
+          _count: true,
+        }),
+        this.prisma.facture.aggregate({
+          where: { statut: StatutFacture.ANNULEE },
+          _sum: { montantTotal: true },
+          _count: true,
+        }),
+      ]);
+
+    const totalPaye = await this.prisma.facture.aggregate({
+      _sum: { montantPaye: true },
+    });
+
+    return {
+      totalFactures: total._count,
+      montantTotal: Number(total._sum.montantTotal ?? 0),
+      montantPaye: Number(totalPaye._sum.montantPaye ?? 0),
+      enAttente: { count: enAttente._count, montant: Number(enAttente._sum.montantTotal ?? 0) },
+      payees: { count: payees._count, montant: Number(payees._sum.montantTotal ?? 0) },
+      partielles: { count: partielles._count, montant: Number(partielles._sum.montantTotal ?? 0) },
+      enRetard: { count: enRetard._count, montant: Number(enRetard._sum.montantTotal ?? 0) },
+      annulees: { count: annulees._count, montant: Number(annulees._sum.montantTotal ?? 0) },
+    };
+  }
+
+  private async generateNumeroFacture(
+    periode: string,
+    tx?: { facture: typeof this.prisma.facture; $queryRawUnsafe: typeof this.prisma.$queryRawUnsafe },
+  ): Promise<string> {
+    const client = tx ?? this.prisma;
+    const prefix = `FA-${periode.replace('-', '')}`;
+
+    // Utiliser un verrou advisory PostgreSQL pour éviter les doublons
+    // Le hash du prefix sert d'identifiant de verrou
+    const lockId = Array.from(prefix).reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    await client.$queryRawUnsafe(`SELECT pg_advisory_xact_lock(${lockId})`);
+
+    const lastFacture = await client.facture.findFirst({
+      where: { numero: { startsWith: prefix } },
+      orderBy: { numero: 'desc' },
+      select: { numero: true },
+    });
+
+    let sequence = 1;
+    if (lastFacture) {
+      const parts = lastFacture.numero.split('-');
+      const lastSeq = parseInt(parts[2], 10);
+      if (!isNaN(lastSeq)) {
+        sequence = lastSeq + 1;
+      }
+    }
+
+    return `${prefix}-${String(sequence).padStart(4, '0')}`;
   }
 
   // ============================================
@@ -312,10 +843,9 @@ export class FacturationService {
     for (let i = 0; i < enfants.length; i++) {
       const enfant = enfants[i];
       if (!enfant.classe) {
-        this.logger.warn(
-          `Enfant #${enfant.id} (${enfant.prenom} ${enfant.nom}) n'a pas de classe définie`,
+        throw new BadRequestException(
+          `Enfant #${enfant.id} (${enfant.prenom} ${enfant.nom}) n'a pas de classe définie. Veuillez lui attribuer une classe avant de facturer.`,
         );
-        continue;
       }
       const estPremiereAnnee = await this.isPremiereAnnee(
         enfant.id,
@@ -443,7 +973,7 @@ export class FacturationService {
   ): Promise<DetailCalculScolarite> {
     const enfant = await this.prisma.enfant.findUnique({
       where: { id: enfantId },
-      include: { parent1: true },
+      include: { parent1: { select: { id: true, nom: true, prenom: true, frequencePaiement: true, reductionRFR: true, tauxReductionRFR: true } } },
     });
 
     if (!enfant || !enfant.classe) {
@@ -677,7 +1207,16 @@ export class FacturationService {
     const enfant = await this.prisma.enfant.findUnique({
       where: { id: enfantId },
       include: {
-        parent1: true,
+        parent1: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            frequencePaiement: true,
+            reductionRFR: true,
+            tauxReductionRFR: true,
+          },
+        },
         inscriptions: { where: { anneeScolaire, statut: StatutInscription.ACTIVE } },
       },
     });
