@@ -101,6 +101,7 @@ export class PreinscriptionsController {
   }
 
   @Get('verify-email/:token')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Vérifie l\'email via le token de vérification' })
   verifyEmail(@Param('token') token: string) {
     return this.preinscriptionsService.verifyEmail(token);

@@ -100,8 +100,8 @@ export class ReinscriptionsService {
         ],
       },
       include: {
-        parent1: true,
-        parent2: true,
+        parent1: { select: { id: true, nom: true, prenom: true, name: true, email: true } },
+        parent2: { select: { id: true, nom: true, prenom: true, name: true, email: true } },
       },
     });
 
@@ -169,8 +169,8 @@ export class ReinscriptionsService {
       include: {
         enfant: {
           include: {
-            parent1: true,
-            parent2: true,
+            parent1: { select: { id: true, nom: true, prenom: true, name: true, email: true, telephone: true } },
+            parent2: { select: { id: true, nom: true, prenom: true, name: true, email: true, telephone: true } },
           },
         },
       },
@@ -197,8 +197,8 @@ export class ReinscriptionsService {
       include: {
         enfant: {
           include: {
-            parent1: true,
-            parent2: true,
+            parent1: { select: { id: true, nom: true, prenom: true, name: true, email: true } },
+            parent2: { select: { id: true, nom: true, prenom: true, name: true, email: true } },
           },
         },
       },

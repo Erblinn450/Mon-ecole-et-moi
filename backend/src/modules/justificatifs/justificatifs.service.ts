@@ -120,7 +120,7 @@ export class JustificatifsService {
     // Récupérer l'enfant avec ses parents
     const enfant = await this.prisma.enfant.findUnique({
       where: { id: enfantId },
-      include: { parent1: true, parent2: true },
+      select: { id: true, nom: true, prenom: true, parent1Id: true, parent2Id: true, classe: true },
     });
 
     if (!enfant) return;

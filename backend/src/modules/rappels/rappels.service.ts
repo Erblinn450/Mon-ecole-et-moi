@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
-import { StatutInscription, type Enfant, type User } from '@prisma/client';
+import { StatutInscription, type Enfant } from '@prisma/client';
+
+interface ParentInfo {
+  id: number;
+  name: string;
+  email: string;
+  prenom: string | null;
+}
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -52,8 +59,8 @@ export class RappelsService {
           },
         },
         include: {
-          parent1: true,
-          parent2: true,
+          parent1: { select: { id: true, name: true, email: true } },
+          parent2: { select: { id: true, name: true, email: true } },
           justificatifs: {
             where: {
               type: {
@@ -163,15 +170,15 @@ export class RappelsService {
           },
         },
         include: {
-          parent1: true,
-          parent2: true,
+          parent1: { select: { id: true, name: true, prenom: true, email: true } },
+          parent2: { select: { id: true, name: true, prenom: true, email: true } },
         },
       });
 
       this.logger.log(`${enfants.length} enfants actifs trouvés`);
 
       // Regrouper les enfants par parent pour éviter d'envoyer plusieurs emails
-      const parentsEnfants = new Map<number, { parent: User; enfants: Enfant[] }>();
+      const parentsEnfants = new Map<number, { parent: ParentInfo; enfants: Enfant[] }>();
 
       for (const enfant of enfants) {
         // Parent 1
@@ -205,7 +212,7 @@ export class RappelsService {
   /**
    * Envoie un email de rappel pour la réinscription
    */
-  private async envoyerEmailReinscription(parent: User, enfants: Enfant[]) {
+  private async envoyerEmailReinscription(parent: ParentInfo, enfants: Enfant[]) {
     const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
     const anneeSuivante = `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 

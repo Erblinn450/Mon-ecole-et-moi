@@ -333,6 +333,187 @@ const token = localStorage.getItem("auth_token");
 - [ ] Pas de credentials/secrets en dur
 - [ ] Code formaté correctement
 
+### Règles Issues de l'Audit de Sécurité (Février 2026)
+
+Ces règles ont été établies suite à un audit complet du code (sécurité, transactions, logique métier). Elles complètent les bonnes pratiques ci-dessus avec des cas concrets tirés du projet.
+
+#### 1. Vérification de parenté sur les ressources enfant
+
+**Tout endpoint qui prend un `enfantId` et qui n'est pas restreint aux admins DOIT vérifier que l'utilisateur authentifié est bien parent de cet enfant.**
+
+Pattern à utiliser : méthode privée `verifierParente()` dans le service, appelée en tout premier.
+
+```typescript
+// ✅ CORRECT — repas.service.ts
+private async verifierParente(enfantId: number, userId: number, isAdmin: boolean) {
+  if (isAdmin) return;
+  const enfant = await this.prisma.enfant.findUnique({ where: { id: enfantId } });
+  if (!enfant || (enfant.parent1Id !== userId && enfant.parent2Id !== userId)) {
+    throw new ForbiddenException('Vous n\'êtes pas autorisé à agir sur cet enfant');
+  }
+}
+
+async commander(enfantId: number, date: string, userId: number, isAdmin: boolean, type: TypeRepas = 'MIDI') {
+  await this.verifierParente(enfantId, userId, isAdmin); // ← Toujours en premier
+  // ... logique métier
+}
+```
+
+```typescript
+// ❌ INTERDIT — ancien periscolaire.service.ts (pas de vérification)
+async inscrire(enfantId: number, date: string) {
+  // N'importe quel parent authentifié peut inscrire N'IMPORTE QUEL enfant
+  return this.prisma.periscolaire.create({ data: { enfantId, ... } });
+}
+```
+
+**Le controller doit passer `req.user.id` et `req.user.role === Role.ADMIN` au service :**
+
+```typescript
+// ✅ CORRECT — repas.controller.ts
+@Post('commander')
+commander(
+  @Body() body: { enfantId: number; date: string },
+  @Request() req: AuthenticatedRequest,
+) {
+  const isAdmin = req.user.role === Role.ADMIN;
+  return this.repasService.commander(body.enfantId, body.date, req.user.id, isAdmin);
+}
+```
+
+**Fichiers concernés** : `repas`, `periscolaire`, et tout futur module qui manipule des données enfant.
+
+#### 2. Transactions Prisma (`$transaction`)
+
+**Règle absolue : toute lecture qui conditionne une écriture DOIT être DANS la même transaction.**
+
+Si tu lis une valeur, calcules quelque chose, puis écris le résultat → la lecture et l'écriture doivent être dans le même `$transaction`. Sinon, une requête concurrente peut modifier la donnée entre ta lecture et ton écriture (race condition).
+
+```typescript
+// ✅ CORRECT — facturation.service.ts (enregistrerPaiement)
+async enregistrerPaiement(factureId: number, dto: EnregistrerPaiementDto) {
+  return this.prisma.$transaction(async (tx) => {
+    // Lecture DANS la transaction
+    const facture = await tx.facture.findUnique({ where: { id: factureId } });
+    if (!facture) throw new NotFoundException(...);
+
+    const resteAPayer = Number(facture.montantTotal) - Number(facture.montantPaye);
+    if (dto.montant > resteAPayer) throw new BadRequestException(...);
+
+    await tx.paiement.create({ data: { factureId, montant: dto.montant, ... } });
+
+    const totalPaye = Number(facture.montantPaye) + dto.montant;
+    return tx.facture.update({
+      where: { id: factureId },
+      data: { montantPaye: Math.round(totalPaye * 100) / 100, statut: ... },
+    });
+  });
+}
+```
+
+```typescript
+// ❌ INTERDIT — ancienne version (lecture hors transaction)
+async enregistrerPaiement(factureId: number, dto: EnregistrerPaiementDto) {
+  const facture = await this.prisma.facture.findUnique({ where: { id: factureId } });
+  // ↑ Lecture HORS transaction : la facture peut être modifiée entre cette ligne et le update
+  return this.prisma.$transaction(async (tx) => {
+    const totalPaye = Number(facture.montantPaye) + dto.montant; // ← donnée stale !
+    // ...
+  });
+}
+```
+
+**Cas d'usage obligatoires pour `$transaction` :**
+- Création multi-tables : `creerCompteParentEtEnfant` (user + enfant + update préinscription)
+- Opérations financières : paiement, ajout/modification/suppression de ligne facture
+- Génération de numéros séquentiels : `generateNumeroFacture` (avec `pg_advisory_xact_lock`)
+- Toute opération read-then-write sur des données partagées
+
+#### 3. Arithmétique monétaire
+
+**Ne jamais faire confiance à l'arithmétique flottante de JavaScript pour les montants financiers.**
+
+```javascript
+// Problème fondamental de JavaScript :
+0.1 + 0.2 === 0.3  // false ! → 0.30000000000000004
+5.45 * 3            // 16.349999999999998
+```
+
+**Règle actuelle** (Math.round comme garde-fou) :
+```typescript
+// Toujours arrondir après chaque opération
+const montant = Math.round(quantite * prixUnitaire * 100) / 100;
+const total = Math.round((montantBase - reductionRFR) * 100) / 100;
+```
+
+**Règle cible** (migration vers Decimal.js prévue) :
+```typescript
+import { Decimal } from 'decimal.js';
+const montant = new Decimal(quantite).times(prixUnitaire).toDecimalPlaces(2).toNumber();
+```
+
+**Ne jamais accumuler des additions flottantes en série** sans arrondir chaque étape. Prisma stocke les montants en `Decimal` côté BDD — le risque est uniquement côté JavaScript lors des calculs intermédiaires.
+
+#### 4. Validation des montants financiers et logique métier
+
+**`@Min(0)` obligatoire** sur tout champ prix ou montant dans les DTOs :
+```typescript
+// ✅ ajouter-ligne.dto.ts
+@IsNumber({})
+@Min(0, { message: 'Le prix unitaire ne peut pas être négatif' })
+prixUnit: number;
+```
+
+**Valider côté serveur que le paiement ne dépasse pas le reste à payer :**
+```typescript
+const resteAPayer = Number(facture.montantTotal) - Number(facture.montantPaye);
+if (dto.montant > resteAPayer) {
+  throw new BadRequestException(
+    `Le montant (${dto.montant}€) dépasse le reste à payer (${resteAPayer.toFixed(2)}€)`,
+  );
+}
+```
+
+**Machine à états sur `StatutFacture`** — transitions autorisées :
+```
+EN_ATTENTE  → ENVOYEE, ANNULEE
+ENVOYEE     → EN_ATTENTE, PAYEE, PARTIELLE, EN_RETARD, ANNULEE
+PARTIELLE   → PAYEE, EN_RETARD, ANNULEE
+PAYEE       → EN_ATTENTE (correction d'erreur uniquement)
+EN_RETARD   → EN_ATTENTE, PAYEE, PARTIELLE, ANNULEE
+ANNULEE     → (aucune — état terminal)
+```
+Implémenté dans `FacturationService.TRANSITIONS_VALIDES`. Toute transition non listée lève une `BadRequestException`.
+
+**Ne jamais skipper silencieusement une entrée en erreur dans un batch :**
+```typescript
+// ❌ INTERDIT — ancien getEnfantsActifs
+if (!enfant.classe) {
+  this.logger.warn(`Enfant sans classe`);
+  continue; // ← L'admin ne sait pas qu'un enfant est ignoré
+}
+
+// ✅ CORRECT — lever une erreur explicite
+if (!enfant.classe) {
+  throw new BadRequestException(
+    `Enfant #${enfant.id} (${enfant.prenom} ${enfant.nom}) n'a pas de classe définie. Veuillez lui attribuer une classe avant de facturer.`,
+  );
+}
+```
+
+**Ne jamais utiliser `include: { parent1: true }` sans `select`** — cela charge le password hash en mémoire :
+```typescript
+// ❌ INTERDIT
+include: { parent1: true } // ← charge password, rememberToken, etc.
+
+// ✅ CORRECT
+include: {
+  parent1: {
+    select: { id: true, nom: true, prenom: true, email: true, telephone: true },
+  },
+}
+```
+
 ### Anti-Patterns à Éviter
 
 ❌ **NE JAMAIS FAIRE :**
@@ -344,6 +525,10 @@ const token = localStorage.getItem("auth_token");
 - Laisser des TODO sans les traiter
 - Stocker des mots de passe en clair
 - Faire confiance aux données du frontend sans validation backend
+- Lire une donnée hors `$transaction` si elle conditionne une écriture dans cette même transaction
+- Utiliser `Number()` pour des calculs monétaires sans `Math.round` (ou mieux, `Decimal.js`)
+- Skipper silencieusement une entrée en erreur dans un batch sans alerter l'utilisateur
+- Utiliser `include: { parent1: true }` au lieu de `select` (expose le password hash)
 
 ✅ **TOUJOURS FAIRE :**
 - Lever une erreur si config manquante
@@ -352,3 +537,5 @@ const token = localStorage.getItem("auth_token");
 - Utiliser des transactions pour les opérations multiples
 - Logger les erreurs importantes
 - Tester les cas limites (liste vide, données manquantes)
+- Vérifier la parenté (`verifierParente`) avant toute opération sur un enfant
+- `grep 'parent1: true'` et `grep 'parent2: true'` avant chaque commit pour détecter les fuites de password

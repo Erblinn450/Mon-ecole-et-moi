@@ -29,8 +29,8 @@ export class ExportService {
     const enfants = await this.prisma.enfant.findMany({
       where: { deletedAt: null },
       include: {
-        parent1: true,
-        parent2: true,
+        parent1: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+        parent2: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
         inscriptions: {
           orderBy: { dateInscription: 'desc' },
           take: 1,
@@ -137,7 +137,16 @@ export class ExportService {
   async exportParentsCSV(): Promise<string> {
     const users = await this.prisma.user.findMany({
       where: { deletedAt: null },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        prenom: true,
+        telephone: true,
+        adresse: true,
+        role: true,
+        actif: true,
+        createdAt: true,
         enfantsParent1: { where: { deletedAt: null } },
         enfantsParent2: { where: { deletedAt: null } },
       },
@@ -182,7 +191,7 @@ export class ExportService {
   async exportFacturesCSV(): Promise<string> {
     const factures = await this.prisma.facture.findMany({
       include: {
-        parent: true,
+        parent: { select: { id: true, nom: true, prenom: true, email: true } },
         lignes: true,
       },
       orderBy: { dateEmission: 'desc' },

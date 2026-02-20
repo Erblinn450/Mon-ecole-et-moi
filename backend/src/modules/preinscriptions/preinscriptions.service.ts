@@ -388,84 +388,98 @@ export class PreinscriptionsService {
 
     const hashedPassword = await bcrypt.hash(motDePasse, 10);
 
-    let parent = await this.prisma.user.findUnique({
-      where: { email: preinscription.emailParent },
-    });
-
-    let motDePasseParent1: string | null = null;
-
-    if (!parent) {
-      parent = await this.prisma.user.create({
-        data: {
-          email: preinscription.emailParent,
-          password: hashedPassword,
-          name: `${preinscription.prenomParent || ''} ${preinscription.nomParent}`.trim(),
-          nom: preinscription.nomParent,
-          prenom: preinscription.prenomParent,
-          telephone: preinscription.telephoneParent,
-          adresse: preinscription.adresseParent,
-          role: Role.PARENT,
-          actif: true,
-          premiereConnexion: true,
-        },
-      });
-      motDePasseParent1 = motDePasse;
-    } else {
-      this.logger.log(`Parent existant trouvé: ${preinscription.emailParent} - pas de nouveau mot de passe`);
+    // Préparer le mot de passe parent 2 en amont (hors transaction pour le bcrypt)
+    let motDePasseParent2: string | null = null;
+    let hashedPassword2: string | null = null;
+    if (preinscription.emailParent2) {
+      motDePasseParent2 = useRandomPassword
+        ? this.generateSecurePassword(12)
+        : 'parent1234';
+      hashedPassword2 = await bcrypt.hash(motDePasseParent2, 10);
     }
 
-    let parent2 = null;
-    let motDePasseParent2: string | null = null;
-    if (preinscription.emailParent2) {
-      parent2 = await this.prisma.user.findUnique({
-        where: { email: preinscription.emailParent2 },
+    // Transaction atomique : création parent(s) + enfant
+    return this.prisma.$transaction(async (tx) => {
+      let parent = await tx.user.findUnique({
+        where: { email: preinscription.emailParent },
       });
 
-      if (!parent2) {
-        motDePasseParent2 = useRandomPassword
-          ? this.generateSecurePassword(12)
-          : 'parent1234';
-        const hashedPassword2 = await bcrypt.hash(motDePasseParent2, 10);
+      let motDePasseParent1: string | null = null;
 
-        parent2 = await this.prisma.user.create({
+      if (!parent) {
+        parent = await tx.user.create({
           data: {
-            email: preinscription.emailParent2,
-            password: hashedPassword2,
-            name: `${preinscription.prenomParent2 || ''} ${preinscription.nomParent2 || ''}`.trim(),
-            nom: preinscription.nomParent2,
-            prenom: preinscription.prenomParent2,
-            telephone: preinscription.telephoneParent2,
-            adresse: preinscription.adresseParent2,
+            email: preinscription.emailParent,
+            password: hashedPassword,
+            name: `${preinscription.prenomParent || ''} ${preinscription.nomParent}`.trim(),
+            nom: preinscription.nomParent,
+            prenom: preinscription.prenomParent,
+            telephone: preinscription.telephoneParent,
+            adresse: preinscription.adresseParent,
             role: Role.PARENT,
             actif: true,
             premiereConnexion: true,
           },
         });
-
-        this.logger.log(`Compte parent 2 créé: ${preinscription.emailParent2}`);
+        motDePasseParent1 = motDePasse;
+      } else {
+        this.logger.log(`Parent existant trouvé: ${preinscription.emailParent} - pas de nouveau mot de passe`);
       }
-    }
 
-    let enfant = await this.prisma.enfant.findFirst({
-      where: { preinscriptionId: preinscription.id },
-    });
+      let parent2 = null;
+      let mdpParent2Final: string | null = null;
+      if (preinscription.emailParent2) {
+        parent2 = await tx.user.findUnique({
+          where: { email: preinscription.emailParent2 },
+        });
 
-    if (!enfant) {
-      enfant = await this.prisma.enfant.create({
-        data: {
-          nom: preinscription.nomEnfant,
-          prenom: preinscription.prenomEnfant,
-          dateNaissance: preinscription.dateNaissance,
-          lieuNaissance: preinscription.lieuNaissance,
-          classe: preinscription.classeSouhaitee,
-          parent1Id: parent.id,
-          parent2Id: parent2?.id || null,
-          preinscriptionId: preinscription.id,
-        },
+        if (!parent2 && hashedPassword2) {
+          parent2 = await tx.user.create({
+            data: {
+              email: preinscription.emailParent2,
+              password: hashedPassword2,
+              name: `${preinscription.prenomParent2 || ''} ${preinscription.nomParent2 || ''}`.trim(),
+              nom: preinscription.nomParent2,
+              prenom: preinscription.prenomParent2,
+              telephone: preinscription.telephoneParent2,
+              adresse: preinscription.adresseParent2,
+              role: Role.PARENT,
+              actif: true,
+              premiereConnexion: true,
+            },
+          });
+          mdpParent2Final = motDePasseParent2;
+          this.logger.log(`Compte parent 2 créé: ${preinscription.emailParent2}`);
+        }
+      }
+
+      let enfant = await tx.enfant.findFirst({
+        where: { preinscriptionId: preinscription.id },
       });
-    }
 
-    return { parent, parent2, enfant, password: motDePasseParent1, passwordParent2: motDePasseParent2 };
+      if (!enfant) {
+        enfant = await tx.enfant.create({
+          data: {
+            nom: preinscription.nomEnfant,
+            prenom: preinscription.prenomEnfant,
+            dateNaissance: preinscription.dateNaissance,
+            lieuNaissance: preinscription.lieuNaissance,
+            classe: preinscription.classeSouhaitee,
+            parent1Id: parent.id,
+            parent2Id: parent2?.id || null,
+            preinscriptionId: preinscription.id,
+          },
+        });
+      }
+
+      // Marquer compteCree dans la même transaction
+      await tx.preinscription.update({
+        where: { id: preinscription.id },
+        data: { compteCree: true },
+      });
+
+      return { parent, parent2, enfant, password: motDePasseParent1, passwordParent2: mdpParent2Final };
+    });
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -6,6 +6,16 @@ export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
 
   constructor(private prisma: PrismaService) {}
+
+  private async verifierParente(enfantId: number, parentId: number) {
+    const enfant = await this.prisma.enfant.findUnique({
+      where: { id: enfantId },
+      select: { parent1Id: true, parent2Id: true },
+    });
+    if (!enfant || (enfant.parent1Id !== parentId && enfant.parent2Id !== parentId)) {
+      throw new ForbiddenException('Vous n\'êtes pas autorisé à agir sur cet enfant');
+    }
+  }
 
   /**
    * Enregistrer l'ouverture du règlement intérieur
@@ -17,6 +27,8 @@ export class DocumentsService {
     ipAddress: string,
     userAgent: string,
   ) {
+    await this.verifierParente(enfantId, parentId);
+
     // Vérifier si déjà enregistré
     const existing = await this.prisma.pdfOuverture.findFirst({
       where: {
@@ -51,6 +63,8 @@ export class DocumentsService {
    * Vérifier si le règlement a été ouvert
    */
   async verifierOuverture(parentId: number, enfantId: number, pdfType: string = 'reglement-interieur') {
+    await this.verifierParente(enfantId, parentId);
+
     const ouverture = await this.prisma.pdfOuverture.findFirst({
       where: {
         parentId,

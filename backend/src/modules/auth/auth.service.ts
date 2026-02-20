@@ -58,8 +58,6 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const { password: _, ...result } = user;
-
     const payload = {
       sub: user.id,
       email: user.email,
@@ -67,7 +65,7 @@ export class AuthService {
     };
 
     return {
-      user: result,
+      user,
       access_token: this.jwtService.sign(payload),
     };
   }
@@ -77,12 +75,11 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Utilisateur non trouvé');
     }
-    const { password: _, ...result } = user;
-    return result;
+    return user;
   }
 
   async changePassword(userId: number, currentPassword: string, newPassword: string) {
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findByIdWithPassword(userId);
     if (!user) {
       throw new UnauthorizedException('Utilisateur non trouvé');
     }

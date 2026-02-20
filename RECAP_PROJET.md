@@ -1404,6 +1404,102 @@ Préinscription (parent)
 
 ---
 
+### 🗓️ Jeudi 20 février 2026
+
+**Durée :** ~4h (2 sessions IA)
+
+**✅ Réalisé : Audit de sécurité complet + corrections**
+
+#### Session 1 : Audit + corrections critiques (facturation + repas)
+
+1. **Audit de sécurité complet du backend**
+   - Scan systématique de tout le codebase (controllers, services, Prisma queries)
+   - ~30 problèmes identifiés, classés par sévérité (Critique/Haute/Moyenne)
+
+2. **Corrections critiques — Module Facturation**
+   - **T1** : Race condition numéro facture → `pg_advisory_xact_lock` dans transaction
+   - **T4** : `enregistrerPaiement` → lecture facture dans transaction + validation montant ≤ reste à payer + check statut ANNULEE
+   - **T5/T6** : `ajouterLigne`, `modifierLigne`, `supprimerLigne` → lectures dans transactions
+   - **M4** : Machine à états `StatutFacture` → `TRANSITIONS_VALIDES` avec validation
+   - **M2** : `@Min(0)` sur `prixUnit` dans `AjouterLigneDto`
+   - **M5** : Enfant sans classe → `throw BadRequestException` au lieu de `continue` silencieux
+
+3. **Corrections critiques — Repas**
+   - **S1** : Ajout `verifierParente()` dans `repas.service.ts` + passage userId/isAdmin dans controller
+
+4. **Corrections critiques — Auth/Users**
+   - **S4** : `findById()` → `select` explicite excluant le password hash
+   - Création `findByIdWithPassword()` pour usage interne (changePassword)
+   - `@Roles(Role.ADMIN)` ajouté sur `GET /users/:id`
+   - **S3** : `@MinLength(6)` → `@MinLength(8)` sur register + login DTOs
+
+5. **Corrections critiques — Préinscriptions**
+   - **T2/T3** : `creerCompteParentEtEnfant` wrappé dans `$transaction()` (bcrypt hors transaction)
+   - **S7** : `@Throttle({ limit: 5, ttl: 60000 })` sur `verify-email/:token`
+
+#### Session 2 : Élimination `parent1: true` + scan final
+
+6. **Élimination de `parent1: true` / `parent2: true` dans tout le codebase**
+   - Pattern dangereux : `include: { parent1: true }` charge le hash du mot de passe
+   - 15 occurrences corrigées → remplacées par `select` avec champs nécessaires
+   - Fichiers : `reinscriptions.service.ts` (×3), `justificatifs.service.ts` (×1), `signatures.service.ts` (×1), `rappels.service.ts` (×2), `export.service.ts` (×3), `facturation.service.ts` (×1)
+   - **0 occurrence restante** confirmé par grep
+
+7. **Scan final de sécurité**
+   - Scan complet backend (controllers, services, Prisma queries, CORS, rate limiting)
+   - **Documents ownership** : `verifierParente()` ajouté dans `documents.service.ts`
+   - **Users create/update/remove** : password hash exclu des réponses API
+   - `auth.service.ts register` simplifié (create ne retourne plus le password)
+
+8. **Mise à jour documentation**
+   - `CLAUDE.md` : section "Règles Issues de l'Audit de Sécurité" ajoutée (4 sous-sections avec exemples)
+   - Anti-patterns mis à jour (reads hors transaction, parent1: true, Number() pour argent)
+   - `MEMORY.md` : vigilances permanentes + checklist sécurité
+   - Suppression `security-checklist.md` (redondant avec MEMORY.md + CLAUDE.md)
+
+**📁 Fichiers modifiés (backend) :**
+- `facturation/facturation.service.ts` (advisory lock, transactions, validation paiement, machine à états, enfant sans classe)
+- `facturation/dto/ajouter-ligne.dto.ts` (`@Min(0)` sur prixUnit)
+- `repas/repas.service.ts` (verifierParente)
+- `repas/repas.controller.ts` (passage userId/isAdmin)
+- `users/users.service.ts` (select sur findById, findByIdWithPassword, password exclu de create/update/remove)
+- `users/users.controller.ts` (`@Roles(Role.ADMIN)` sur GET :id)
+- `auth/auth.service.ts` (use findByIdWithPassword, simplification register)
+- `auth/dto/register.dto.ts` (MinLength 8)
+- `auth/dto/login.dto.ts` (MinLength 8)
+- `preinscriptions/preinscriptions.service.ts` ($transaction sur creerCompteParentEtEnfant)
+- `preinscriptions/preinscriptions.controller.ts` (@Throttle sur verify-email)
+- `reinscriptions/reinscriptions.service.ts` (3× parent select)
+- `justificatifs/justificatifs.service.ts` (select au lieu de include)
+- `signatures/signatures.service.ts` (suppression include inutile)
+- `rappels/rappels.service.ts` (2× parent select + type ParentInfo)
+- `export/export.service.ts` (3× parent select + select sur user findMany)
+- `documents/documents.service.ts` (verifierParente)
+
+**✅ Vérification :**
+- Build backend : ✅ (0 erreur TypeScript)
+- Grep `parent1: true` : ✅ (0 résultat)
+- Grep `parent: true` : ✅ (0 résultat)
+
+**🔒 État sécurité après audit :**
+- ✅ Ownership vérifié : repas, documents, justificatifs, signatures, réinscriptions, facturation
+- ✅ Password hash jamais exposé dans les réponses API
+- ✅ Transactions sur toutes les opérations multi-tables
+- ✅ Validation DTO complète (montants, passwords, paiements)
+- ✅ Machine à états sur statuts facture
+- ✅ Rate limiting sur endpoints sensibles
+- ⏳ Périscolaire ownership → avril (module désactivé)
+- ⏳ Decimal.js → avant juin (risque faible)
+- ⏳ RFR parent2 → avant prod facturation (décision Audrey)
+- ⏳ CORS production → avant déploiement
+
+**⏭️ Prochaines étapes :**
+- [ ] Module Facturation : interfaces frontend (admin + parent)
+- [ ] Génération PDF factures
+- [ ] Module Repas / Périscolaire (avril)
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -1441,6 +1537,6 @@ Préinscription (parent)
 
 ---
 
-**Dernière mise à jour :** 17 février 2026 (session polish)
+**Dernière mise à jour :** 20 février 2026 (audit sécurité)
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

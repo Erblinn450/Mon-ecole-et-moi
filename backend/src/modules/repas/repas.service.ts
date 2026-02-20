@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TypeRepas } from '@prisma/client';
 import { addWeeks, isBefore, startOfDay } from 'date-fns';
@@ -7,15 +7,23 @@ import { addWeeks, isBefore, startOfDay } from 'date-fns';
 export class RepasService {
   constructor(private prisma: PrismaService) {}
 
-  async commander(enfantId: number, date: string, type: TypeRepas = 'MIDI') {
+  private async verifierParente(enfantId: number, userId: number, isAdmin: boolean) {
+    if (isAdmin) return;
+    const enfant = await this.prisma.enfant.findUnique({ where: { id: enfantId } });
+    if (!enfant || (enfant.parent1Id !== userId && enfant.parent2Id !== userId)) {
+      throw new ForbiddenException('Vous n\'êtes pas autorisé à agir sur cet enfant');
+    }
+  }
+
+  async commander(enfantId: number, date: string, userId: number, isAdmin: boolean, type: TypeRepas = 'MIDI') {
+    await this.verifierParente(enfantId, userId, isAdmin);
+
     const dateRepas = new Date(date);
 
-    // Vérifier que la date est dans le futur
     if (isBefore(startOfDay(dateRepas), startOfDay(new Date()))) {
       throw new BadRequestException('Impossible de commander pour une date passée');
     }
 
-    // Vérifier si le repas existe déjà
     const existing = await this.prisma.repas.findFirst({
       where: { enfantId, dateRepas, type },
     });
@@ -34,11 +42,13 @@ export class RepasService {
     });
   }
 
-  async commanderMultiple(enfantId: number, dates: string[], type: TypeRepas = 'MIDI') {
+  async commanderMultiple(enfantId: number, dates: string[], userId: number, isAdmin: boolean, type: TypeRepas = 'MIDI') {
+    await this.verifierParente(enfantId, userId, isAdmin);
+
     const results = [];
     for (const date of dates) {
       try {
-        const repas = await this.commander(enfantId, date, type);
+        const repas = await this.commander(enfantId, date, userId, isAdmin, type);
         results.push({ date, success: true, repas });
       } catch (error) {
         results.push({ date, success: false, error: (error as Error).message });
@@ -50,24 +60,21 @@ export class RepasService {
   async annuler(id: number, userId: number, isAdmin: boolean) {
     const repas = await this.prisma.repas.findUnique({
       where: { id },
-      include: { enfant: true },
     });
 
     if (!repas) {
       throw new NotFoundException('Repas non trouvé');
     }
 
-    // Vérifier que l'utilisateur est parent de l'enfant ou admin
     if (!isAdmin) {
       const enfant = await this.prisma.enfant.findUnique({
         where: { id: repas.enfantId },
       });
 
-      if (enfant?.parent1Id !== userId && enfant?.parent2Id !== userId) {
-        throw new BadRequestException('Vous n\'êtes pas autorisé à annuler ce repas');
+      if (!enfant || (enfant.parent1Id !== userId && enfant.parent2Id !== userId)) {
+        throw new ForbiddenException('Vous n\'êtes pas autorisé à annuler ce repas');
       }
 
-      // Parents : annulation possible seulement 1 semaine avant
       const limiteAnnulation = addWeeks(new Date(), 1);
       if (isBefore(repas.dateRepas, limiteAnnulation)) {
         throw new BadRequestException(
@@ -79,8 +86,10 @@ export class RepasService {
     return this.prisma.repas.delete({ where: { id } });
   }
 
-  async getRepasEnfant(enfantId: number, mois?: string) {
-    const where: any = { enfantId };
+  async getRepasEnfant(enfantId: number, userId: number, isAdmin: boolean, mois?: string) {
+    await this.verifierParente(enfantId, userId, isAdmin);
+
+    const where: Record<string, unknown> = { enfantId };
 
     if (mois) {
       const [year, month] = mois.split('-').map(Number);
@@ -100,7 +109,7 @@ export class RepasService {
 
   async getRepasParDate(date: string) {
     const dateRepas = new Date(date);
-    
+
     return this.prisma.repas.findMany({
       where: { dateRepas },
       include: {
@@ -122,7 +131,7 @@ export class RepasService {
 
   async getEnfantsNonInscrits(date: string) {
     const dateRepas = new Date(date);
-    
+
     const enfantsInscrits = await this.prisma.repas.findMany({
       where: { dateRepas },
       select: { enfantId: true },
@@ -133,7 +142,7 @@ export class RepasService {
     return this.prisma.enfant.findMany({
       where: {
         id: { notIn: idsInscrits },
-        classe: { not: null }, // Seulement les enfants avec une classe
+        classe: { not: null },
       },
       include: {
         parent1: { select: { name: true, email: true, telephone: true } },
@@ -169,4 +178,3 @@ export class RepasService {
     };
   }
 }
-

@@ -29,16 +29,20 @@ export class RepasController {
   @ApiOperation({ summary: 'Commander un repas' })
   commander(
     @Body() body: { enfantId: number; date: string; type?: TypeRepas },
+    @Request() req: AuthenticatedRequest,
   ) {
-    return this.repasService.commander(body.enfantId, body.date, body.type);
+    const isAdmin = req.user.role === Role.ADMIN;
+    return this.repasService.commander(body.enfantId, body.date, req.user.id, isAdmin, body.type);
   }
 
   @Post('commander-multiple')
   @ApiOperation({ summary: 'Commander plusieurs repas' })
   commanderMultiple(
     @Body() body: { enfantId: number; dates: string[]; type?: TypeRepas },
+    @Request() req: AuthenticatedRequest,
   ) {
-    return this.repasService.commanderMultiple(body.enfantId, body.dates, body.type);
+    const isAdmin = req.user.role === Role.ADMIN;
+    return this.repasService.commanderMultiple(body.enfantId, body.dates, req.user.id, isAdmin, body.type);
   }
 
   @Delete(':id')
@@ -56,9 +60,11 @@ export class RepasController {
   @ApiQuery({ name: 'mois', required: false, example: '2025-01' })
   getRepasEnfant(
     @Param('enfantId', ParseIntPipe) enfantId: number,
+    @Request() req: AuthenticatedRequest,
     @Query('mois') mois?: string,
   ) {
-    return this.repasService.getRepasEnfant(enfantId, mois);
+    const isAdmin = req.user.role === Role.ADMIN;
+    return this.repasService.getRepasEnfant(enfantId, req.user.id, isAdmin, mois);
   }
 
   @Get('date/:date')

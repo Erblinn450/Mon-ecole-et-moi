@@ -10,7 +10,7 @@ export class RegisterDto {
   @ApiProperty({ example: 'motdepasse123' })
   @IsString()
   @IsNotEmpty({ message: 'Mot de passe requis' })
-  @MinLength(6, { message: 'Mot de passe trop court (min 6 caractères)' })
+  @MinLength(8, { message: 'Mot de passe trop court (min 8 caractères)' })
   password: string;
 
   @ApiProperty({ example: 'Jean Dupont' })

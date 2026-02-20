@@ -121,7 +121,6 @@ export class SignaturesService {
     } else if (enfantId) {
       enfant = await this.prisma.enfant.findUnique({
         where: { id: enfantId },
-        include: { parent1: true, parent2: true },
       });
 
       if (!enfant) {

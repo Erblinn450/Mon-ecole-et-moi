@@ -15,7 +15,8 @@ export class UsersService {
       throw new ConflictException('Email déjà utilisé');
     }
 
-    return this.prisma.user.create({ data });
+    const { password: _, ...user } = await this.prisma.user.create({ data });
+    return user;
   }
 
   async findAll() {
@@ -37,10 +38,36 @@ export class UsersService {
   async findById(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: {
-        enfantsParent1: true,
-        enfantsParent2: true,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        nom: true,
+        prenom: true,
+        telephone: true,
+        role: true,
+        actif: true,
+        premiereConnexion: true,
+        createdAt: true,
+        enfantsParent1: {
+          select: { id: true, nom: true, prenom: true, classe: true, dateNaissance: true },
+        },
+        enfantsParent2: {
+          select: { id: true, nom: true, prenom: true, classe: true, dateNaissance: true },
+        },
       },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Utilisateur non trouvé');
+    }
+
+    return user;
+  }
+
+  async findByIdWithPassword(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
     });
 
     if (!user) {
@@ -57,16 +84,18 @@ export class UsersService {
   }
 
   async update(id: number, data: Prisma.UserUpdateInput) {
-    return this.prisma.user.update({
+    const { password: _, ...user } = await this.prisma.user.update({
       where: { id },
       data,
     });
+    return user;
   }
 
   async remove(id: number) {
-    return this.prisma.user.delete({
+    const { password: _, ...user } = await this.prisma.user.delete({
       where: { id },
     });
+    return user;
   }
 
   async updatePassword(id: number, hashedPassword: string) {
