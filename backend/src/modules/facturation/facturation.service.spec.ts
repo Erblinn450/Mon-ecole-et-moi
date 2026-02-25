@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FacturationService } from './facturation.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { NotFoundException } from '@nestjs/common';
 import { StatutInscription } from '@prisma/client';
 
 describe('FacturationService - Moteur de Calcul', () => {
   let service: FacturationService;
-  let prisma: PrismaService;
 
   // Mock data
   const mockParent = {
@@ -89,6 +89,7 @@ describe('FacturationService - Moteur de Calcul', () => {
     },
     user: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     inscription: {
       count: jest.fn(),
@@ -126,11 +127,16 @@ describe('FacturationService - Moteur de Calcul', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: EmailService,
+          useValue: {
+            sendFactureNotification: jest.fn().mockResolvedValue(true),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<FacturationService>(FacturationService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -205,7 +211,7 @@ describe('FacturationService - Moteur de Calcul', () => {
   describe('calculerScolarite', () => {
     it('devrait calculer 575€ pour 1 enfant maternelle mensuel', async () => {
       mockPrismaService.enfant.findUnique.mockResolvedValue(mockEnfant1);
-      mockPrismaService.user.findUnique.mockResolvedValue(mockParent);
+      mockPrismaService.user.findMany.mockResolvedValue([mockParent]);
 
       const result = await service.calculerScolarite(
         1,
@@ -222,7 +228,7 @@ describe('FacturationService - Moteur de Calcul', () => {
 
     it('devrait calculer 540€ pour fratrie maternelle mensuel', async () => {
       mockPrismaService.enfant.findUnique.mockResolvedValue(mockEnfant2);
-      mockPrismaService.user.findUnique.mockResolvedValue(mockParent);
+      mockPrismaService.user.findMany.mockResolvedValue([mockParent]);
 
       const result = await service.calculerScolarite(
         2,
@@ -238,7 +244,7 @@ describe('FacturationService - Moteur de Calcul', () => {
 
     it('devrait calculer 710€ pour collège mensuel', async () => {
       mockPrismaService.enfant.findUnique.mockResolvedValue(mockEnfantCollege);
-      mockPrismaService.user.findUnique.mockResolvedValue(mockParentRFR);
+      mockPrismaService.user.findMany.mockResolvedValue([mockParentRFR]);
 
       const result = await service.calculerScolarite(
         3,
@@ -264,25 +270,71 @@ describe('FacturationService - Moteur de Calcul', () => {
   // ============================================
 
   describe('calculerReductionRFR', () => {
-    it('devrait retourner 0 si parent sans RFR', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(mockParent);
+    it('devrait retourner 0 si parent1 sans RFR et pas de parent2', async () => {
+      mockPrismaService.enfant.findUnique.mockResolvedValue({
+        parent1Id: 1,
+        parent2Id: null,
+      });
+      mockPrismaService.user.findMany.mockResolvedValue([mockParent]);
 
       const result = await service.calculerReductionRFR(575, 1);
 
       expect(result).toBe(0);
     });
 
-    it('devrait calculer 6% de réduction RFR', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(mockParentRFR);
+    it('devrait calculer 6% de réduction RFR via parent1', async () => {
+      mockPrismaService.enfant.findUnique.mockResolvedValue({
+        parent1Id: 2,
+        parent2Id: null,
+      });
+      mockPrismaService.user.findMany.mockResolvedValue([mockParentRFR]);
 
-      const result = await service.calculerReductionRFR(710, 2);
+      const result = await service.calculerReductionRFR(710, 3);
 
-      // 710 * 6% = 42.60
+      // 710 * 6 / 100 = 42.60
       expect(result).toBe(42.6);
     });
 
-    it('devrait retourner 0 si parent non trouvé', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+    it('devrait appliquer la réduction RFR de parent2 si parent1 non éligible', async () => {
+      mockPrismaService.enfant.findUnique.mockResolvedValue({
+        parent1Id: 1,
+        parent2Id: 2,
+      });
+      mockPrismaService.user.findMany.mockResolvedValue([
+        mockParent, // parent1 sans RFR
+        mockParentRFR, // parent2 avec RFR 6%
+      ]);
+
+      const result = await service.calculerReductionRFR(710, 1);
+
+      // 710 * 6 / 100 = 42.60
+      expect(result).toBe(42.6);
+    });
+
+    it('devrait prendre le meilleur taux si les deux parents ont RFR', async () => {
+      const parentRFR19 = {
+        ...mockParent,
+        id: 3,
+        reductionRFR: true,
+        tauxReductionRFR: 19.0,
+      };
+      mockPrismaService.enfant.findUnique.mockResolvedValue({
+        parent1Id: 2,
+        parent2Id: 3,
+      });
+      mockPrismaService.user.findMany.mockResolvedValue([
+        mockParentRFR, // parent1 avec RFR 6%
+        parentRFR19, // parent2 avec RFR 19%
+      ]);
+
+      const result = await service.calculerReductionRFR(710, 1);
+
+      // 710 * 19 / 100 = 134.90
+      expect(result).toBe(134.9);
+    });
+
+    it('devrait retourner 0 si enfant non trouvé', async () => {
+      mockPrismaService.enfant.findUnique.mockResolvedValue(null);
 
       const result = await service.calculerReductionRFR(575, 999);
 
@@ -423,6 +475,7 @@ describe('FacturationService - Moteur de Calcul', () => {
       mockPrismaService.enfant.findMany.mockResolvedValue([mockEnfant1]);
       mockPrismaService.inscription.count.mockResolvedValue(0);
       mockPrismaService.user.findUnique.mockResolvedValue(mockParent);
+      mockPrismaService.user.findMany.mockResolvedValue([mockParent]);
       mockPrismaService.repas.count.mockResolvedValue(10);
       mockPrismaService.periscolaire.count.mockResolvedValue(5);
     });
@@ -482,6 +535,7 @@ describe('FacturationService - Moteur de Calcul', () => {
       mockPrismaService.enfant.findMany.mockResolvedValue([mockEnfant1]);
       mockPrismaService.inscription.count.mockResolvedValue(0);
       mockPrismaService.user.findUnique.mockResolvedValue(mockParent);
+      mockPrismaService.user.findMany.mockResolvedValue([mockParent]);
       mockPrismaService.repas.count.mockResolvedValue(0);
       mockPrismaService.periscolaire.count.mockResolvedValue(0);
 

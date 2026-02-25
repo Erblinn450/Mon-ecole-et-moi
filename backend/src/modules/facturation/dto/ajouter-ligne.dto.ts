@@ -59,6 +59,7 @@ export class ModifierLigneDto {
   @ApiPropertyOptional({ description: 'Prix unitaire en euros' })
   @IsOptional()
   @IsNumber({})
+  @Min(0, { message: 'Le prix unitaire ne peut pas être négatif' })
   @Type(() => Number)
   prixUnit?: number;
 

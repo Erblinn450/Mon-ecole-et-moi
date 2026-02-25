@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif;line-height: 1.6;color: #333;max-width: 600px;margin: 0 auto;padding: 20px;background-color: #f4f4f4;">
+    <div style="background-color: #ffffff;border-radius: 12px;padding: 30px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="text-align: center;margin-bottom: 30px;padding-bottom: 20px;border-bottom: 3px solid #10b981;">
+            <h1 style="color: #10b981;margin: 0;font-size: 24px;">Nouvelle facture disponible</h1>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <p>Bonjour <strong>{{prenomParent}}</strong>,</p>
+            <p>Votre facture <strong>{{numeroFacture}}</strong> d'un montant de <strong>{{montant}} €</strong>{{#if prenomEnfant}} pour <strong>{{prenomEnfant}}</strong>{{/if}} est disponible.</p>
+            <p>Vous pouvez la consulter directement depuis votre espace parent :</p>
+
+            <div style="text-align: center;margin: 30px 0;">
+                <a href="{{factureUrl}}" style="display: inline-block;padding: 15px 30px;background: linear-gradient(135deg, #10b981 0%, #059669 100%);color: white;text-decoration: none;border-radius: 12px;font-weight: bold;font-size: 16px;">
+                    Consulter ma facture
+                </a>
+            </div>
+
+            <div style="background-color: #f0fdf4;border-radius: 8px;padding: 15px;margin: 20px 0;">
+                <p style="margin: 0;font-size: 14px;color: #166534;">
+                    <strong>Récapitulatif :</strong><br>
+                    Facture n° {{numeroFacture}}<br>
+                    Montant : {{montant}} €<br>
+                    Échéance : {{dateEcheance}}
+                </p>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;padding-top: 20px;border-top: 1px solid #e5e7eb;text-align: center;font-size: 12px;color: #6b7280;">
+            <p>Mon École Montessori et Moi</p>
+            <p>58 rue Damberg, 68350 Brunstatt-Didenheim</p>
+            <p>&copy; {{year}} - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>

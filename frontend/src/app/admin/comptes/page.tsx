@@ -1,248 +1,288 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Users,
+  Search,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Key,
+  Mail,
+} from "lucide-react";
+import { usersApi } from "@/lib/api";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { Role } from "@/types";
 
-interface CompteParent {
+interface ParentCompte {
   id: number;
-  numDossier: string;
-  nomParent: string;
   email: string;
-  enfants: string[];
-  dateCreation: string;
-  statut: "actif" | "inactif" | "suspendu";
+  name: string;
+  nom?: string;
+  prenom?: string;
+  telephone?: string;
+  role: Role;
+  actif: boolean;
+  createdAt: string;
+  enfantsParent1?: { id: number; nom: string; prenom: string; classe?: string }[];
 }
 
-// Données mock
-const MOCK_COMPTES: CompteParent[] = [
-  { 
-    id: 1, 
-    numDossier: "PRE-2025-001", 
-    nomParent: "Jean Dupont", 
-    email: "jean.dupont@example.com", 
-    enfants: ["Lucas Dupont", "Emma Dupont"],
-    dateCreation: "2025-01-02",
-    statut: "actif"
-  },
-  { 
-    id: 2, 
-    numDossier: "PRE-2025-002", 
-    nomParent: "Marie Martin", 
-    email: "marie.martin@example.com", 
-    enfants: ["Léa Martin"],
-    dateCreation: "2025-01-03",
-    statut: "actif"
-  },
-  { 
-    id: 3, 
-    numDossier: "PRE-2025-003", 
-    nomParent: "Sophie Bernard", 
-    email: "sophie.bernard@example.com", 
-    enfants: ["Hugo Bernard"],
-    dateCreation: "2025-01-04",
-    statut: "actif"
-  },
-  { 
-    id: 4, 
-    numDossier: "PRE-2024-150", 
-    nomParent: "Paul Petit", 
-    email: "paul.petit@example.com", 
-    enfants: ["Chloé Petit"],
-    dateCreation: "2024-12-15",
-    statut: "inactif"
-  },
-];
-
 export default function AdminComptesPage() {
-  const [comptes, setComptes] = useState<CompteParent[]>(MOCK_COMPTES);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [filterStatut, setFilterStatut] = useState<string>("");
+  const [parents, setParents] = useState<ParentCompte[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatut, setFilterStatut] = useState<string>("tous");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string; message: string; variant: "danger" | "warning" | "default"; onConfirm: () => void;
+  } | null>(null);
 
-  // Stats
-  const stats = {
-    total: comptes.length,
-    actifs: comptes.filter(c => c.statut === "actif").length,
-    inactifs: comptes.filter(c => c.statut === "inactif").length,
-    suspendus: comptes.filter(c => c.statut === "suspendu").length,
+  const loadParents = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const allUsers = await usersApi.getAll() as ParentCompte[];
+      setParents(allUsers.filter((u) => u.role === Role.PARENT));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadParents();
+  }, [loadParents]);
+
+  const showSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  // Filtrer les comptes
-  const filteredComptes = comptes.filter(c => {
-    if (filterStatut && c.statut !== filterStatut) return false;
+  const handleToggleActif = async (parent: ParentCompte) => {
+    setActionLoading(true);
+    try {
+      await usersApi.update(parent.id, { actif: !parent.actif } as Partial<ParentCompte>);
+      await loadParents();
+      showSuccess(parent.actif ? "Compte désactivé" : "Compte réactivé");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const stats = {
+    total: parents.length,
+    actifs: parents.filter((p) => p.actif).length,
+    inactifs: parents.filter((p) => !p.actif).length,
+  };
+
+  const filteredParents = parents.filter((p) => {
+    if (filterStatut === "actif" && !p.actif) return false;
+    if (filterStatut === "inactif" && p.actif) return false;
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      return (
-        c.nomParent.toLowerCase().includes(search) ||
-        c.email.toLowerCase().includes(search) ||
-        c.numDossier.toLowerCase().includes(search) ||
-        c.enfants.some(e => e.toLowerCase().includes(search))
-      );
+      const query = searchTerm.toLowerCase();
+      const nom = `${p.prenom ?? ""} ${p.nom ?? ""}`.toLowerCase();
+      const enfants = (p.enfantsParent1 ?? []).map((e) => `${e.prenom} ${e.nom}`.toLowerCase()).join(" ");
+      return nom.includes(query) || p.email.toLowerCase().includes(query) || enfants.includes(query);
     }
     return true;
   });
 
-  // Changer le statut
-  const toggleStatut = (id: number, newStatut: "actif" | "inactif" | "suspendu") => {
-    setComptes(comptes.map(c => 
-      c.id === id ? { ...c, statut: newStatut } : c
-    ));
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 size={32} className="animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
-  // Réinitialiser le mot de passe
-  const resetPassword = (compte: CompteParent) => {
-    if (confirm(`Envoyer un email de réinitialisation de mot de passe à ${compte.email} ?`)) {
-      alert(`✅ Email envoyé à ${compte.email}`);
-    }
-  };
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto mt-8 p-6 bg-rose-50 rounded-xl border border-rose-200">
+        <div className="flex items-center gap-3">
+          <AlertCircle className="text-rose-500" size={24} />
+          <p className="text-rose-700">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* En-tête */}
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">👥 Comptes Parents</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Comptes Parents</h1>
         <p className="text-gray-500 mt-1">
           Gérez les comptes parents créés suite aux préinscriptions validées
         </p>
       </div>
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm border text-center">
-          <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-          <p className="text-sm text-gray-500">Total comptes</p>
+      {/* Message succès */}
+      {successMessage && (
+        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-700 flex items-center gap-2">
+          <CheckCircle size={18} />
+          {successMessage}
         </div>
-        <div className="bg-green-50 rounded-xl p-4 shadow-sm border border-green-200 text-center">
-          <p className="text-2xl font-bold text-green-600">{stats.actifs}</p>
-          <p className="text-sm text-green-500">✅ Actifs</p>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Users size={18} className="text-indigo-600" />
+            <span className="text-sm font-medium text-indigo-700">Total</span>
+          </div>
+          <p className="text-2xl font-bold text-indigo-900">{stats.total}</p>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 shadow-sm border border-gray-200 text-center">
-          <p className="text-2xl font-bold text-gray-600">{stats.inactifs}</p>
-          <p className="text-sm text-gray-500">💤 Inactifs</p>
+        <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle size={18} className="text-emerald-600" />
+            <span className="text-sm font-medium text-emerald-700">Actifs</span>
+          </div>
+          <p className="text-2xl font-bold text-emerald-900">{stats.actifs}</p>
         </div>
-        <div className="bg-red-50 rounded-xl p-4 shadow-sm border border-red-200 text-center">
-          <p className="text-2xl font-bold text-red-600">{stats.suspendus}</p>
-          <p className="text-sm text-red-500">🚫 Suspendus</p>
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <XCircle size={18} className="text-gray-500" />
+            <span className="text-sm font-medium text-gray-600">Inactifs</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-700">{stats.inactifs}</p>
         </div>
       </div>
 
-      {/* Filtres et recherche */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">🔍 Rechercher</label>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Nom, email, dossier, enfant..."
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-            <select
-              value={filterStatut}
-              onChange={(e) => setFilterStatut(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Tous</option>
-              <option value="actif">✅ Actif</option>
-              <option value="inactif">💤 Inactif</option>
-              <option value="suspendu">🚫 Suspendu</option>
-            </select>
-          </div>
-          <button
-            onClick={() => { setSearchTerm(""); setFilterStatut(""); }}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
-          >
-            🔄 Réinitialiser
-          </button>
+      {/* Filtres */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom, email, enfant..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
         </div>
+        <select
+          value={filterStatut}
+          onChange={(e) => setFilterStatut(e.target.value)}
+          className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="tous">Tous les statuts</option>
+          <option value="actif">Actifs</option>
+          <option value="inactif">Inactifs</option>
+        </select>
       </div>
 
-      {/* Tableau des comptes */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">N° Dossier</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Nom Parent</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Email</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Enfant(s)</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Date création</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Statut</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredComptes.length === 0 ? (
+      {/* Tableau */}
+      {filteredParents.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+          <Users size={48} className="mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-600">Aucun compte</h3>
+          <p className="text-gray-400 mt-1">
+            {parents.length > 0 ? "Aucun résultat pour vos filtres" : "Aucun parent inscrit"}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-500">
-                    Aucun compte trouvé
-                  </td>
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Parent</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Enfant(s)</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Inscription</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                 </tr>
-              ) : (
-                filteredComptes.map((compte) => (
-                  <tr key={compte.id} className="border-t hover:bg-gray-50">
-                    <td className="py-3 px-4 font-mono text-sm">{compte.numDossier}</td>
-                    <td className="py-3 px-4 font-medium">{compte.nomParent}</td>
-                    <td className="py-3 px-4 text-sm">{compte.email}</td>
-                    <td className="py-3 px-4">
-                      {compte.enfants.map((e, i) => (
-                        <span key={i} className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded mr-1 mb-1">
-                          {e}
-                        </span>
-                      ))}
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredParents.map((parent) => (
+                  <tr key={parent.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-gray-900">
+                        {parent.prenom ?? ""} {parent.nom ?? parent.name}
+                      </p>
+                      {parent.telephone && (
+                        <p className="text-xs text-gray-400">{parent.telephone}</p>
+                      )}
                     </td>
-                    <td className="py-3 px-4 text-sm">
-                      {new Date(compte.dateCreation).toLocaleDateString("fr-FR")}
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1.5">
+                        <Mail size={14} className="text-gray-400" />
+                        {parent.email}
+                      </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        compte.statut === "actif" ? "bg-green-100 text-green-700" :
-                        compte.statut === "inactif" ? "bg-gray-100 text-gray-700" :
-                        "bg-red-100 text-red-700"
+                    <td className="px-6 py-4">
+                      {(parent.enfantsParent1 ?? []).length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {parent.enfantsParent1!.map((e) => (
+                            <span key={e.id} className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">
+                              {e.prenom} {e.nom}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(parent.createdAt).toLocaleDateString("fr-FR")}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                        parent.actif
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-gray-100 text-gray-500"
                       }`}>
-                        {compte.statut === "actif" ? "✅ Actif" :
-                         compte.statut === "inactif" ? "💤 Inactif" : "🚫 Suspendu"}
+                        {parent.actif ? "Actif" : "Inactif"}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => resetPassword(compte)}
-                          className="text-blue-500 hover:text-blue-700 text-sm"
-                          title="Réinitialiser mot de passe"
+                          onClick={() => setConfirmModal({
+                            title: parent.actif ? "Désactiver ce compte ?" : "Réactiver ce compte ?",
+                            message: parent.actif
+                              ? `Le parent ${parent.prenom ?? ""} ${parent.nom ?? ""} ne pourra plus se connecter.`
+                              : `Le parent ${parent.prenom ?? ""} ${parent.nom ?? ""} pourra à nouveau se connecter.`,
+                            variant: parent.actif ? "warning" : "default",
+                            onConfirm: () => { setConfirmModal(null); handleToggleActif(parent); },
+                          })}
+                          disabled={actionLoading}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            parent.actif
+                              ? "text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                              : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50"
+                          }`}
+                          title={parent.actif ? "Désactiver" : "Réactiver"}
                         >
-                          🔑
+                          {parent.actif ? <XCircle size={16} /> : <CheckCircle size={16} />}
                         </button>
-                        {compte.statut === "actif" ? (
-                          <button
-                            onClick={() => toggleStatut(compte.id, "suspendu")}
-                            className="text-red-500 hover:text-red-700 text-sm"
-                            title="Suspendre"
-                          >
-                            🚫
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => toggleStatut(compte.id, "actif")}
-                            className="text-green-500 hover:text-green-700 text-sm"
-                            title="Réactiver"
-                          >
-                            ✅
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Modal de confirmation */}
+      <ConfirmModal
+        open={!!confirmModal}
+        title={confirmModal?.title ?? ""}
+        message={confirmModal?.message ?? ""}
+        variant={confirmModal?.variant ?? "default"}
+        onConfirm={() => confirmModal?.onConfirm()}
+        onCancel={() => setConfirmModal(null)}
+      />
     </div>
   );
 }
-

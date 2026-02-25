@@ -5,8 +5,15 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { Decimal } from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Classe, FrequencePaiement, StatutFacture, StatutInscription, TypeLigne } from '@prisma/client';
+import { Classe, FrequencePaiement, StatutFacture, StatutInscription, TypeLigne, TypeFacture } from '@prisma/client';
+import { EmailService } from '../email/email.service';
+
+/** Raccourci : crée un Decimal à partir de n'importe quelle valeur numérique */
+function dec(v: number | string | Decimal): Decimal {
+  return new Decimal(v);
+}
 import { GenererFactureDto } from './dto/generer-facture.dto';
 import { GenererBatchDto } from './dto/generer-batch.dto';
 import { EnregistrerPaiementDto } from './dto/enregistrer-paiement.dto';
@@ -34,7 +41,10 @@ import {
 export class FacturationService {
   private readonly logger = new Logger(FacturationService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   // ============================================
   // FACTURES (existant, amélioré)
@@ -43,7 +53,11 @@ export class FacturationService {
   async getFacturesParent(parentId: number) {
     return this.prisma.facture.findMany({
       where: { parentId },
-      include: { lignes: true, paiements: true, enfant: true },
+      include: {
+        lignes: true,
+        paiements: true,
+        enfant: { select: { id: true, nom: true, prenom: true, classe: true } },
+      },
       orderBy: { dateEmission: 'desc' },
     });
   }
@@ -153,7 +167,7 @@ export class FacturationService {
           numero,
           parentId,
           enfantId: enfantsActifs.length === 1 ? enfantsActifs[0].id : null,
-          montantTotal: Math.round(montantTotal * 100) / 100,
+          montantTotal: dec(montantTotal).toDecimalPlaces(2).toNumber(),
           dateEmission: new Date(),
           dateEcheance,
           type: 'MENSUELLE',
@@ -263,9 +277,59 @@ export class FacturationService {
       anneeScolaire,
       facturesCreees: factureesCrees.length,
       erreurs: erreurs.length,
-      totalFacture: Math.round(totalFacture * 100) / 100,
+      totalFacture: dec(totalFacture).toDecimalPlaces(2).toNumber(),
       details: resultats,
     };
+  }
+
+  async envoyerBatch(mois?: string) {
+    const where: Record<string, unknown> = { statut: StatutFacture.EN_ATTENTE };
+    if (mois) where.periode = mois;
+
+    const factures = await this.prisma.facture.findMany({
+      where,
+      include: {
+        parent: { select: { id: true, nom: true, prenom: true, email: true } },
+        enfant: { select: { id: true, nom: true, prenom: true } },
+      },
+    });
+
+    if (factures.length === 0) {
+      throw new BadRequestException('Aucune facture en attente à envoyer');
+    }
+
+    let envoyees = 0;
+    const erreurs: string[] = [];
+
+    for (const facture of factures) {
+      try {
+        await this.prisma.facture.update({
+          where: { id: facture.id },
+          data: { statut: StatutFacture.ENVOYEE },
+        });
+
+        if (facture.parent?.email) {
+          await this.emailService.sendFactureNotification({
+            emailParent: facture.parent.email,
+            prenomParent: facture.parent.prenom ?? facture.parent.nom ?? '',
+            numeroFacture: facture.numero,
+            montant: Number(facture.montantTotal).toFixed(2),
+            factureId: facture.id,
+            prenomEnfant: facture.enfant?.prenom,
+            dateEcheance: new Date(facture.dateEcheance).toLocaleDateString('fr-FR'),
+          });
+        }
+
+        envoyees++;
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Erreur inconnue';
+        erreurs.push(`${facture.numero}: ${message}`);
+        this.logger.warn(`Erreur envoi facture ${facture.numero}: ${message}`);
+      }
+    }
+
+    this.logger.log(`Envoi batch: ${envoyees} factures envoyées, ${erreurs.length} erreurs`);
+    return { envoyees, erreurs };
   }
 
   async previsualiserFacture(dto: GenererFactureDto) {
@@ -316,7 +380,7 @@ export class FacturationService {
       parentEmail: parent.email,
       frequencePaiement: parent.frequencePaiement ?? 'MENSUEL',
       enfants,
-      totalFamille: Math.round(totalFamille * 100) / 100,
+      totalFamille: dec(totalFamille).toDecimalPlaces(2).toNumber(),
       periode,
     };
   }
@@ -327,8 +391,10 @@ export class FacturationService {
       include: {
         lignes: { orderBy: { id: 'asc' } },
         paiements: { orderBy: { datePaiement: 'desc' } },
-        parent: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+        parent: { select: { id: true, nom: true, prenom: true, email: true, telephone: true, ibanParent: true, mandatSepaRef: true, modePaiementPref: true } },
         enfant: { select: { id: true, nom: true, prenom: true, classe: true } },
+        factureSource: { select: { id: true, numero: true } },
+        avoirs: { select: { id: true, numero: true } },
       },
     });
     if (!facture) {
@@ -355,10 +421,10 @@ export class FacturationService {
   // Transitions de statut autorisées
   private static readonly TRANSITIONS_VALIDES: Record<StatutFacture, StatutFacture[]> = {
     [StatutFacture.EN_ATTENTE]: [StatutFacture.ENVOYEE, StatutFacture.ANNULEE],
-    [StatutFacture.ENVOYEE]: [StatutFacture.EN_ATTENTE, StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.EN_RETARD, StatutFacture.ANNULEE],
+    [StatutFacture.ENVOYEE]: [StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.EN_RETARD, StatutFacture.ANNULEE],
     [StatutFacture.PARTIELLE]: [StatutFacture.PAYEE, StatutFacture.EN_RETARD, StatutFacture.ANNULEE],
-    [StatutFacture.PAYEE]: [StatutFacture.EN_ATTENTE], // Permet de remettre en attente si erreur
-    [StatutFacture.EN_RETARD]: [StatutFacture.EN_ATTENTE, StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.ANNULEE],
+    [StatutFacture.PAYEE]: [], // Juridiquement : facture envoyée = non modifiable. Correction = avoir
+    [StatutFacture.EN_RETARD]: [StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.ANNULEE],
     [StatutFacture.ANNULEE]: [], // État terminal
   };
 
@@ -373,6 +439,25 @@ export class FacturationService {
       throw new BadRequestException(
         `Transition impossible : ${facture.statut} → ${dto.statut}. Transitions autorisées : ${transitionsPermises.join(', ') || 'aucune'}`,
       );
+    }
+
+    // On ne peut pas marquer PAYEE tant que le montant payé < montant total
+    if (dto.statut === StatutFacture.PAYEE) {
+      const resteAPayer = Number(facture.montantTotal) - Number(facture.montantPaye);
+      if (resteAPayer > 0.01) {
+        throw new BadRequestException(
+          `Impossible de marquer comme payée : il reste ${resteAPayer.toFixed(2)} € à percevoir. Enregistrez d'abord le paiement.`,
+        );
+      }
+    }
+
+    // On ne peut pas marquer PARTIELLE sans aucun paiement enregistré
+    if (dto.statut === StatutFacture.PARTIELLE) {
+      if (Number(facture.montantPaye) === 0) {
+        throw new BadRequestException(
+          'Impossible de marquer comme paiement partiel : aucun paiement n\'a été enregistré.',
+        );
+      }
     }
 
     const data: Record<string, unknown> = { statut: dto.statut };
@@ -433,7 +518,7 @@ export class FacturationService {
       return tx.facture.update({
         where: { id: factureId },
         data: {
-          montantPaye: Math.round(totalPaye * 100) / 100,
+          montantPaye: dec(totalPaye).toDecimalPlaces(2).toNumber(),
           statut: nouveauStatut,
         },
         include: {
@@ -445,14 +530,23 @@ export class FacturationService {
     });
   }
 
+  private verifierFactureModifiable(facture: { statut: StatutFacture; numero: string }) {
+    if (facture.statut !== StatutFacture.EN_ATTENTE) {
+      throw new BadRequestException(
+        `La facture ${facture.numero} ne peut plus être modifiée (statut : ${facture.statut}). Une fois envoyée, une facture n'est plus modifiable.`,
+      );
+    }
+  }
+
   async ajouterLigne(factureId: number, dto: AjouterLigneDto) {
-    const montantLigne = Math.round(dto.quantite * dto.prixUnit * 100) / 100;
+    const montantLigne = dec(dto.quantite).times(dto.prixUnit).toDecimalPlaces(2).toNumber();
 
     return this.prisma.$transaction(async (tx) => {
       const facture = await tx.facture.findUnique({ where: { id: factureId } });
       if (!facture) {
         throw new NotFoundException(`Facture #${factureId} non trouvée`);
       }
+      this.verifierFactureModifiable(facture);
 
       await tx.ligneFacture.create({
         data: {
@@ -466,10 +560,10 @@ export class FacturationService {
         },
       });
 
-      const nouveauTotal = Number(facture.montantTotal) + montantLigne;
+      const nouveauTotal = dec(facture.montantTotal).plus(montantLigne).toDecimalPlaces(2).toNumber();
       return tx.facture.update({
         where: { id: factureId },
-        data: { montantTotal: Math.round(nouveauTotal * 100) / 100 },
+        data: { montantTotal: nouveauTotal },
         include: { lignes: true },
       });
     });
@@ -477,6 +571,12 @@ export class FacturationService {
 
   async modifierLigne(factureId: number, ligneId: number, dto: ModifierLigneDto) {
     return this.prisma.$transaction(async (tx) => {
+      const facture = await tx.facture.findUnique({ where: { id: factureId } });
+      if (!facture) {
+        throw new NotFoundException(`Facture #${factureId} non trouvée`);
+      }
+      this.verifierFactureModifiable(facture);
+
       const ligne = await tx.ligneFacture.findFirst({
         where: { id: ligneId, factureId },
       });
@@ -488,8 +588,8 @@ export class FacturationService {
 
       const quantite = dto.quantite ?? ligne.quantite;
       const prixUnit = dto.prixUnit ?? Number(ligne.prixUnit);
-      const nouveauMontant = Math.round(quantite * prixUnit * 100) / 100;
-      const diffMontant = nouveauMontant - Number(ligne.montant);
+      const nouveauMontant = dec(quantite).times(prixUnit).toDecimalPlaces(2).toNumber();
+      const diffMontant = dec(nouveauMontant).minus(ligne.montant).toNumber();
 
       await tx.ligneFacture.update({
         where: { id: ligneId },
@@ -502,12 +602,11 @@ export class FacturationService {
         },
       });
 
-      const facture = await tx.facture.findUnique({ where: { id: factureId } });
-      const nouveauTotal = Number(facture!.montantTotal) + diffMontant;
+      const nouveauTotal = dec(facture.montantTotal).plus(diffMontant).toDecimalPlaces(2).toNumber();
 
       return tx.facture.update({
         where: { id: factureId },
-        data: { montantTotal: Math.round(nouveauTotal * 100) / 100 },
+        data: { montantTotal: nouveauTotal },
         include: { lignes: true },
       });
     });
@@ -515,6 +614,12 @@ export class FacturationService {
 
   async supprimerLigne(factureId: number, ligneId: number) {
     return this.prisma.$transaction(async (tx) => {
+      const facture = await tx.facture.findUnique({ where: { id: factureId } });
+      if (!facture) {
+        throw new NotFoundException(`Facture #${factureId} non trouvée`);
+      }
+      this.verifierFactureModifiable(facture);
+
       const ligne = await tx.ligneFacture.findFirst({
         where: { id: ligneId, factureId },
       });
@@ -526,12 +631,11 @@ export class FacturationService {
 
       await tx.ligneFacture.delete({ where: { id: ligneId } });
 
-      const facture = await tx.facture.findUnique({ where: { id: factureId } });
-      const nouveauTotal = Number(facture!.montantTotal) - Number(ligne.montant);
+      const nouveauTotal = Decimal.max(0, dec(facture.montantTotal).minus(ligne.montant)).toDecimalPlaces(2).toNumber();
 
       return tx.facture.update({
         where: { id: factureId },
-        data: { montantTotal: Math.max(0, Math.round(nouveauTotal * 100) / 100) },
+        data: { montantTotal: nouveauTotal },
         include: { lignes: true },
       });
     });
@@ -586,7 +690,7 @@ export class FacturationService {
 
   private async generateNumeroFacture(
     periode: string,
-    tx?: { facture: typeof this.prisma.facture; $queryRawUnsafe: typeof this.prisma.$queryRawUnsafe },
+    tx?: { facture: typeof this.prisma.facture; $executeRawUnsafe: typeof this.prisma.$executeRawUnsafe },
   ): Promise<string> {
     const client = tx ?? this.prisma;
     const prefix = `FA-${periode.replace('-', '')}`;
@@ -594,7 +698,7 @@ export class FacturationService {
     // Utiliser un verrou advisory PostgreSQL pour éviter les doublons
     // Le hash du prefix sert d'identifiant de verrou
     const lockId = Array.from(prefix).reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    await client.$queryRawUnsafe(`SELECT pg_advisory_xact_lock(${lockId})`);
+    await client.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(${lockId})`);
 
     const lastFacture = await client.facture.findFirst({
       where: { numero: { startsWith: prefix } },
@@ -612,6 +716,112 @@ export class FacturationService {
     }
 
     return `${prefix}-${String(sequence).padStart(4, '0')}`;
+  }
+
+  private async generateNumeroAvoir(
+    periode: string,
+    tx: { facture: typeof this.prisma.facture; $executeRawUnsafe: typeof this.prisma.$executeRawUnsafe },
+  ): Promise<string> {
+    const prefix = `AV-${periode.replace('-', '')}`;
+
+    const lockId = Array.from(prefix).reduce((acc, c) => acc + c.charCodeAt(0), 0) + 1000;
+    await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(${lockId})`);
+
+    const lastAvoir = await tx.facture.findFirst({
+      where: { numero: { startsWith: prefix } },
+      orderBy: { numero: 'desc' },
+      select: { numero: true },
+    });
+
+    let sequence = 1;
+    if (lastAvoir) {
+      const parts = lastAvoir.numero.split('-');
+      const lastSeq = parseInt(parts[2], 10);
+      if (!isNaN(lastSeq)) {
+        sequence = lastSeq + 1;
+      }
+    }
+
+    return `${prefix}-${String(sequence).padStart(4, '0')}`;
+  }
+
+  async creerAvoir(factureId: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const facture = await tx.facture.findUnique({
+        where: { id: factureId },
+        include: { lignes: true },
+      });
+
+      if (!facture) {
+        throw new NotFoundException(`Facture #${factureId} non trouvée`);
+      }
+
+      const statutsAutorisesAvoir: StatutFacture[] = [
+        StatutFacture.ENVOYEE,
+        StatutFacture.PARTIELLE,
+        StatutFacture.EN_RETARD,
+      ];
+      if (!statutsAutorisesAvoir.includes(facture.statut)) {
+        throw new BadRequestException(
+          `Impossible de créer un avoir pour une facture ${facture.statut}. La facture doit être envoyée, en paiement partiel ou impayée.`,
+        );
+      }
+
+      const periode = facture.periode ?? new Date().toISOString().slice(0, 7);
+      const numero = await this.generateNumeroAvoir(periode, tx);
+
+      const montantAvoir = dec(facture.montantTotal).neg().toDecimalPlaces(2).toNumber();
+
+      const avoir = await tx.facture.create({
+        data: {
+          numero,
+          parentId: facture.parentId,
+          enfantId: facture.enfantId,
+          montantTotal: montantAvoir,
+          montantPaye: 0,
+          dateEmission: new Date(),
+          dateEcheance: new Date(),
+          type: TypeFacture.AVOIR,
+          statut: StatutFacture.ENVOYEE,
+          periode,
+          anneeScolaire: facture.anneeScolaire,
+          factureSourceId: facture.id,
+          description: `Avoir annulant la facture ${facture.numero}`,
+          modePaiement: facture.modePaiement,
+          destinataire: facture.destinataire,
+        },
+      });
+
+      // Copier les lignes en inversant les montants
+      const lignesAvoir = facture.lignes.map((ligne) => ({
+        factureId: avoir.id,
+        description: ligne.description,
+        quantite: ligne.quantite,
+        prixUnit: dec(ligne.prixUnit).neg().toDecimalPlaces(2).toNumber(),
+        montant: dec(ligne.montant).neg().toDecimalPlaces(2).toNumber(),
+        type: ligne.type,
+        commentaire: ligne.commentaire,
+      }));
+
+      await tx.ligneFacture.createMany({ data: lignesAvoir });
+
+      // Annuler la facture source
+      await tx.facture.update({
+        where: { id: facture.id },
+        data: { statut: StatutFacture.ANNULEE },
+      });
+
+      this.logger.log(`Avoir ${numero} créé pour facture ${facture.numero}`);
+
+      return tx.facture.findUnique({
+        where: { id: avoir.id },
+        include: {
+          lignes: true,
+          parent: { select: { id: true, nom: true, prenom: true, email: true } },
+          enfant: { select: { id: true, nom: true, prenom: true, classe: true } },
+        },
+      });
+    });
   }
 
   // ============================================
@@ -1017,10 +1227,10 @@ export class FacturationService {
       }
     }
 
-    // Calculer la réduction RFR
+    // Calculer la réduction RFR (vérifie parent1 ET parent2)
     const reductionRFR = await this.calculerReductionRFR(
       montantBase,
-      enfant.parent1Id,
+      enfantId,
     );
 
     return {
@@ -1028,28 +1238,48 @@ export class FacturationService {
       estFratrie,
       reductionFratrie,
       reductionRFR,
-      montantFinal: Math.round((montantBase - reductionRFR) * 100) / 100,
+      montantFinal: dec(montantBase).minus(reductionRFR).toDecimalPlaces(2).toNumber(),
     };
   }
 
   /**
-   * Calcule la réduction RFR si applicable
+   * Calcule la réduction RFR si applicable.
+   * Vérifie parent1 ET parent2 : si l'un des deux a reductionRFR = true, la réduction s'applique.
+   * Si les deux ont des taux différents, le taux le plus avantageux (le plus élevé) est retenu.
    */
   async calculerReductionRFR(
     montant: number,
-    parentId: number,
+    enfantId: number,
   ): Promise<number> {
-    const parent = await this.prisma.user.findUnique({
-      where: { id: parentId },
+    const enfant = await this.prisma.enfant.findUnique({
+      where: { id: enfantId },
+      select: { parent1Id: true, parent2Id: true },
+    });
+
+    if (!enfant) return 0;
+
+    const parentIds = [enfant.parent1Id];
+    if (enfant.parent2Id) parentIds.push(enfant.parent2Id);
+
+    const parents = await this.prisma.user.findMany({
+      where: { id: { in: parentIds } },
       select: { reductionRFR: true, tauxReductionRFR: true },
     });
 
-    if (!parent || !parent.reductionRFR || !parent.tauxReductionRFR) {
-      return 0;
+    // Trouver le meilleur taux RFR parmi les parents éligibles
+    let meilleurTaux = 0;
+    for (const parent of parents) {
+      if (parent.reductionRFR && parent.tauxReductionRFR) {
+        const taux = Number(parent.tauxReductionRFR);
+        if (taux > meilleurTaux) {
+          meilleurTaux = taux;
+        }
+      }
     }
 
-    const taux = Number(parent.tauxReductionRFR);
-    return Math.round((montant * taux) / 100 * 100) / 100;
+    if (meilleurTaux === 0) return 0;
+
+    return dec(montant).times(meilleurTaux).dividedBy(100).toDecimalPlaces(2).toNumber();
   }
 
   /**
@@ -1154,7 +1384,7 @@ export class FacturationService {
 
     const tarif = await this.getConfigTarifByCle('REPAS_MIDI', anneeScolaire);
     const prixUnitaire = Number(tarif.valeur);
-    const montant = Math.round(count * prixUnitaire * 100) / 100;
+    const montant = dec(count).times(prixUnitaire).toDecimalPlaces(2).toNumber();
 
     return { count, montant };
   }
@@ -1187,7 +1417,7 @@ export class FacturationService {
       anneeScolaire,
     );
     const prixUnitaire = Number(tarif.valeur);
-    const montant = Math.round(count * prixUnitaire * 100) / 100;
+    const montant = dec(count).times(prixUnitaire).toDecimalPlaces(2).toNumber();
 
     return { count, montant };
   }
@@ -1367,9 +1597,9 @@ export class FacturationService {
       classe: enfant.classe as Classe,
       rangFratrie,
       lignes,
-      totalAvantReduction: Math.round(totalAvantReduction * 100) / 100,
-      totalReductions: Math.round(totalReductions * 100) / 100,
-      totalNet: Math.round(totalNet * 100) / 100,
+      totalAvantReduction: dec(totalAvantReduction).toDecimalPlaces(2).toNumber(),
+      totalReductions: dec(totalReductions).toDecimalPlaces(2).toNumber(),
+      totalNet: dec(totalNet).toDecimalPlaces(2).toNumber(),
     };
   }
 }

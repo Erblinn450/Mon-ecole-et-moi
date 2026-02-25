@@ -358,6 +358,47 @@ export class EmailService {
   }
 
   /**
+   * Email de notification de facture disponible
+   */
+  async sendFactureNotification(data: {
+    emailParent: string;
+    prenomParent: string;
+    numeroFacture: string;
+    montant: string;
+    factureId: number;
+    prenomEnfant?: string;
+    dateEcheance: string;
+  }) {
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+    const factureUrl = `${frontendUrl}/mes-factures/${data.factureId}`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: data.emailParent,
+        subject: `Mon école Montessori et Moi - Facture ${data.numeroFacture} disponible`,
+        template: 'facture-envoi',
+        context: {
+          prenomParent: data.prenomParent,
+          numeroFacture: data.numeroFacture,
+          montant: data.montant,
+          prenomEnfant: data.prenomEnfant,
+          factureUrl,
+          dateEcheance: data.dateEcheance,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      this.logger.log(`Email facture envoyé à ${data.emailParent} pour ${data.numeroFacture}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Erreur envoi email facture à ${data.emailParent}`, {
+        error: error.message,
+      });
+      return false;
+    }
+  }
+
+  /**
    * Envoie un email via un template Handlebars
    */
   async sendTemplateEmail(options: { to: string; subject: string; template: string; context: Record<string, any> }) {

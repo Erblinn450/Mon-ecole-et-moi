@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Clock,
   CreditCard,
+  Download,
 } from "lucide-react";
 import { facturationApi } from "@/lib/api";
 import { Facture, StatutFacture, TypeLigne } from "@/types";
@@ -19,7 +20,7 @@ const statutConfig: Record<StatutFacture, { label: string; bg: string; text: str
   ENVOYEE: { label: "Envoyée", bg: "bg-blue-50", text: "text-blue-700" },
   PAYEE: { label: "Payée", bg: "bg-emerald-50", text: "text-emerald-700" },
   PARTIELLE: { label: "Paiement partiel", bg: "bg-orange-50", text: "text-orange-700" },
-  EN_RETARD: { label: "En retard", bg: "bg-rose-50", text: "text-rose-700" },
+  EN_RETARD: { label: "Impayé", bg: "bg-rose-50", text: "text-rose-700" },
   ANNULEE: { label: "Annulée", bg: "bg-gray-50", text: "text-gray-500" },
 };
 
@@ -82,6 +83,22 @@ export default function MaFactureDetailPage() {
   const config = statutConfig[facture.statut];
   const resteAPayer = Number(facture.montantTotal) - Number(facture.montantPaye);
 
+  const handleDownloadPdf = async () => {
+    try {
+      const blob = await facturationApi.downloadMaPdf(factureId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `facture-${facture.numero || factureId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert("Erreur lors du téléchargement du PDF");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -101,12 +118,21 @@ export default function MaFactureDetailPage() {
             {new Date(facture.dateEmission).toLocaleDateString("fr-FR")}
           </p>
         </div>
-        <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
-          {facture.statut === "PAYEE" && <CheckCircle size={16} />}
-          {facture.statut === "EN_ATTENTE" && <Clock size={16} />}
-          {facture.statut === "EN_RETARD" && <AlertCircle size={16} />}
-          {config.label}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDownloadPdf}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm"
+          >
+            <Download size={16} />
+            Télécharger PDF
+          </button>
+          <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
+            {facture.statut === "PAYEE" && <CheckCircle size={16} />}
+            {facture.statut === "EN_ATTENTE" && <Clock size={16} />}
+            {facture.statut === "EN_RETARD" && <AlertCircle size={16} />}
+            {config.label}
+          </span>
+        </div>
       </div>
 
       {/* Enfant */}
@@ -157,7 +183,7 @@ export default function MaFactureDetailPage() {
             <div className="text-right">
               <p className="text-sm text-gray-500">Mode de paiement</p>
               <p className="font-medium text-gray-900">
-                {facture.modePaiement === "PRELEVEMENT" ? "Prélèvement SEPA" : "Virement"}
+                {facture.modePaiement === "PRELEVEMENT" ? "Prélèvement SEPA" : facture.modePaiement === "CHEQUE" ? "Chèque" : "Virement"}
               </p>
             </div>
           )}
@@ -237,7 +263,7 @@ export default function MaFactureDetailPage() {
                     {new Date(paiement.datePaiement).toLocaleDateString("fr-FR")}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {paiement.modePaiement === "PRELEVEMENT" ? "Prélèvement" : "Virement"}
+                    {paiement.modePaiement === "PRELEVEMENT" ? "Prélèvement" : paiement.modePaiement === "CHEQUE" ? "Chèque" : "Virement"}
                     {paiement.reference && ` - ${paiement.reference}`}
                   </p>
                 </div>

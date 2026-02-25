@@ -60,6 +60,7 @@ export enum FrequencePaiement {
 export enum ModePaiement {
   PRELEVEMENT = "PRELEVEMENT",
   VIREMENT = "VIREMENT",
+  CHEQUE = "CHEQUE",
 }
 
 export enum StatutFacture {
@@ -352,11 +353,14 @@ export interface Facture {
   datePrelevement?: string;
   commentaire?: string;
   anneeScolaire?: string;
+  factureSourceId?: number;
+  factureSource?: { id: number; numero: string };
+  avoirs?: { id: number; numero: string }[];
   createdAt: string;
   updatedAt: string;
   lignes: LigneFacture[];
   paiements: Paiement[];
-  parent?: { id: number; nom?: string; prenom?: string; email: string };
+  parent?: { id: number; nom?: string; prenom?: string; email: string; ibanParent?: string; mandatSepaRef?: string; modePaiementPref?: ModePaiement };
   enfant?: { id: number; nom: string; prenom: string; classe?: Classe };
 }
 

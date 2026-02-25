@@ -9,6 +9,11 @@
         "include": "modules/email/templates/**/*.hbs",
         "outDir": "dist/src",
         "watchAssets": true
+      },
+      {
+        "include": "assets/**/*",
+        "outDir": "dist/src",
+        "watchAssets": true
       }
     ]
   }

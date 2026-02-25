@@ -232,7 +232,7 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 
 ---
 
-## 📊 État du Projet (Janvier 2026)
+## 📊 État du Projet (Février 2026)
 
 ### ✅ Modules terminés
 | Module | Frontend | Backend |
@@ -241,16 +241,28 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 | Préinscription | ✅ | ✅ |
 | Authentification JWT | ✅ | ✅ |
 | Emails multi-providers | - | ✅ |
-| Sécurité (rate limit, captcha) | - | ✅ |
+| Sécurité (rate limit, captcha, audit) | - | ✅ |
 | Signature règlement | ✅ | ✅ |
-| Tarifs intégrés | ✅ | - |
+| Upload justificatifs | ✅ | ✅ |
+| Dashboard parent | ✅ | ✅ |
+| Dashboard admin | ✅ | ✅ |
+| Export CSV | ✅ | ✅ |
+| Personnes autorisées | ✅ | ✅ |
+| Réinscription | ✅ | ✅ |
+| Pages légales (RGPD) | ✅ | - |
 
-### 🟡 En cours
-| Module | État | Prévu |
-|--------|------|-------|
-| Dashboard parent | 50% | S2 janvier |
-| Interface admin | 60% | S4 janvier |
-| Upload justificatifs | En cours | S3 janvier |
+### 🟡 En cours — Facturation (PRIORITÉ)
+| Sous-module | État | Détail |
+|-------------|------|--------|
+| Config tarifs (backend) | ✅ | 23 tarifs configurés, CRUD complet |
+| Articles personnalisés (backend) | ✅ | CRUD complet |
+| Moteur de calcul (backend) | ✅ | Scolarité, fratrie, RFR, inscription, repas, périscolaire |
+| Génération factures (backend) | ✅ | Individuelle + batch + prévisualisation |
+| Paiements + machine à états (backend) | ✅ | Transactions, validation, StatutFacture |
+| Génération PDF (backend) | ✅ | PDFKit, logo, IBAN, lignes, totaux |
+| Arithmétique monétaire | ✅ | Decimal.js (migration T9 terminée) |
+| Interface admin (frontend) | ⬜ | À faire |
+| Interface parent (frontend) | ⬜ | À faire |
 
 ### ⏸️ Désactivés (frontend fait, backend commenté)
 | Module | Prévu |
@@ -261,8 +273,8 @@ NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lxxxxx
 ### ⬜ À faire
 | Module | Prévu |
 |--------|-------|
-| **FACTURATION** | **Février-Mars (PRIORITÉ)** |
-| Communication | Mai |
+| Interface facturation frontend | Mars |
+| Communication parents | Mai |
 | PWA Mobile | Juin (si temps) |
 
 ---
@@ -1500,6 +1512,272 @@ Préinscription (parent)
 
 ---
 
+### 🗓️ Dimanche 22 février 2026
+
+**Durée :** ~3h (Session IA)
+
+**✅ Réalisé : 4 corrections prioritaires (audit + PDF factures)**
+
+#### 1. M3 — Correction RFR parent2
+
+- **Problème** : `calculerReductionRFR(montant, parentId)` ne prenait en compte que parent1, ignorant parent2 même s'il avait un meilleur taux RFR.
+- **Correction** : Signature modifiée en `calculerReductionRFR(montant, enfantId)`. La méthode récupère maintenant l'enfant, les deux parents, et applique le **meilleur taux** entre les deux.
+- **Impact** : `calculerScolarite()` mis à jour pour passer `enfantId` au lieu de `enfant.parent1Id`.
+- **Tests** : 5 nouveaux tests ajoutés (parent1 seul, parent2 seul, meilleur taux des deux, enfant introuvable).
+
+#### 2. T9 — Migration Decimal.js + correction bug ligne 1052
+
+- **Installation** : `decimal.js@10.6.0`
+- **Bug corrigé** : `Math.round((montant * taux) / 100 * 100) / 100` — la priorité des opérateurs annulait l'arrondi.
+- **Migration** : 16 occurrences de `Math.round(x * 100) / 100` remplacées par `Decimal.js` :
+  - `dec(x).times(y).toDecimalPlaces(2).toNumber()` (multiplication)
+  - `dec(x).plus(y).toDecimalPlaces(2).toNumber()` (addition)
+  - `dec(x).minus(y).toDecimalPlaces(2).toNumber()` (soustraction)
+  - `Decimal.max(0, dec(x).minus(y)).toDecimalPlaces(2).toNumber()` (max)
+- **Helper** : Fonction `dec(v)` créée pour simplifier les appels.
+
+#### 3. T10 — Hash token reset password (bcrypt)
+
+- **Problème** : Le token de réinitialisation était stocké en clair dans `rememberToken`.
+- **Correction** : Pattern **selector/verifier** implémenté :
+  - `selector` (16 bytes hex) : stocké en clair pour la recherche en BDD (nouveau champ `resetTokenSelector`)
+  - `verifier` (32 bytes hex) : hashé avec bcrypt puis stocké dans `rememberToken`
+  - Token envoyé au parent : `${selector}.${verifier}`
+  - Validation : recherche par selector, puis `bcrypt.compare(verifier, hash)`
+- **Schema Prisma** : Ajout champ `resetTokenSelector` dans le modèle User.
+- **Méthodes modifiées** : `setResetToken()`, `findByResetSelector()` (remplace `findByResetToken()`), `resetPasswordWithToken()`.
+
+#### 4. Génération PDF factures (PDFKit)
+
+- **Service créé** : `facturation-pdf.service.ts` (290 lignes)
+  - En-tête : logo école + nom + adresse + SIRET
+  - Infos facture : numéro, date, échéance, période, statut
+  - Destinataire : nom, email, téléphone du parent
+  - Élève : prénom, nom, classe
+  - Tableau lignes : fond alterné, colonnes Description/Qté/P.U./Montant, commentaires en italique
+  - Totaux : total, déjà payé, reste à payer (fond jaune)
+  - Mention TVA non applicable (art. 261-4-4° CGI)
+  - Informations de paiement : mode, date prélèvement, IBAN/BIC
+  - Pied de page avec coordonnées école
+- **Endpoints ajoutés** dans le controller :
+  - `GET /facturation/:id/pdf` (Admin) — télécharge le PDF d'une facture
+  - `GET /facturation/mes-factures/:id/pdf` (Parent) — télécharge le PDF de sa facture (ownership vérifié via `getFactureParentById`)
+- **Sécurité** : `Content-Type: application/pdf`, `Content-Disposition: attachment`, ownership vérifié pour les parents.
+
+**📁 Fichiers créés :**
+- `backend/src/modules/facturation/facturation-pdf.service.ts`
+
+**📁 Fichiers modifiés :**
+- `backend/src/modules/facturation/facturation.service.ts` (M3 + T9 : Decimal.js, RFR parent2)
+- `backend/src/modules/facturation/facturation.service.spec.ts` (5 nouveaux tests RFR, mocks mis à jour)
+- `backend/src/modules/facturation/facturation.module.ts` (ajout FacturationPdfService)
+- `backend/src/modules/facturation/facturation.controller.ts` (2 endpoints PDF + injection FacturationPdfService)
+- `backend/src/modules/auth/auth.service.ts` (T10 : pattern selector/verifier)
+- `backend/src/modules/users/users.service.ts` (T10 : setResetToken, findByResetSelector, resetPasswordWithToken)
+- `backend/prisma/schema.prisma` (champ resetTokenSelector)
+- `backend/package.json` (decimal.js@10.6.0)
+
+**✅ Vérification :**
+- Build backend : ✅ (0 erreur TypeScript)
+- Tests facturation : ✅ (28/28 passent)
+
+**🔒 Points d'audit résolus :**
+- ✅ M3 — RFR parent2 pris en compte
+- ✅ T9 — Decimal.js remplace Math.round pour les calculs monétaires
+- ✅ T10 — Token reset password hashé avec bcrypt
+
+#### 5. Corrections supplémentaires post-audit
+
+- **Fuite password hash** : `findByResetSelector` ne charge plus que `id`, `rememberToken`, `resetTokenExpiresAt` (via `select`)
+- **Decimal.js dans PDF** : `drawTotaux` utilise Decimal.js pour les calculs montantTotal/montantPaye/resteAPayer
+- **Logo PDF** : Copié dans `backend/src/assets/logo.png`, configuré dans `nest-cli.json` pour copie automatique dans `dist/`
+- **Enfant sans select** : `getFacturesParent` utilise maintenant `enfant: { select: { id, nom, prenom, classe } }` au lieu de `enfant: true`
+- **Route ordering NestJS** : Réorganisation complète du controller — routes statiques (`config-tarifs`, `articles`, `stats`) avant les routes paramétrées (`:id`). Corrige un bug 400 sur `/config-tarifs` qui était intercepté par `/:id`.
+- **pg_advisory_xact_lock** : Remplacé `$queryRawUnsafe` par `$executeRawUnsafe` (Prisma ne peut pas désérialiser le retour void)
+- **Seed** : Mot de passe parent corrigé `parent123` → `parent1234` (cohérent avec CLAUDE.md)
+
+**📁 Fichiers modifiés (corrections) :**
+- `backend/src/modules/users/users.service.ts` (select sur findByResetSelector)
+- `backend/src/modules/facturation/facturation-pdf.service.ts` (Decimal.js + logo path)
+- `backend/src/modules/facturation/facturation.service.ts` (enfant select + $executeRawUnsafe)
+- `backend/src/modules/facturation/facturation.controller.ts` (réorganisation routes)
+- `backend/nest-cli.json` (assets copy pour logo)
+- `backend/prisma/seed.ts` (password parent)
+
+**📁 Fichiers créés :**
+- `backend/src/assets/logo.png` (copie depuis frontend)
+
+#### 6. Tests d'intégration complets
+
+Tests manuels avec données réelles (curl) — tous passent :
+
+| Test | Résultat |
+|------|----------|
+| Login admin (admin@ecole.fr) | ✅ 200, token valide |
+| Login parent (parent@test.fr) | ✅ 200, token valide |
+| GET /config-tarifs | ✅ 23 tarifs retournés |
+| Génération facture (Lucas Dupont, oct 2025) | ✅ FA-202510-0001, 575€, EN_ATTENTE |
+| GET /facturation/:id/pdf (admin) | ✅ 200, 98 KB, PDF 1.3 valide |
+| GET /mes-factures (parent) | ✅ 1 facture avec lignes + enfant |
+| GET /mes-factures/:id (parent) | ✅ Détail complet |
+| GET /mes-factures/:id/pdf (parent) | ✅ 200, 98 KB |
+| **IDOR : parent2 → facture parent1** | ✅ **404 (pas de fuite)** |
+| **IDOR : parent2 → PDF parent1** | ✅ **404 (pas de fuite)** |
+| Parent2 liste factures | ✅ [] (vide, correct) |
+| Accès sans token | ✅ 401 Unauthorized |
+
+**⏭️ Prochaines étapes :**
+- [x] ~~Interface admin facturation (frontend)~~ ✅
+- [x] ~~Interface parent "Mes factures" (frontend)~~ ✅
+- [ ] Module Repas / Périscolaire (avril)
+- [x] ~~Tester génération PDF avec données réelles~~ ✅
+
+---
+
+### 🗓️ Lundi 24 février 2026
+
+**Durée :** ~4h
+
+**Contexte :** Retour réunion client (Audrey) + audit UX facturation + implémentation améliorations prioritaires
+
+#### 1. Retour réunion client Audrey — Analyse des besoins
+
+Audrey a communiqué ses besoins lors d'une réunion :
+- **Modes de paiement** : Virement + chèque manuels, prélèvement SEPA automatique
+- **SEPA** : Génération fichier XML pain.008.001.02 pour envoi à CIC banque
+- **Envoi groupé** : Toutes les factures envoyées en même temps une fois validées
+- **Règle juridique** : Facture envoyée = non modifiable. Correction = avoir (facture corrective)
+- **Téléchargement groupé** : Toutes les factures du mois en un clic (ZIP)
+
+**8 questions rédigées et envoyées à Audrey** (en attente de réponse) :
+1. Détails chèque (numéro, date encaissement ?)
+2. Gestion rejet de prélèvement
+3. Ajout IBAN parent dans le formulaire d'inscription ?
+4. Sélection SEPA (tout le mois vs sélection manuelle) → **Répondu : les deux options**
+5. Système d'avoir (automatique vs manuel)
+6. Email facture (PDF pièce jointe vs lien)
+7. Confirmation envoi groupé
+8. Source IBAN parents (déjà disponibles ou saisie dans l'app)
+
+#### 2. Audit UX complet du module facturation
+
+Audit des 5 pages facturation (admin liste, admin détail, parent liste, parent détail, composants). Résultats :
+
+| Priorité | Problème | Impact |
+|----------|----------|--------|
+| CRITIQUE | Parent ne peut pas télécharger PDF (bouton manquant) | Fonctionnalité inutilisable |
+| CRITIQUE | Admin ne peut pas modifier une ligne existante | Workflow incomplet |
+| IMPORTANT | Pas de résumé "total dû" côté parent | Compréhension difficile |
+| IMPORTANT | Pas de tri/filtre côté parent | Navigation difficile |
+| IMPORTANT | Stepper non responsive mobile | UX mobile cassée |
+| IMPORTANT | `confirm()` natif au lieu de modals | Incohérence design |
+| MOYEN | Pas de téléchargement groupé admin | Efficacité admin |
+
+#### 3. Bloquer modification après envoi (sécurité juridique)
+
+**Règle** : Une fois envoyée, une facture ne peut plus être modifiée (obligation légale).
+
+- **Backend** : Ajout `verifierFactureModifiable()` — vérifie `statut === EN_ATTENTE`, sinon `BadRequestException`
+- **Backend** : Guard appliqué sur `ajouterLigne()`, `modifierLigne()`, `supprimerLigne()`
+- **Backend** : `TRANSITIONS_VALIDES` mis à jour :
+  - Supprimé `EN_ATTENTE` des transitions depuis `ENVOYEE`, `PAYEE`, `EN_RETARD`
+  - `PAYEE` → `[]` (état terminal, correction = avoir)
+- **Frontend** : TRANSITIONS_VALIDES miroir mis à jour
+- **Frontend** : Supprimé tous les boutons "Corriger" des bandeaux
+- **Frontend** : Colonne actions (modifier/supprimer ligne) visible uniquement si `EN_ATTENTE`
+
+#### 4. Bouton PDF côté parent
+
+- Ajout bouton "Télécharger PDF" dans le header de la page détail parent
+- Utilise `facturationApi.downloadMaPdf()` (endpoint existant)
+- Download via `createObjectURL` + click programmatique
+
+#### 5. Ajout mode de paiement CHEQUE
+
+- **Prisma** : Ajout `CHEQUE` dans enum `ModePaiement`
+- **Frontend types** : Ajout `CHEQUE = "CHEQUE"` dans enum TypeScript
+- **Frontend** : Labels "Chèque" ajoutés partout (admin détail, parent détail, select paiement)
+- **Backend PDF** : Label "Chèque" ajouté dans `modePaiementLabels`
+- **Migration** : Schema synchronisé via `prisma db push`
+
+#### 6. Modifier une ligne existante côté admin
+
+- **API client** : Ajout `modifierLigne()` dans `facturationApi` (PATCH)
+- **Frontend** : Bouton crayon (Pencil) sur chaque ligne, visible uniquement si `EN_ATTENTE`
+- **Frontend** : Formulaire inline dans le tableau (description, quantité, prix unitaire, commentaire)
+- **Frontend** : Boutons CheckCircle/X pour valider/annuler l'édition
+- **Backend** : Endpoint `PATCH /facturation/:id/lignes/:ligneId` déjà existant
+
+#### 7. Résumé total dû + tri/filtre côté parent
+
+- **Bandeau résumé** : "Total restant à payer : X €" en haut de la liste
+  - Amber si paiements en attente, rose si factures en retard
+  - Indique le nombre de factures en retard
+- **Filtre par enfant** : Boutons pill pour filtrer par enfant (visible si plusieurs enfants)
+- **Tri** : Factures triées par date d'émission décroissante (plus récente en premier)
+
+#### 8. Téléchargement ZIP groupé (admin)
+
+- **Backend** : Nouveau service `generateZipFactures(mois)` dans `facturation-pdf.service.ts`
+  - Utilise `archiver` (npm) pour créer un ZIP
+  - Génère tous les PDFs des factures du mois (hors annulées)
+  - Compression zlib niveau 9
+- **Backend** : Endpoint `GET /facturation/export-pdf-zip?mois=2026-02` (admin only)
+- **Frontend** : Bouton "Télécharger tout" sur la liste admin (visible quand filtre mois actif)
+- **API client** : Ajout `downloadZip(mois)` dans `facturationApi`
+- **Dépendance** : `archiver@7.0.1` installé
+
+#### 9. Stepper responsive + remplacement confirm() par modals
+
+**Stepper responsive :**
+- Desktop (≥md) : Stepper horizontal avec cercles + flèches (inchangé)
+- Mobile (<md) : Stepper vertical avec ligne de progression à gauche
+- Implémenté avec `hidden md:flex` / `flex md:hidden`
+
+**ConfirmModal :**
+- Nouveau composant réutilisable `frontend/src/components/ui/ConfirmModal.tsx`
+- Props : `open`, `title`, `message`, `variant` (danger/warning/default), `onConfirm`, `onCancel`
+- Fonctionnalités : fermeture Escape, clic backdrop, focus management
+- Remplace tous les `confirm()` natifs de la page admin détail facture
+
+#### 10. Nettoyage migrations Prisma
+
+- Supprimé l'ancien dossier migrations (init incomplète de janvier)
+- Drop et recréation du schema public
+- Nouvelle migration unique `20260224120001_init` capturant tout le schema actuel
+- Seed exécuté avec succès
+
+**📁 Fichiers créés :**
+- `frontend/src/components/ui/ConfirmModal.tsx`
+- `backend/prisma/migrations/20260224120001_init/migration.sql`
+
+**📁 Fichiers modifiés :**
+- `backend/prisma/schema.prisma` (enum CHEQUE)
+- `backend/src/modules/facturation/facturation.service.ts` (TRANSITIONS_VALIDES, verifierFactureModifiable, guard PARTIELLE)
+- `backend/src/modules/facturation/facturation-pdf.service.ts` (CHEQUE label, generateZipFactures)
+- `backend/src/modules/facturation/facturation.controller.ts` (endpoint export-pdf-zip)
+- `backend/package.json` (archiver@7.0.1)
+- `frontend/src/types/index.ts` (enum CHEQUE)
+- `frontend/src/lib/api.ts` (modifierLigne, downloadZip)
+- `frontend/src/app/admin/facturation/[id]/page.tsx` (transitions, édition ligne, stepper responsive, modals, suppression boutons "Corriger")
+- `frontend/src/app/admin/facturation/page.tsx` (bouton télécharger ZIP)
+- `frontend/src/app/(parent)/mes-factures/page.tsx` (résumé total dû, filtre enfant, tri)
+- `frontend/src/app/(parent)/mes-factures/[id]/page.tsx` (bouton PDF, label CHEQUE)
+
+**✅ Vérification :**
+- Build backend : ✅ (0 erreur TypeScript)
+- Migration + seed : ✅
+
+**⏭️ Prochaines étapes (en attente réponses Audrey) :**
+- [ ] Génération fichier SEPA XML pain.008.001.02
+- [ ] Envoi groupé factures par email
+- [ ] Système d'avoir (facture corrective)
+- [ ] Gestion rejet de prélèvement
+- [ ] Ajout champs IBAN/mandat SEPA sur profil parent
+- [ ] Module Repas / Périscolaire (avril)
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -1537,6 +1815,6 @@ Préinscription (parent)
 
 ---
 
-**Dernière mise à jour :** 20 février 2026 (audit sécurité)
+**Dernière mise à jour :** 24 février 2026 (retour client Audrey + audit UX + 7 améliorations facturation + migration propre)
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

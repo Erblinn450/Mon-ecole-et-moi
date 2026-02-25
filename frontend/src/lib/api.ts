@@ -713,6 +713,21 @@ export const facturationApi = {
     return handleResponse<Facture>(response);
   },
 
+  // Admin - Modifier ligne
+  async modifierLigne(factureId: number, ligneId: number, data: {
+    description?: string;
+    quantite?: number;
+    prixUnit?: number;
+    commentaire?: string;
+  }): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/lignes/${ligneId}`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Facture>(response);
+  },
+
   // Admin - Supprimer ligne
   async supprimerLigne(factureId: number, ligneId: number): Promise<Facture> {
     const response = await fetch(`${API_URL}/facturation/${factureId}/lignes/${ligneId}`, {
@@ -720,6 +735,68 @@ export const facturationApi = {
       headers: getAuthHeaders(),
     });
     return handleResponse<Facture>(response);
+  },
+
+  // Admin - Télécharger ZIP de toutes les factures du mois
+  async downloadZip(mois: string): Promise<Blob> {
+    const response = await fetch(`${API_URL}/facturation/export-pdf-zip?mois=${mois}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors du téléchargement du ZIP");
+    }
+    return response.blob();
+  },
+
+  // Admin - Télécharger PDF
+  async downloadPdf(factureId: number): Promise<Blob> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/pdf`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors du téléchargement du PDF");
+    }
+    return response.blob();
+  },
+
+  // Parent - Télécharger PDF
+  async downloadMaPdf(factureId: number): Promise<Blob> {
+    const response = await fetch(`${API_URL}/facturation/mes-factures/${factureId}/pdf`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors du téléchargement du PDF");
+    }
+    return response.blob();
+  },
+
+  // Admin - Envoyer batch (emails)
+  async envoyerBatch(mois?: string): Promise<{ envoyees: number; erreurs: string[] }> {
+    const response = await fetch(`${API_URL}/facturation/envoyer-batch`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ mois }),
+    });
+    return handleResponse<{ envoyees: number; erreurs: string[] }>(response);
+  },
+
+  // Admin - Créer un avoir
+  async creerAvoir(factureId: number): Promise<Facture> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/avoir`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<Facture>(response);
+  },
+
+  // Admin - Modifier IBAN parent
+  async updateParentSepa(parentId: number, data: { ibanParent?: string; mandatSepaRef?: string }): Promise<unknown> {
+    const response = await fetch(`${API_URL}/users/${parentId}`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<unknown>(response);
   },
 };
 

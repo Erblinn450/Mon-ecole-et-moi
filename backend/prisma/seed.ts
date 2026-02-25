@@ -92,7 +92,7 @@ async function main() {
   console.log(`✅ Admin créé: ${admin.email}`);
 
   // Parent de test
-  const parentPassword = await bcrypt.hash('parent123', 10);
+  const parentPassword = await bcrypt.hash('parent1234', 10);
   const parent = await prisma.user.upsert({
     where: { email: 'parent@test.fr' },
     update: {},

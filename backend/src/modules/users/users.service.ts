@@ -48,6 +48,9 @@ export class UsersService {
         role: true,
         actif: true,
         premiereConnexion: true,
+        modePaiementPref: true,
+        ibanParent: true,
+        mandatSepaRef: true,
         createdAt: true,
         enfantsParent1: {
           select: { id: true, nom: true, prenom: true, classe: true, dateNaissance: true },
@@ -131,21 +134,27 @@ export class UsersService {
     });
   }
 
-  async setResetToken(id: number, token: string) {
+  async setResetToken(id: number, selector: string, hashedVerifier: string) {
     // Token expire dans 1 heure
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     return this.prisma.user.update({
       where: { id },
       data: {
-        rememberToken: token,
+        resetTokenSelector: selector,
+        rememberToken: hashedVerifier,
         resetTokenExpiresAt: expiresAt,
       },
     });
   }
 
-  async findByResetToken(token: string) {
+  async findByResetSelector(selector: string) {
     const user = await this.prisma.user.findFirst({
-      where: { rememberToken: token },
+      where: { resetTokenSelector: selector },
+      select: {
+        id: true,
+        rememberToken: true,
+        resetTokenExpiresAt: true,
+      },
     });
 
     // Vérifier si le token a expiré
@@ -161,8 +170,9 @@ export class UsersService {
       where: { id },
       data: {
         password: hashedPassword,
-        rememberToken: null, // Clear the token
-        resetTokenExpiresAt: null, // Clear expiration
+        rememberToken: null,
+        resetTokenSelector: null,
+        resetTokenExpiresAt: null,
         premiereConnexion: false,
       },
     });

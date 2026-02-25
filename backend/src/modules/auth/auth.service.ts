@@ -111,9 +111,15 @@ export class AuthService {
       return { message: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.' };
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    await this.usersService.setResetToken(user.id, resetToken);
+    // Sélecteur (recherche en BDD) + vérifieur (hashé, comparé avec bcrypt)
+    const selector = crypto.randomBytes(16).toString('hex');
+    const verifier = crypto.randomBytes(32).toString('hex');
+    const hashedVerifier = await bcrypt.hash(verifier, 10);
 
+    await this.usersService.setResetToken(user.id, selector, hashedVerifier);
+
+    // Le lien envoyé contient selector + verifier en clair
+    const resetToken = `${selector}.${verifier}`;
     await this.emailService.sendPasswordResetEmail(
       user.email,
       resetToken,
@@ -124,8 +130,21 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string) {
-    const user = await this.usersService.findByResetToken(token);
-    if (!user) {
+    // Token format : selector.verifier
+    const parts = token.split('.');
+    if (parts.length !== 2) {
+      throw new BadRequestException('Lien invalide ou expiré');
+    }
+    const [selector, verifier] = parts;
+
+    const user = await this.usersService.findByResetSelector(selector);
+    if (!user || !user.rememberToken) {
+      throw new BadRequestException('Lien invalide ou expiré');
+    }
+
+    // Vérifier le hash du vérifieur
+    const isValid = await bcrypt.compare(verifier, user.rememberToken);
+    if (!isValid) {
       throw new BadRequestException('Lien invalide ou expiré');
     }
 

@@ -14,8 +14,11 @@ import {
   Ban,
   TrendingUp,
   ArrowRight,
+  Download,
+  Send,
 } from "lucide-react";
 import { facturationApi } from "@/lib/api";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { Facture, FactureStats, StatutFacture } from "@/types";
 
 const statutConfig: Record<StatutFacture, { label: string; bg: string; text: string }> = {
@@ -23,7 +26,7 @@ const statutConfig: Record<StatutFacture, { label: string; bg: string; text: str
   ENVOYEE: { label: "Envoyée", bg: "bg-blue-50", text: "text-blue-700" },
   PAYEE: { label: "Payée", bg: "bg-emerald-50", text: "text-emerald-700" },
   PARTIELLE: { label: "Partielle", bg: "bg-orange-50", text: "text-orange-700" },
-  EN_RETARD: { label: "En retard", bg: "bg-rose-50", text: "text-rose-700" },
+  EN_RETARD: { label: "Impayé", bg: "bg-rose-50", text: "text-rose-700" },
   ANNULEE: { label: "Annulée", bg: "bg-gray-50", text: "text-gray-500" },
 };
 
@@ -51,6 +54,10 @@ export default function FacturationPage() {
   const [filterMois, setFilterMois] = useState<string>("");
   const [isBatchLoading, setIsBatchLoading] = useState(false);
   const [batchMessage, setBatchMessage] = useState<string | null>(null);
+  const [isEnvoiLoading, setIsEnvoiLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string; message: string; variant: "danger" | "warning" | "default"; onConfirm: () => void;
+  } | null>(null);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -103,6 +110,25 @@ export default function FacturationPage() {
     }
   };
 
+  const nbEnAttente = factures.filter((f) => f.statut === StatutFacture.EN_ATTENTE).length;
+
+  const handleEnvoyerBatch = async () => {
+    setIsEnvoiLoading(true);
+    setBatchMessage(null);
+    try {
+      const result = await facturationApi.envoyerBatch(filterMois || undefined);
+      setBatchMessage(
+        `${result.envoyees} facture(s) envoyée(s) par email` +
+        (result.erreurs.length > 0 ? ` (${result.erreurs.length} erreur(s))` : "")
+      );
+      await loadData();
+    } catch (err) {
+      setBatchMessage(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+    } finally {
+      setIsEnvoiLoading(false);
+    }
+  };
+
   const filteredFactures = factures.filter((f) => {
     if (filterStatut !== "TOUS" && f.statut !== filterStatut) return false;
     if (searchQuery) {
@@ -145,18 +171,62 @@ export default function FacturationPage() {
           <h1 className="text-2xl font-bold text-gray-900">Facturation</h1>
           <p className="text-gray-500 mt-1">Gestion des factures et paiements</p>
         </div>
-        <button
-          onClick={handleGenererBatch}
-          disabled={isBatchLoading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
-        >
-          {isBatchLoading ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <Plus size={18} />
+        <div className="flex items-center gap-2">
+          {filterMois && (
+            <button
+              onClick={async () => {
+                try {
+                  const blob = await facturationApi.downloadZip(filterMois);
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `factures-${filterMois}.zip`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(url);
+                } catch {
+                  alert("Erreur lors du téléchargement");
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <Download size={18} />
+              Télécharger tout
+            </button>
           )}
-          Générer les factures du mois
-        </button>
+          {nbEnAttente > 0 && (
+            <button
+              onClick={() => setConfirmModal({
+                title: "Envoyer les factures ?",
+                message: `${nbEnAttente} facture(s) en attente seront envoyées par email aux parents.`,
+                variant: "warning",
+                onConfirm: () => { setConfirmModal(null); handleEnvoyerBatch(); },
+              })}
+              disabled={isEnvoiLoading}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            >
+              {isEnvoiLoading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
+              Envoyer les factures ({nbEnAttente})
+            </button>
+          )}
+          <button
+            onClick={handleGenererBatch}
+            disabled={isBatchLoading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          >
+            {isBatchLoading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Plus size={18} />
+            )}
+            Générer les factures du mois
+          </button>
+        </div>
       </div>
 
       {/* Batch message */}
@@ -196,7 +266,7 @@ export default function FacturationPage() {
           <div className="bg-rose-50 rounded-xl border border-rose-100 p-4">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle size={18} className="text-rose-600" />
-              <span className="text-sm font-medium text-rose-700">En retard</span>
+              <span className="text-sm font-medium text-rose-700">Impayé</span>
             </div>
             <p className="text-2xl font-bold text-rose-900">{stats.enRetard.count}</p>
             <p className="text-sm text-rose-600">{stats.enRetard.montant.toFixed(2)} €</p>
@@ -328,6 +398,16 @@ export default function FacturationPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de confirmation */}
+      <ConfirmModal
+        open={!!confirmModal}
+        title={confirmModal?.title ?? ""}
+        message={confirmModal?.message ?? ""}
+        variant={confirmModal?.variant ?? "default"}
+        onConfirm={() => confirmModal?.onConfirm()}
+        onCancel={() => setConfirmModal(null)}
+      />
     </div>
   );
 }
