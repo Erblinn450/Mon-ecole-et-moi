@@ -44,7 +44,7 @@ export default function AdminComptesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const allUsers = await usersApi.getAll() as ParentCompte[];
+      const allUsers = await usersApi.getAll() as unknown as ParentCompte[];
       setParents(allUsers.filter((u) => u.role === Role.PARENT));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors du chargement");

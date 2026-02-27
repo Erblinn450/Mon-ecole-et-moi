@@ -94,11 +94,11 @@ export default function MesFacturesPage() {
 
       {/* Filtre enfant */}
       {(() => {
-        const enfants = [...new Map(
+        const enfants = Array.from(new Map(
           factures
             .filter((f) => f.enfant)
-            .map((f) => [f.enfant!.id, `${f.enfant!.prenom} ${f.enfant!.nom}`])
-        ).entries()];
+            .map((f) => [f.enfant!.id, `${f.enfant!.prenom} ${f.enfant!.nom}`] as [number, string])
+        ).entries());
         return enfants.length > 1 ? (
           <div className="flex gap-2 flex-wrap">
             <button

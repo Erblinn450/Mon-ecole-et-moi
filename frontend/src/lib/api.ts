@@ -87,6 +87,24 @@ export const authApi = {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user");
   },
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse<{ message: string }>(response);
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    return handleResponse<{ message: string }>(response);
+  },
 };
 
 // ============================================

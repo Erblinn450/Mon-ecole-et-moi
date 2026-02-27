@@ -1778,6 +1778,51 @@ Audit des 5 pages facturation (admin liste, admin détail, parent liste, parent 
 
 ---
 
+### 🗓️ Jeudi 27 février 2026
+
+**Durée :** ~1h
+
+**Contexte :** Audrey signale que des parents n'arrivent pas à se connecter (oubli de mot de passe). Le backend "mot de passe oublié" était déjà implémenté (endpoints, tokens sécurisés, email template). Il manquait uniquement les pages frontend.
+
+**✅ Réalisé :**
+
+#### 1. Pages "Mot de passe oublié" (frontend)
+
+- **Page `/mot-de-passe-oublie`** : Formulaire avec champ email, message de succès générique (sécurité : ne révèle pas si le compte existe), lien retour connexion
+- **Page `/reset-password`** : Lit le token depuis l'URL (`?token=xxx`), 2 champs mot de passe + confirmation, validation min 8 caractères, gestion token invalide/expiré, redirection vers connexion après succès
+- **API client** : Ajout `authApi.forgotPassword()` et `authApi.resetPassword()` dans `lib/api.ts`
+- **Lien connexion** : Le lien "Mot de passe oublié ?" sur la page connexion pointait vers `#`, corrigé vers `/mot-de-passe-oublie`
+- **Style** : Cohérent avec la page connexion existante (même header, même card, même gradient emerald)
+
+#### 2. Correction bugs de build préexistants
+
+- **`mes-factures/page.tsx`** : Erreur `--downlevelIteration` sur `[...new Map().entries()]` → remplacé par `Array.from()`
+- **`admin/comptes/page.tsx`** : Erreur de cast TypeScript `User[] as ParentCompte[]` → ajout `as unknown` intermédiaire
+
+**📁 Fichiers créés :**
+- `frontend/src/app/(public)/mot-de-passe-oublie/page.tsx`
+- `frontend/src/app/(public)/reset-password/page.tsx`
+
+**📁 Fichiers modifiés :**
+- `frontend/src/lib/api.ts` (ajout forgotPassword, resetPassword)
+- `frontend/src/app/(public)/connexion/page.tsx` (lien mot de passe oublié)
+- `frontend/src/app/(parent)/mes-factures/page.tsx` (fix build Array.from)
+- `frontend/src/app/admin/comptes/page.tsx` (fix build cast TypeScript)
+
+**✅ Vérification :**
+- Build frontend : ✅ (0 erreur)
+- Pas de modification backend (déjà complet)
+
+**📧 Communication client :**
+- Mail envoyé à Audrey : fonctionnalité prête d'ici lundi + relance sur les 4 questions SEPA sans réponse
+
+**⏭️ Prochaines étapes :**
+- [ ] Tester le flux complet en local (MailHog)
+- [ ] Déploiement démo (Vercel + Render + Neon) — plan prêt
+- [ ] En attente réponse Audrey sur les 4 questions mandat SEPA
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -1815,6 +1860,6 @@ Audit des 5 pages facturation (admin liste, admin détail, parent liste, parent 
 
 ---
 
-**Dernière mise à jour :** 24 février 2026 (retour client Audrey + audit UX + 7 améliorations facturation + migration propre)
+**Dernière mise à jour :** 27 février 2026 (pages mot de passe oublié + fix builds préexistants)
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

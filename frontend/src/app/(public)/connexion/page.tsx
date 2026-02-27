@@ -202,7 +202,7 @@ export default function ConnexionPage() {
               </form>
 
               <div className="mt-6 text-center">
-                <Link href="#" className="text-sm text-emerald-600 hover:text-emerald-700">
+                <Link href="/mot-de-passe-oublie" className="text-sm text-emerald-600 hover:text-emerald-700">
                   Mot de passe oublié ?
                 </Link>
               </div>
