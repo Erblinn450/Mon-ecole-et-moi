@@ -796,8 +796,8 @@ export default function FactureDetailPage() {
                   Créer un avoir
                 </button>
               )}
-              {/* Annuler — toujours en dernier, en rouge discret */}
-              {facture.statut !== StatutFacture.PAYEE && (
+              {/* Annuler — uniquement pour les factures non encore envoyées (brouillons) */}
+              {facture.statut === StatutFacture.EN_ATTENTE && (
                 <button
                   onClick={() => {
                     setConfirmModal({

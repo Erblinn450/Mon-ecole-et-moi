@@ -1,4 +1,4 @@
-import { PrismaClient, Role, Classe, StatutPreinscription } from '@prisma/client';
+import { PrismaClient, Role, Classe, StatutPreinscription, StatutInscription, StatutFacture, TypeFacture, TypeLigne, ModePaiement, FrequencePaiement } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -240,6 +240,505 @@ async function main() {
     }
   }
   console.log(`✅ ${articlesDemo.length} articles personnalisés créés`);
+
+  // ============================================
+  // 7. FAMILLES SUPPLÉMENTAIRES
+  // ============================================
+  console.log('👨‍👩‍👧‍👦 Création des familles supplémentaires...');
+
+  // Famille Martin — 2 enfants (fratrie), mère seule
+  const parent2Password = await bcrypt.hash('parent1234', 10);
+  const parentMartin = await prisma.user.upsert({
+    where: { email: 'sophie.martin@email.fr' },
+    update: {},
+    create: {
+      email: 'sophie.martin@email.fr',
+      password: parent2Password,
+      name: 'Sophie Martin',
+      nom: 'Martin',
+      prenom: 'Sophie',
+      telephone: '0687451239',
+      adresse: '45 avenue de Colmar, 68200 Mulhouse',
+      role: Role.PARENT,
+      actif: true,
+      premiereConnexion: false,
+      frequencePaiement: FrequencePaiement.MENSUEL,
+      modePaiementPref: ModePaiement.PRELEVEMENT,
+      ibanParent: 'FR7630006000011234567890189',
+      mandatSepaRef: 'MANDAT-2025-002',
+    },
+  });
+
+  const enfantMartin1 = await prisma.enfant.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
+      nom: 'Martin',
+      prenom: 'Emma',
+      dateNaissance: new Date('2019-06-22'),
+      lieuNaissance: 'Mulhouse',
+      classe: Classe.MATERNELLE,
+      parent1Id: parentMartin.id,
+    },
+  });
+
+  const enfantMartin2 = await prisma.enfant.upsert({
+    where: { id: 3 },
+    update: {},
+    create: {
+      nom: 'Martin',
+      prenom: 'Noah',
+      dateNaissance: new Date('2017-01-10'),
+      lieuNaissance: 'Mulhouse',
+      classe: Classe.ELEMENTAIRE,
+      parent1Id: parentMartin.id,
+    },
+  });
+
+  // Famille Bernard — couple, 1 enfant élémentaire
+  const parent3Password = await bcrypt.hash('parent1234', 10);
+  const parentBernard1 = await prisma.user.upsert({
+    where: { email: 'claire.bernard@email.fr' },
+    update: {},
+    create: {
+      email: 'claire.bernard@email.fr',
+      password: parent3Password,
+      name: 'Claire Bernard',
+      nom: 'Bernard',
+      prenom: 'Claire',
+      telephone: '0654321987',
+      adresse: '12 rue du Sauvage, 68100 Mulhouse',
+      role: Role.PARENT,
+      actif: true,
+      premiereConnexion: false,
+      frequencePaiement: FrequencePaiement.TRIMESTRIEL,
+      modePaiementPref: ModePaiement.VIREMENT,
+    },
+  });
+
+  const parentBernard2 = await prisma.user.upsert({
+    where: { email: 'thomas.bernard@email.fr' },
+    update: {},
+    create: {
+      email: 'thomas.bernard@email.fr',
+      password: parent3Password,
+      name: 'Thomas Bernard',
+      nom: 'Bernard',
+      prenom: 'Thomas',
+      telephone: '0698765432',
+      adresse: '12 rue du Sauvage, 68100 Mulhouse',
+      role: Role.PARENT,
+      actif: true,
+      premiereConnexion: false,
+    },
+  });
+
+  const enfantBernard = await prisma.enfant.upsert({
+    where: { id: 4 },
+    update: {},
+    create: {
+      nom: 'Bernard',
+      prenom: 'Léa',
+      dateNaissance: new Date('2018-09-05'),
+      lieuNaissance: 'Colmar',
+      classe: Classe.ELEMENTAIRE,
+      parent1Id: parentBernard1.id,
+      parent2Id: parentBernard2.id,
+    },
+  });
+
+  // Famille Petit — 1 enfant maternelle, préinscription récente
+  const parent4Password = await bcrypt.hash('parent1234', 10);
+  const parentPetit = await prisma.user.upsert({
+    where: { email: 'amandine.petit@email.fr' },
+    update: {},
+    create: {
+      email: 'amandine.petit@email.fr',
+      password: parent4Password,
+      name: 'Amandine Petit',
+      nom: 'Petit',
+      prenom: 'Amandine',
+      telephone: '0612987654',
+      adresse: '8 rue des Tanneurs, 68100 Mulhouse',
+      role: Role.PARENT,
+      actif: true,
+      premiereConnexion: true, // N'a pas encore changé son mot de passe
+      frequencePaiement: FrequencePaiement.MENSUEL,
+      modePaiementPref: ModePaiement.PRELEVEMENT,
+    },
+  });
+
+  const enfantPetit = await prisma.enfant.upsert({
+    where: { id: 5 },
+    update: {},
+    create: {
+      nom: 'Petit',
+      prenom: 'Jade',
+      dateNaissance: new Date('2021-11-28'),
+      lieuNaissance: 'Strasbourg',
+      classe: Classe.MATERNELLE,
+      parent1Id: parentPetit.id,
+    },
+  });
+
+  console.log('✅ 3 familles supplémentaires créées');
+
+  // ============================================
+  // 8. INSCRIPTIONS
+  // ============================================
+  console.log('📚 Création des inscriptions...');
+
+  const inscriptionsData = [
+    { enfantId: enfant.id, parentId: parent.id, statut: StatutInscription.ACTIVE },
+    { enfantId: enfantMartin1.id, parentId: parentMartin.id, statut: StatutInscription.ACTIVE },
+    { enfantId: enfantMartin2.id, parentId: parentMartin.id, statut: StatutInscription.ACTIVE },
+    { enfantId: enfantBernard.id, parentId: parentBernard1.id, statut: StatutInscription.ACTIVE },
+    { enfantId: enfantPetit.id, parentId: parentPetit.id, statut: StatutInscription.EN_COURS },
+  ];
+
+  for (const insc of inscriptionsData) {
+    const existing = await prisma.inscription.findFirst({
+      where: { enfantId: insc.enfantId, anneeScolaire },
+    });
+    if (!existing) {
+      await prisma.inscription.create({
+        data: {
+          enfantId: insc.enfantId,
+          parentId: insc.parentId,
+          dateInscription: new Date('2025-09-01'),
+          statut: insc.statut,
+          anneeScolaire,
+        },
+      });
+    }
+  }
+  console.log('✅ Inscriptions créées');
+
+  // ============================================
+  // 9. PERSONNES AUTORISÉES
+  // ============================================
+  console.log('👥 Création des personnes autorisées...');
+
+  const personnesAutorisees = [
+    { enfantId: enfant.id, nom: 'Dupont', prenom: 'Jean', telephone: '0611223344', lienParente: 'Grand-père' },
+    { enfantId: enfant.id, nom: 'Moreau', prenom: 'Catherine', telephone: '0622334455', lienParente: 'Tante' },
+    { enfantId: enfantMartin1.id, nom: 'Martin', prenom: 'Pierre', telephone: '0633445566', lienParente: 'Grand-père' },
+    { enfantId: enfantBernard.id, nom: 'Dubois', prenom: 'Marie', telephone: '0644556677', lienParente: 'Nounou' },
+  ];
+
+  for (const pa of personnesAutorisees) {
+    const existing = await prisma.personneAutorisee.findFirst({
+      where: { enfantId: pa.enfantId, nom: pa.nom, prenom: pa.prenom },
+    });
+    if (!existing) {
+      await prisma.personneAutorisee.create({ data: pa });
+    }
+  }
+  console.log('✅ Personnes autorisées créées');
+
+  // ============================================
+  // 10. FACTURES DE DÉMO
+  // ============================================
+  console.log('🧾 Création des factures de démo...');
+
+  // --- Factures de Lucas Dupont (parent@test.fr) ---
+
+  // Janvier 2026 — Payée
+  const facture1 = await prisma.facture.upsert({
+    where: { numero: 'FA-2026-001' },
+    update: {},
+    create: {
+      numero: 'FA-2026-001',
+      parentId: parent.id,
+      enfantId: enfant.id,
+      montantTotal: 639.35,
+      montantPaye: 639.35,
+      dateEmission: new Date('2026-01-05'),
+      dateEcheance: new Date('2026-01-31'),
+      periode: '2026-01',
+      statut: StatutFacture.PAYEE,
+      type: TypeFacture.MENSUELLE,
+      modePaiement: ModePaiement.VIREMENT,
+      anneeScolaire,
+    },
+  });
+
+  // Lignes facture 1
+  const lignesF1 = [
+    { factureId: facture1.id, description: 'Scolarité mensuelle - Maternelle', quantite: 1, prixUnit: 575.0, montant: 575.0, type: TypeLigne.SCOLARITE },
+    { factureId: facture1.id, description: 'Repas midi', quantite: 10, prixUnit: 5.45, montant: 54.50, type: TypeLigne.REPAS },
+    { factureId: facture1.id, description: 'Frais matériel pédagogique - Maternelle', quantite: 1, prixUnit: 9.85, montant: 9.85, type: TypeLigne.MATERIEL },
+  ];
+  for (const ligne of lignesF1) {
+    const existing = await prisma.ligneFacture.findFirst({
+      where: { factureId: ligne.factureId, description: ligne.description },
+    });
+    if (!existing) {
+      await prisma.ligneFacture.create({ data: ligne });
+    }
+  }
+
+  // Paiement facture 1
+  const existingP1 = await prisma.paiement.findFirst({ where: { factureId: facture1.id } });
+  if (!existingP1) {
+    await prisma.paiement.create({
+      data: {
+        factureId: facture1.id,
+        montant: 639.35,
+        datePaiement: new Date('2026-01-15'),
+        modePaiement: ModePaiement.VIREMENT,
+        reference: 'VIR-DUPONT-202601',
+      },
+    });
+  }
+
+  // Février 2026 — Envoyée (en attente de paiement)
+  const facture2 = await prisma.facture.upsert({
+    where: { numero: 'FA-2026-002' },
+    update: {},
+    create: {
+      numero: 'FA-2026-002',
+      parentId: parent.id,
+      enfantId: enfant.id,
+      montantTotal: 693.15,
+      montantPaye: 0,
+      dateEmission: new Date('2026-02-03'),
+      dateEcheance: new Date('2026-02-28'),
+      periode: '2026-02',
+      statut: StatutFacture.ENVOYEE,
+      type: TypeFacture.MENSUELLE,
+      modePaiement: ModePaiement.VIREMENT,
+      anneeScolaire,
+    },
+  });
+
+  const lignesF2 = [
+    { factureId: facture2.id, description: 'Scolarité mensuelle - Maternelle', quantite: 1, prixUnit: 575.0, montant: 575.0, type: TypeLigne.SCOLARITE },
+    { factureId: facture2.id, description: 'Repas midi', quantite: 18, prixUnit: 5.45, montant: 98.10, type: TypeLigne.REPAS },
+    { factureId: facture2.id, description: 'Périscolaire', quantite: 4, prixUnit: 5.0125, montant: 20.05, type: TypeLigne.PERISCOLAIRE },
+  ];
+  for (const ligne of lignesF2) {
+    const existing = await prisma.ligneFacture.findFirst({
+      where: { factureId: ligne.factureId, description: ligne.description },
+    });
+    if (!existing) {
+      await prisma.ligneFacture.create({ data: ligne });
+    }
+  }
+
+  // --- Factures de la famille Martin (fratrie, 2 enfants) ---
+
+  // Emma Martin — Janvier 2026, payée
+  const facture3 = await prisma.facture.upsert({
+    where: { numero: 'FA-2026-003' },
+    update: {},
+    create: {
+      numero: 'FA-2026-003',
+      parentId: parentMartin.id,
+      enfantId: enfantMartin1.id,
+      montantTotal: 594.50,
+      montantPaye: 594.50,
+      dateEmission: new Date('2026-01-05'),
+      dateEcheance: new Date('2026-01-31'),
+      periode: '2026-01',
+      statut: StatutFacture.PAYEE,
+      type: TypeFacture.MENSUELLE,
+      modePaiement: ModePaiement.PRELEVEMENT,
+      anneeScolaire,
+    },
+  });
+
+  const lignesF3 = [
+    { factureId: facture3.id, description: 'Scolarité mensuelle fratrie - Maternelle', quantite: 1, prixUnit: 540.0, montant: 540.0, type: TypeLigne.SCOLARITE },
+    { factureId: facture3.id, description: 'Repas midi', quantite: 10, prixUnit: 5.45, montant: 54.50, type: TypeLigne.REPAS },
+  ];
+  for (const ligne of lignesF3) {
+    const existing = await prisma.ligneFacture.findFirst({
+      where: { factureId: ligne.factureId, description: ligne.description },
+    });
+    if (!existing) {
+      await prisma.ligneFacture.create({ data: ligne });
+    }
+  }
+
+  const existingP3 = await prisma.paiement.findFirst({ where: { factureId: facture3.id } });
+  if (!existingP3) {
+    await prisma.paiement.create({
+      data: {
+        factureId: facture3.id,
+        montant: 594.50,
+        datePaiement: new Date('2026-01-10'),
+        modePaiement: ModePaiement.PRELEVEMENT,
+        reference: 'PRLV-MARTIN-202601-E',
+      },
+    });
+  }
+
+  // Noah Martin — Janvier 2026, payée
+  const facture4 = await prisma.facture.upsert({
+    where: { numero: 'FA-2026-004' },
+    update: {},
+    create: {
+      numero: 'FA-2026-004',
+      parentId: parentMartin.id,
+      enfantId: enfantMartin2.id,
+      montantTotal: 621.50,
+      montantPaye: 621.50,
+      dateEmission: new Date('2026-01-05'),
+      dateEcheance: new Date('2026-01-31'),
+      periode: '2026-01',
+      statut: StatutFacture.PAYEE,
+      type: TypeFacture.MENSUELLE,
+      modePaiement: ModePaiement.PRELEVEMENT,
+      anneeScolaire,
+    },
+  });
+
+  const lignesF4 = [
+    { factureId: facture4.id, description: 'Scolarité mensuelle fratrie - Élémentaire', quantite: 1, prixUnit: 540.0, montant: 540.0, type: TypeLigne.SCOLARITE },
+    { factureId: facture4.id, description: 'Repas midi', quantite: 15, prixUnit: 5.45, montant: 81.75, type: TypeLigne.REPAS },
+    { factureId: facture4.id, description: 'Réduction fratrie', quantite: 1, prixUnit: -0.25, montant: -0.25, type: TypeLigne.REDUCTION },
+  ];
+  for (const ligne of lignesF4) {
+    const existing = await prisma.ligneFacture.findFirst({
+      where: { factureId: ligne.factureId, description: ligne.description },
+    });
+    if (!existing) {
+      await prisma.ligneFacture.create({ data: ligne });
+    }
+  }
+
+  const existingP4 = await prisma.paiement.findFirst({ where: { factureId: facture4.id } });
+  if (!existingP4) {
+    await prisma.paiement.create({
+      data: {
+        factureId: facture4.id,
+        montant: 621.50,
+        datePaiement: new Date('2026-01-10'),
+        modePaiement: ModePaiement.PRELEVEMENT,
+        reference: 'PRLV-MARTIN-202601-N',
+      },
+    });
+  }
+
+  // Emma Martin — Février 2026, paiement partiel
+  const facture5 = await prisma.facture.upsert({
+    where: { numero: 'FA-2026-005' },
+    update: {},
+    create: {
+      numero: 'FA-2026-005',
+      parentId: parentMartin.id,
+      enfantId: enfantMartin1.id,
+      montantTotal: 605.90,
+      montantPaye: 540.0,
+      dateEmission: new Date('2026-02-03'),
+      dateEcheance: new Date('2026-02-28'),
+      periode: '2026-02',
+      statut: StatutFacture.PARTIELLE,
+      type: TypeFacture.MENSUELLE,
+      modePaiement: ModePaiement.PRELEVEMENT,
+      anneeScolaire,
+    },
+  });
+
+  const lignesF5 = [
+    { factureId: facture5.id, description: 'Scolarité mensuelle fratrie - Maternelle', quantite: 1, prixUnit: 540.0, montant: 540.0, type: TypeLigne.SCOLARITE },
+    { factureId: facture5.id, description: 'Repas midi', quantite: 12, prixUnit: 5.45, montant: 65.40, type: TypeLigne.REPAS },
+    { factureId: facture5.id, description: 'Sortie scolaire - Musée', quantite: 1, prixUnit: 0.50, montant: 0.50, type: TypeLigne.PERSONNALISE },
+  ];
+  for (const ligne of lignesF5) {
+    const existing = await prisma.ligneFacture.findFirst({
+      where: { factureId: ligne.factureId, description: ligne.description },
+    });
+    if (!existing) {
+      await prisma.ligneFacture.create({ data: ligne });
+    }
+  }
+
+  const existingP5 = await prisma.paiement.findFirst({ where: { factureId: facture5.id } });
+  if (!existingP5) {
+    await prisma.paiement.create({
+      data: {
+        factureId: facture5.id,
+        montant: 540.0,
+        datePaiement: new Date('2026-02-10'),
+        modePaiement: ModePaiement.PRELEVEMENT,
+        reference: 'PRLV-MARTIN-202602-E',
+        commentaire: 'Prélèvement scolarité uniquement, reste repas à régler',
+      },
+    });
+  }
+
+  // --- Facture Léa Bernard — Trimestrielle, en attente ---
+  const facture6 = await prisma.facture.upsert({
+    where: { numero: 'FA-2026-006' },
+    update: {},
+    create: {
+      numero: 'FA-2026-006',
+      parentId: parentBernard1.id,
+      enfantId: enfantBernard.id,
+      montantTotal: 1893.75,
+      montantPaye: 0,
+      dateEmission: new Date('2026-01-05'),
+      dateEcheance: new Date('2026-03-31'),
+      periode: '2026-T1',
+      statut: StatutFacture.ENVOYEE,
+      type: TypeFacture.MENSUELLE,
+      modePaiement: ModePaiement.VIREMENT,
+      anneeScolaire,
+      commentaire: 'Paiement trimestriel — T1 2026',
+    },
+  });
+
+  const lignesF6 = [
+    { factureId: facture6.id, description: 'Scolarité trimestrielle - Élémentaire', quantite: 1, prixUnit: 1725.0, montant: 1725.0, type: TypeLigne.SCOLARITE },
+    { factureId: facture6.id, description: 'Frais matériel pédagogique - Élémentaire', quantite: 1, prixUnit: 85.0, montant: 85.0, type: TypeLigne.MATERIEL },
+    { factureId: facture6.id, description: 'Repas midi (estimation T1)', quantite: 15, prixUnit: 5.45, montant: 81.75, type: TypeLigne.REPAS },
+    { factureId: facture6.id, description: 'Frais inscription années suivantes', quantite: 1, prixUnit: 2.0, montant: 2.0, type: TypeLigne.INSCRIPTION },
+  ];
+  for (const ligne of lignesF6) {
+    const existing = await prisma.ligneFacture.findFirst({
+      where: { factureId: ligne.factureId, description: ligne.description },
+    });
+    if (!existing) {
+      await prisma.ligneFacture.create({ data: ligne });
+    }
+  }
+
+  // --- Facture Jade Petit — Frais d'inscription première année ---
+  const facture7 = await prisma.facture.upsert({
+    where: { numero: 'FA-2026-007' },
+    update: {},
+    create: {
+      numero: 'FA-2026-007',
+      parentId: parentPetit.id,
+      enfantId: enfantPetit.id,
+      montantTotal: 415.0,
+      montantPaye: 0,
+      dateEmission: new Date('2026-02-15'),
+      dateEcheance: new Date('2026-03-15'),
+      periode: '2026-02',
+      statut: StatutFacture.EN_ATTENTE,
+      type: TypeFacture.PONCTUELLE,
+      anneeScolaire,
+      commentaire: 'Frais inscription + matériel première année',
+    },
+  });
+
+  const lignesF7 = [
+    { factureId: facture7.id, description: "Frais d'inscription 1ère année", quantite: 1, prixUnit: 350.0, montant: 350.0, type: TypeLigne.INSCRIPTION },
+    { factureId: facture7.id, description: 'Frais matériel pédagogique - Maternelle', quantite: 1, prixUnit: 65.0, montant: 65.0, type: TypeLigne.MATERIEL },
+  ];
+  for (const ligne of lignesF7) {
+    const existing = await prisma.ligneFacture.findFirst({
+      where: { factureId: ligne.factureId, description: ligne.description },
+    });
+    if (!existing) {
+      await prisma.ligneFacture.create({ data: ligne });
+    }
+  }
+
+  console.log('✅ 7 factures de démo créées avec lignes et paiements');
 
   console.log('🎉 Seeding terminé avec succès !');
 }

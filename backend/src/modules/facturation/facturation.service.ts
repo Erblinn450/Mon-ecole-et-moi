@@ -421,10 +421,10 @@ export class FacturationService {
   // Transitions de statut autorisées
   private static readonly TRANSITIONS_VALIDES: Record<StatutFacture, StatutFacture[]> = {
     [StatutFacture.EN_ATTENTE]: [StatutFacture.ENVOYEE, StatutFacture.ANNULEE],
-    [StatutFacture.ENVOYEE]: [StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.EN_RETARD, StatutFacture.ANNULEE],
-    [StatutFacture.PARTIELLE]: [StatutFacture.PAYEE, StatutFacture.EN_RETARD, StatutFacture.ANNULEE],
+    [StatutFacture.ENVOYEE]: [StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.EN_RETARD], // Annulation = avoir obligatoire
+    [StatutFacture.PARTIELLE]: [StatutFacture.PAYEE, StatutFacture.EN_RETARD], // Annulation = avoir obligatoire
     [StatutFacture.PAYEE]: [], // Juridiquement : facture envoyée = non modifiable. Correction = avoir
-    [StatutFacture.EN_RETARD]: [StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.ANNULEE],
+    [StatutFacture.EN_RETARD]: [StatutFacture.PAYEE, StatutFacture.PARTIELLE], // Annulation = avoir obligatoire
     [StatutFacture.ANNULEE]: [], // État terminal
   };
 

@@ -3,7 +3,10 @@ const nextConfig = {
   // PWA configuration will be added later
   reactStrictMode: true,
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.onrender.com' },
+      { protocol: 'http', hostname: 'localhost' },
+    ],
   },
 }
 
