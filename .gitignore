@@ -129,3 +129,9 @@ backups/
 # Logs de production
 /backend/logs/
 !/backend/logs/.gitkeep
+
+# Fichiers personnels (journal de bord, mémoire, planning)
+RECAP_PROJET.md
+MEMOIRE_L3.md
+PLANNING_REALISTE.md
+PLAN_FACTURATION.md
