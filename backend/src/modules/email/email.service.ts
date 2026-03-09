@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
+import * as Handlebars from 'handlebars';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface PreinscriptionEmailData {
   numeroDossier: string;
@@ -29,11 +32,72 @@ interface EmailVerificationData {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  private readonly useBrevoApi: boolean;
 
   constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {
+    this.useBrevoApi = this.configService.get('MAIL_PROVIDER') === 'brevo-api';
+    if (this.useBrevoApi) {
+      this.logger.log('Email provider: Brevo HTTP API');
+    }
+  }
+
+  /**
+   * Envoie un email via Brevo HTTP API ou SMTP selon la config
+   */
+  private async sendEmail(options: { to: string; subject: string; template: string; context: Record<string, any> }): Promise<void> {
+    if (this.useBrevoApi) {
+      await this.sendViaBrevoApi(options);
+      return;
+    }
+    await this.mailerService.sendMail(options);
+  }
+
+  /**
+   * Compile un template Handlebars et envoie via l'API HTTP Brevo
+   */
+  private async sendViaBrevoApi(options: { to: string; subject: string; template: string; context: Record<string, any> }) {
+    const apiKey = this.configService.get('BREVO_API_KEY');
+    if (!apiKey) {
+      throw new Error('BREVO_API_KEY manquante pour le provider brevo-api');
+    }
+
+    // Lire et compiler le template Handlebars
+    const templatePath = path.join(__dirname, 'templates', `${options.template}.hbs`);
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const compiled = Handlebars.compile(templateSource);
+    const htmlContent = compiled(options.context);
+
+    // Parser MAIL_FROM "Nom <email>"
+    const mailFrom = this.configService.get('MAIL_FROM', 'Mon École et Moi <noreply@monecole.fr>');
+    const fromMatch = mailFrom.match(/^"?(.+?)"?\s*<(.+?)>$/);
+    const senderName = fromMatch ? fromMatch[1].trim() : 'Mon École et Moi';
+    const senderEmail = fromMatch ? fromMatch[2] : mailFrom;
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Brevo API ${response.status}: ${errorBody}`);
+    }
+
+    return response.json();
+  }
 
   async sendPreinscriptionConfirmation(data: PreinscriptionEmailData) {
     const { emailParent, emailParent2, ...rest } = data;
@@ -59,7 +123,7 @@ export class EmailService {
 
     try {
       // Envoyer au parent principal
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: emailParent,
         subject:
           'Confirmation de votre demande de pré-inscription - Mon École et Moi',
@@ -71,7 +135,7 @@ export class EmailService {
 
       // Envoyer au parent 2 si présent
       if (emailParent2) {
-        await this.mailerService.sendMail({
+        await this.sendEmail({
           to: emailParent2,
           subject:
             'Confirmation de votre demande de pré-inscription - Mon École et Moi',
@@ -105,7 +169,7 @@ export class EmailService {
       : 'prochainement';
 
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: emailParent,
         subject: 'Mon école Montessori et Moi - Votre dossier d\'inscription pour ' + data.prenomEnfant + ' est accepté !',
         template: 'preinscription-validated',
@@ -121,7 +185,7 @@ export class EmailService {
 
       // Ne pas envoyer le mot de passe au parent 2 (il devra se créer son propre compte)
       if (emailParent2) {
-        await this.mailerService.sendMail({
+        await this.sendEmail({
           to: emailParent2,
           subject: 'Mon école Montessori et Moi - Votre dossier d\'inscription pour ' + data.prenomEnfant + ' est accepté !',
           template: 'preinscription-validated',
@@ -150,7 +214,7 @@ export class EmailService {
     const { emailParent, emailParent2, ...rest } = data;
 
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: emailParent,
         subject: 'Mon école Montessori et Moi - Statut de votre dossier d\'inscription pour ' + data.prenomEnfant,
         template: 'preinscription-refus',
@@ -161,7 +225,7 @@ export class EmailService {
       });
 
       if (emailParent2) {
-        await this.mailerService.sendMail({
+        await this.sendEmail({
           to: emailParent2,
           subject: 'Mon école Montessori et Moi - Statut de votre dossier d\'inscription pour ' + data.prenomEnfant,
           template: 'preinscription-refus',
@@ -186,7 +250,7 @@ export class EmailService {
     const { emailParent, emailParent2, ...rest } = data;
 
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: emailParent,
         subject: 'Mon école Montessori et Moi - Confirmation d\'annulation de la demande d\'inscription pour ' + data.prenomEnfant,
         template: 'preinscription-annulation',
@@ -197,7 +261,7 @@ export class EmailService {
       });
 
       if (emailParent2) {
-        await this.mailerService.sendMail({
+        await this.sendEmail({
           to: emailParent2,
           subject: 'Mon école Montessori et Moi - Confirmation d\'annulation de la demande d\'inscription pour ' + data.prenomEnfant,
           template: 'preinscription-annulation',
@@ -238,7 +302,7 @@ export class EmailService {
     };
 
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: data.emailParent,
         subject: `Mon école Montessori et Moi - Réinscription de ${data.prenomEnfant} acceptée !`,
         template: 'reinscription-validee',
@@ -273,7 +337,7 @@ export class EmailService {
     commentaire?: string | null;
   }) {
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: data.emailParent,
         subject: `Mon école Montessori et Moi - Statut de la réinscription de ${data.prenomEnfant}`,
         template: 'reinscription-refusee',
@@ -301,7 +365,7 @@ export class EmailService {
     const verificationUrl = `${frontendUrl}/verification-email?token=${data.verificationToken}`;
 
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: data.emailParent,
         subject: '✉️ Vérifiez votre adresse email - Mon École et Moi',
         template: 'email-verification',
@@ -335,7 +399,7 @@ export class EmailService {
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: email,
         subject: 'Réinitialisation de votre mot de passe - Mon École et Moi',
         template: 'password-reset',
@@ -373,7 +437,7 @@ export class EmailService {
     const factureUrl = `${frontendUrl}/mes-factures/${data.factureId}`;
 
     try {
-      await this.mailerService.sendMail({
+      await this.sendEmail({
         to: data.emailParent,
         subject: `Mon école Montessori et Moi - Facture ${data.numeroFacture} disponible`,
         template: 'facture-envoi',
@@ -402,6 +466,6 @@ export class EmailService {
    * Envoie un email via un template Handlebars
    */
   async sendTemplateEmail(options: { to: string; subject: string; template: string; context: Record<string, any> }) {
-    return this.mailerService.sendMail(options);
+    return this.sendEmail(options);
   }
 }
