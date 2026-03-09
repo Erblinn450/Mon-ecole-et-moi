@@ -323,16 +323,18 @@ export default function PreinscriptionPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Bouton pré-remplir (dev) */}
-        <div className="mb-6 text-right">
-          <button
-            type="button"
-            onClick={autoFillForm}
-            className="text-sm text-gray-500 hover:text-emerald-600 underline"
-          >
-            Pré-remplir (test)
-          </button>
-        </div>
+        {/* Bouton pré-remplir (dev uniquement) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-6 text-right">
+            <button
+              type="button"
+              onClick={autoFillForm}
+              className="text-sm text-gray-500 hover:text-emerald-600 underline"
+            >
+              Pré-remplir (test)
+            </button>
+          </div>
+        )}
 
         {error && (
           <div
