@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -10,12 +9,6 @@ async function bootstrap() {
 
   // Préfixe global pour l'API
   app.setGlobalPrefix('api');
-
-  // Servir les fichiers statiques (uploads)
-  // __dirname = dist/src/, donc on remonte 2 niveaux pour atteindre la racine backend/
-  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), {
-    prefix: '/api/storage/',
-  });
 
   // Validation globale
   app.useGlobalPipes(

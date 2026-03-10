@@ -209,6 +209,21 @@ export class JustificatifsService {
     return `${annee - 1}-${annee}`;
   }
 
+  async getSecureFilePath(id: number, user: UserPayload): Promise<string> {
+    const justificatif = await this.prisma.justificatif.findUnique({
+      where: { id },
+      select: { fichierUrl: true, enfantId: true },
+    });
+
+    if (!justificatif) {
+      throw new NotFoundException('Justificatif non trouvé');
+    }
+
+    await this.verifyEnfantOwnership(justificatif.enfantId, user);
+
+    return justificatif.fichierUrl;
+  }
+
   async remove(id: number, user: UserPayload) {
     const justificatif = await this.prisma.justificatif.findUnique({
       where: { id },

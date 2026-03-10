@@ -320,15 +320,23 @@ export default function FournirDocumentsPage() {
                   <div className="flex items-center gap-2">
                     {justif && (
                       <>
-                        <a
-                          href={`${API_URL}/storage/${justif.fichierUrl}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={async () => {
+                            const token = localStorage.getItem("auth_token");
+                            const res = await fetch(`${API_URL}/justificatifs/${justif.id}/download`, {
+                              headers: { Authorization: `Bearer ${token}` },
+                            });
+                            if (res.ok) {
+                              const blob = await res.blob();
+                              const url = URL.createObjectURL(blob);
+                              window.open(url, "_blank");
+                            }
+                          }}
                           className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600"
                           title="Voir le document"
                         >
                           <Eye size={18} />
-                        </a>
+                        </button>
                         {justif.valide !== true && (
                           <button
                             onClick={() => handleDelete(justif.id)}

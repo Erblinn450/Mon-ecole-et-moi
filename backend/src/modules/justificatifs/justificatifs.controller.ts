@@ -6,13 +6,16 @@ import {
   Body,
   Param,
   Patch,
+  Res,
   UseGuards,
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  NotFoundException,
   Request as Req,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JustificatifsService } from './justificatifs.service';
@@ -148,6 +151,23 @@ export class JustificatifsController {
     // Par défaut valide = true si non spécifié
     const valide = body.valide !== undefined ? body.valide : true;
     return this.justificatifsService.valider(id, valide, body.commentaire);
+  }
+
+  @Get(':id/download')
+  @ApiOperation({ summary: 'Télécharger un justificatif (vérifie la propriété)' })
+  async download(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    const filePath = await this.justificatifsService.getSecureFilePath(id, req.user);
+    const absolutePath = join(process.cwd(), 'uploads', filePath);
+
+    if (!existsSync(absolutePath)) {
+      throw new NotFoundException('Fichier non trouvé sur le serveur');
+    }
+
+    return res.sendFile(absolutePath);
   }
 
   @Delete(':id')

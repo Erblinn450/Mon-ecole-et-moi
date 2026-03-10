@@ -977,15 +977,23 @@ export default function PreinscriptionDetailPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <a
-                          href={`${API_URL}/storage/${justif.fichierUrl}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={async () => {
+                            const token = localStorage.getItem("auth_token");
+                            const res = await fetch(`${API_URL}/justificatifs/${justif.id}/download`, {
+                              headers: { Authorization: `Bearer ${token}` },
+                            });
+                            if (res.ok) {
+                              const blob = await res.blob();
+                              const url = URL.createObjectURL(blob);
+                              window.open(url, "_blank");
+                            }
+                          }}
                           className="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600"
                           title="Voir"
                         >
                           <Eye size={16} />
-                        </a>
+                        </button>
 
                         {justif.valide === true ? (
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">
