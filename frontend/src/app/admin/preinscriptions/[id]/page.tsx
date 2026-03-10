@@ -21,6 +21,9 @@ import {
   FileCheck,
   Download,
   Mail,
+  StickyNote,
+  Send,
+  Trash2,
 } from "lucide-react";
 import { Classe, StatutPreinscription, SituationFamiliale } from "@/types";
 import { classeLabels } from "@/lib/labels";
@@ -101,6 +104,13 @@ interface TypeJustificatif {
   obligatoire: boolean;
 }
 
+interface NotePreinscription {
+  id: number;
+  contenu: string;
+  auteur: string | null;
+  createdAt: string;
+}
+
 
 const statutConfig: Record<StatutPreinscription, { label: string; bg: string; text: string }> = {
   [StatutPreinscription.EN_ATTENTE]: { label: "En attente", bg: "bg-amber-100", text: "text-amber-800" },
@@ -126,6 +136,9 @@ export default function PreinscriptionDetailPage() {
   const [formData, setFormData] = useState<Partial<Preinscription>>({});
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
+  const [notes, setNotes] = useState<NotePreinscription[]>([]);
+  const [newNote, setNewNote] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
 
   useEffect(() => {
     if (preinscription) {
@@ -163,6 +176,14 @@ export default function PreinscriptionDetailPage() {
       });
       if (typesResponse.ok) {
         setTypesJustificatifs(await typesResponse.json());
+      }
+
+      // Charger les notes
+      const notesResponse = await fetch(`${API_URL}/preinscriptions/${id}/notes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (notesResponse.ok) {
+        setNotes(await notesResponse.json());
       }
 
       // Si validée, charger les justificatifs et la signature
@@ -388,6 +409,51 @@ export default function PreinscriptionDetailPage() {
       alert(err instanceof Error ? err.message : "Erreur lors de l'envoi");
     } finally {
       setIsSendingReminder(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    setIsAddingNote(true);
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${API_URL}/preinscriptions/${id}/notes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ contenu: newNote.trim() }),
+      });
+
+      if (!response.ok) throw new Error("Erreur lors de l'ajout de la note");
+
+      const note = await response.json();
+      setNotes([note, ...notes]);
+      setNewNote("");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setIsAddingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    if (!confirm("Supprimer cette note ?")) return;
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${API_URL}/preinscriptions/notes/${noteId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Erreur lors de la suppression");
+
+      setNotes(notes.filter(n => n.id !== noteId));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur");
     }
   };
 
@@ -784,6 +850,75 @@ export default function PreinscriptionDetailPage() {
             <p className="text-sm text-gray-500 mb-1">Votre enfant rencontre t&apos;il des difficultés à porter à notre attention afin de l&apos;accompagner au mieux dans sa scolarité ? Si oui, pouvez vous nous en dire plus ?:</p>
             <p className="text-gray-700">{preinscription.difficultes || "Non renseigné"}</p>
           </div>
+        </div>
+      </section>
+
+      {/* Section Notes / Annotations */}
+      <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <StickyNote size={20} /> Notes internes
+          </h2>
+        </div>
+        <div className="p-6 space-y-4">
+          {/* Formulaire ajout */}
+          <div className="flex gap-3">
+            <textarea
+              value={newNote}
+              onChange={e => setNewNote(e.target.value)}
+              placeholder="Ajouter une note..."
+              rows={2}
+              className="flex-1 p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleAddNote();
+                }
+              }}
+            />
+            <button
+              onClick={handleAddNote}
+              disabled={isAddingNote || !newNote.trim()}
+              className="self-end px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isAddingNote ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            </button>
+          </div>
+
+          {/* Liste des notes */}
+          {notes.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-4">Aucune note pour le moment</p>
+          ) : (
+            <div className="space-y-3">
+              {notes.map(note => (
+                <div key={note.id} className="p-4 bg-amber-50 border border-amber-100 rounded-xl group">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-gray-800 whitespace-pre-wrap">{note.contenu}</p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        {note.auteur && <span className="font-medium text-gray-500">{note.auteur}</span>}
+                        {note.auteur && " — "}
+                        {new Date(note.createdAt).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteNote(note.id)}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

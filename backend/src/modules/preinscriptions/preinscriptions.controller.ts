@@ -180,5 +180,39 @@ export class PreinscriptionsController {
   ) {
     return this.preinscriptionsService.relancerDocumentsManquants(id, body.documentsManquants);
   }
+
+  // === NOTES / ANNOTATIONS ===
+
+  @Get(':id/notes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Liste les notes d\'une préinscription (Admin)' })
+  getNotes(@Param('id', ParseIntPipe) id: number) {
+    return this.preinscriptionsService.getNotes(id);
+  }
+
+  @Post(':id/notes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Ajoute une note à une préinscription (Admin)' })
+  addNote(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { contenu: string },
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const auteur = req.user.email;
+    return this.preinscriptionsService.addNote(id, body.contenu, auteur);
+  }
+
+  @Delete('notes/:noteId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Supprime une note (Admin)' })
+  deleteNote(@Param('noteId', ParseIntPipe) noteId: number) {
+    return this.preinscriptionsService.deleteNote(noteId);
+  }
 }
 

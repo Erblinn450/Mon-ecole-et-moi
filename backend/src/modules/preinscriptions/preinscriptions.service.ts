@@ -763,5 +763,53 @@ export class PreinscriptionsService {
       doc.end();
     });
   }
+
+  // === NOTES / ANNOTATIONS ===
+
+  async getNotes(preinscriptionId: number) {
+    // Vérifier que la préinscription existe
+    const preinscription = await this.prisma.preinscription.findUnique({
+      where: { id: preinscriptionId },
+    });
+    if (!preinscription) {
+      throw new NotFoundException(`Préinscription #${preinscriptionId} non trouvée`);
+    }
+
+    return this.prisma.notePreinscription.findMany({
+      where: { preinscriptionId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async addNote(preinscriptionId: number, contenu: string, auteur: string) {
+    // Vérifier que la préinscription existe
+    const preinscription = await this.prisma.preinscription.findUnique({
+      where: { id: preinscriptionId },
+    });
+    if (!preinscription) {
+      throw new NotFoundException(`Préinscription #${preinscriptionId} non trouvée`);
+    }
+
+    return this.prisma.notePreinscription.create({
+      data: {
+        preinscriptionId,
+        contenu,
+        auteur,
+      },
+    });
+  }
+
+  async deleteNote(noteId: number) {
+    const note = await this.prisma.notePreinscription.findUnique({
+      where: { id: noteId },
+    });
+    if (!note) {
+      throw new NotFoundException(`Note #${noteId} non trouvée`);
+    }
+
+    return this.prisma.notePreinscription.delete({
+      where: { id: noteId },
+    });
+  }
 }
 

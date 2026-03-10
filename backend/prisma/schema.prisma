@@ -110,11 +110,24 @@ model Preinscription {
   tokenExpiresAt         DateTime?            @map("token_expires_at")
   tokenVerification      String?              @unique @map("token_verification")
   enfants                Enfant[]
+  notes                  NotePreinscription[]
 
   @@index([statut])
   @@index([emailParent])
   @@index([dateDemande])
   @@map("preinscriptions")
+}
+
+model NotePreinscription {
+  id               Int            @id @default(autoincrement())
+  preinscriptionId Int            @map("preinscription_id")
+  contenu          String
+  auteur           String?
+  createdAt        DateTime       @default(now()) @map("created_at")
+  preinscription   Preinscription @relation(fields: [preinscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([preinscriptionId])
+  @@map("notes_preinscriptions")
 }
 
 model Enfant {

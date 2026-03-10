@@ -124,6 +124,7 @@ archive/
 # Backups
 backups/
 *.sql
+!backend/prisma/migrations/**/*.sql
 !backups/.gitkeep
 
 # Logs de production
