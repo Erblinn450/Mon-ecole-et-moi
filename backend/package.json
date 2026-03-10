@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "nest build",
+    "build": "npx prisma generate && npx prisma migrate deploy && nest build",
     "postbuild": "npm run copy:templates",
     "copy:templates": "npx cpx2 \"src/**/*.hbs\" dist/src && npx cpx2 \"src/**/*.html\" dist/src",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
