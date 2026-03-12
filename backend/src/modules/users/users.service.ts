@@ -107,6 +107,7 @@ export class UsersService {
       data: {
         password: hashedPassword,
         premiereConnexion: false,
+        tokenVersion: { increment: 1 },
       },
     });
   }
@@ -174,6 +175,7 @@ export class UsersService {
         resetTokenSelector: null,
         resetTokenExpiresAt: null,
         premiereConnexion: false,
+        tokenVersion: { increment: 1 },
       },
     });
   }

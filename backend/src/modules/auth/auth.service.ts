@@ -1,18 +1,22 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private prisma: PrismaService,
   ) { }
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -34,6 +38,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      tokenVersion: user.tokenVersion,
     };
 
     return {
@@ -62,6 +67,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      tokenVersion: user.tokenVersion ?? 0,
     };
 
     return {
@@ -156,6 +162,55 @@ export class AuthService {
     await this.usersService.resetPasswordWithToken(user.id, hashedPassword);
 
     return { message: 'Mot de passe réinitialisé avec succès' };
+  }
+
+  async deleteAccount(userId: number, password: string) {
+    // Vérifier le mot de passe avant suppression
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur non trouvé');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Mot de passe incorrect. La suppression nécessite votre mot de passe actuel.');
+    }
+
+    // Supprimer les fichiers physiques des justificatifs avant la cascade SQL
+    const enfants = await this.prisma.enfant.findMany({
+      where: { OR: [{ parent1Id: userId }, { parent2Id: userId }] },
+      select: { id: true },
+    });
+
+    const enfantIds = enfants.map(e => e.id);
+
+    if (enfantIds.length > 0) {
+      const justificatifs = await this.prisma.justificatif.findMany({
+        where: { enfantId: { in: enfantIds } },
+        select: { fichierUrl: true },
+      });
+
+      // Supprimer les fichiers physiques
+      const { join } = await import('path');
+      const { existsSync, unlinkSync } = await import('fs');
+      for (const j of justificatifs) {
+        const filePath = join(process.cwd(), 'uploads', j.fichierUrl);
+        if (existsSync(filePath)) {
+          try {
+            unlinkSync(filePath);
+          } catch (err) {
+            this.logger.warn(`Impossible de supprimer le fichier ${filePath}: ${err}`);
+          }
+        }
+      }
+    }
+
+    // Supprimer le user — les enfants et sous-données cascadent via onDelete: Cascade
+    await this.prisma.user.delete({ where: { id: userId } });
+
+    this.logger.log(`Compte #${userId} supprimé (droit à l'effacement RGPD)`);
+
+    return { message: 'Votre compte et toutes vos données ont été supprimés définitivement.' };
   }
 }
 

@@ -25,6 +25,7 @@ model User {
   rememberToken        String?              @map("remember_token")
   resetTokenSelector   String?              @map("reset_token_selector")
   resetTokenExpiresAt  DateTime?            @map("reset_token_expires_at")
+  tokenVersion        Int                  @default(0) @map("token_version")
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
   deletedAt           DateTime?            @map("deleted_at")

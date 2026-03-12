@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Delete,
   Body,
   Get,
   UseGuards,
@@ -90,6 +91,19 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Token invalide ou expiré' })
   async resetPassword(@Body() body: { token: string; newPassword: string }) {
     return this.authService.resetPassword(body.token, body.newPassword);
+  }
+
+  @Delete('supprimer-compte')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Supprimer son compte et toutes ses données (RGPD)' })
+  @ApiResponse({ status: 200, description: 'Compte et données supprimés' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  async deleteAccount(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: { password: string },
+  ) {
+    return this.authService.deleteAccount(req.user.id, body.password);
   }
 }
 
