@@ -229,6 +229,120 @@ export class ExportService {
   }
 
   /**
+   * Export des données personnelles d'un parent (RGPD Article 15 — droit d'accès)
+   * Le parent récupère toutes SES données + celles de ses enfants
+   */
+  async exportMesDonneesJSON(userId: number): Promise<Record<string, unknown>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        prenom: true,
+        name: true,
+        telephone: true,
+        adresse: true,
+        role: true,
+        actif: true,
+        modePaiementPref: true,
+        ibanParent: true,
+        mandatSepaRef: true,
+        createdAt: true,
+        updatedAt: true,
+        enfantsParent1: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            dateNaissance: true,
+            lieuNaissance: true,
+            classe: true,
+            inscriptions: {
+              select: { id: true, anneeScolaire: true, statut: true, dateInscription: true },
+            },
+            justificatifs: {
+              select: { id: true, typeId: true, valide: true, fichierUrl: true, dateDepot: true, createdAt: true },
+            },
+            signatureReglements: {
+              select: { parentAccepte: true, parentDateSignature: true },
+            },
+            personnesAutorisees: {
+              select: { id: true, nom: true, prenom: true, telephone: true, lienParente: true },
+            },
+          },
+        },
+        enfantsParent2: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            dateNaissance: true,
+            lieuNaissance: true,
+            classe: true,
+            inscriptions: {
+              select: { id: true, anneeScolaire: true, statut: true, dateInscription: true },
+            },
+            justificatifs: {
+              select: { id: true, typeId: true, valide: true, fichierUrl: true, dateDepot: true, createdAt: true },
+            },
+            signatureReglements: {
+              select: { parentAccepte: true, parentDateSignature: true },
+            },
+            personnesAutorisees: {
+              select: { id: true, nom: true, prenom: true, telephone: true, lienParente: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return {};
+    }
+
+    // Factures du parent
+    const factures = await this.prisma.facture.findMany({
+      where: { parentId: userId },
+      select: {
+        id: true,
+        numero: true,
+        type: true,
+        statut: true,
+        dateEmission: true,
+        dateEcheance: true,
+        periode: true,
+        montantTotal: true,
+        montantPaye: true,
+        description: true,
+        lignes: {
+          select: { description: true, quantite: true, prixUnit: true, montant: true },
+        },
+        paiements: {
+          select: { montant: true, datePaiement: true, modePaiement: true },
+        },
+      },
+      orderBy: { dateEmission: 'desc' },
+    });
+
+    const enfants = [...user.enfantsParent1, ...user.enfantsParent2];
+    const { enfantsParent1: _, enfantsParent2: __, ...userInfo } = user;
+
+    return {
+      exportDate: new Date().toISOString(),
+      rgpdArticle: 'Article 15 — Droit d\'accès aux données personnelles',
+      responsableTraitement: 'Mon École et Moi — Audrey Ballester — contact@montessorietmoi.com',
+      donnees: {
+        informationsPersonnelles: userInfo,
+        enfants,
+        factures,
+      },
+    };
+  }
+
+  /**
    * Escape les caractères spéciaux pour CSV
    */
   private escapeCSV(value: string): string {

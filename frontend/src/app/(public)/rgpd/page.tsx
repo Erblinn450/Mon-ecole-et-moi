@@ -182,6 +182,7 @@ export default function RGPDPage() {
           </p>
           <div className="bg-white rounded-lg p-4 space-y-2 text-gray-700">
             <p><strong>Mon École et Moi</strong></p>
+            <p><strong>Responsable de la protection des données :</strong> Audrey Ballester</p>
             <p>58 rue Damberg, 68350 Brunstatt-Didenheim</p>
             <p>Email : <a href="mailto:contact@montessorietmoi.com" className="text-emerald-600 hover:underline">contact@montessorietmoi.com</a></p>
             <p>Téléphone : 03 89 06 07 77</p>

@@ -75,10 +75,34 @@ export default function MentionsLegalesPage() {
               <h2 className="text-xl font-semibold text-gray-900">Hébergement</h2>
             </div>
             <div className="space-y-2 text-gray-600">
-              <p><strong>Hébergeur :</strong> [À compléter lors du déploiement]</p>
-              <p><strong>Adresse :</strong> [À compléter]</p>
+              <p><strong>Hébergeur :</strong> Render Services, Inc.</p>
+              <p><strong>Adresse :</strong> 525 Brannan Street, Suite 300, San Francisco, CA 94107, États-Unis</p>
               <p className="text-sm text-gray-500 mt-2">
-                Les serveurs sont situés en France/Union Européenne conformément au RGPD.
+                Les données sont hébergées dans la région Oregon (US-West) de Render.
+                Render est conforme au Data Privacy Framework (DPF) UE-États-Unis,
+                garantissant un niveau de protection adéquat pour les transferts de données
+                personnelles conformément au RGPD.
+              </p>
+            </div>
+          </section>
+
+          {/* DPO / Responsable des données */}
+          <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <User size={20} className="text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">Responsable de la protection des données</h2>
+            </div>
+            <div className="space-y-2 text-gray-600">
+              <p>Conformément au RGPD, la personne responsable de la protection des données personnelles est :</p>
+              <p><strong>Madame Audrey Ballester</strong></p>
+              <p><strong>Email :</strong> <a href="mailto:contact@montessorietmoi.com" className="text-emerald-600 hover:underline">contact@montessorietmoi.com</a></p>
+              <p><strong>Adresse :</strong> 58 rue Damberg, 68350 Brunstatt-Didenheim</p>
+              <p><strong>Téléphone :</strong> 03 89 06 07 77</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Pour toute question relative à vos données personnelles ou pour exercer vos droits RGPD,
+                vous pouvez contacter directement la responsable ci-dessus.
               </p>
             </div>
           </section>

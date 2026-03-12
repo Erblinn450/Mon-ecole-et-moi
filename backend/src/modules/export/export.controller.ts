@@ -1,4 +1,4 @@
-import { Controller, Get, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -6,6 +6,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ExportService } from './export.service';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('export')
 @Controller('export')
@@ -64,6 +65,20 @@ export class ExportController {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send('\uFEFF' + csv);
+  }
+
+  @Get('mes-donnees')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Télécharger mes données personnelles (RGPD Article 15)' })
+  async exportMesDonnees(@Req() req: AuthenticatedRequest, @Res() res: Response) {
+    const data = await this.exportService.exportMesDonneesJSON(req.user.id);
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `mes-donnees-rgpd_${date}.json`;
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(data, null, 2));
   }
 
   @Get('complet')
