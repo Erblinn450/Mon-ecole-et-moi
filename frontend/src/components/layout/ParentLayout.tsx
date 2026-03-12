@@ -13,6 +13,8 @@ import {
   ChevronRight,
   UserPlus,
   Receipt,
+  UserCog,
+  Scale,
 } from "lucide-react";
 
 // Menu parent
@@ -60,6 +62,12 @@ const menuItems = [
     label: "Dossiers",
     icon: FolderOpen,
     description: "Inscriptions en cours",
+  },
+  {
+    href: "/mon-compte",
+    label: "Mon compte",
+    icon: UserCog,
+    description: "Profil & données RGPD",
   },
 ];
 
@@ -117,7 +125,7 @@ export function ParentLayout({ children }: ParentLayoutProps) {
           </nav>
 
           {/* Footer Sidebar */}
-          <div className="p-5 border-t border-gray-100">
+          <div className="p-5 border-t border-gray-100 space-y-3">
             <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100/50">
               <div className="flex items-start gap-3">
                 <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600">
@@ -133,6 +141,13 @@ export function ParentLayout({ children }: ParentLayoutProps) {
                   </a>
                 </div>
               </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-[11px] text-gray-400">
+              <Link href="/mentions-legales" target="_blank" className="hover:text-gray-600 hover:underline">Mentions légales</Link>
+              <span>·</span>
+              <Link href="/politique-confidentialite" target="_blank" className="hover:text-gray-600 hover:underline">Confidentialité</Link>
+              <span>·</span>
+              <Link href="/rgpd" target="_blank" className="hover:text-gray-600 hover:underline flex items-center gap-0.5"><Scale size={10} />RGPD</Link>
             </div>
           </div>
         </aside>

@@ -64,8 +64,9 @@ export default function RGPDPage() {
                   d&apos;obtenir une copie de ces données ainsi que des informations sur leur traitement.
                 </p>
                 <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
-                  <strong>Comment exercer ce droit :</strong> Envoyez-nous un email en précisant votre demande.
-                  Nous vous répondrons dans un délai de 30 jours.
+                  <strong>Comment exercer ce droit :</strong> Depuis votre espace parent, rendez-vous dans
+                  « Mon compte » pour télécharger l&apos;ensemble de vos données au format JSON.
+                  Vous pouvez également nous envoyer un email et nous vous répondrons dans un délai de 30 jours.
                 </div>
               </div>
             </div>
@@ -84,8 +85,9 @@ export default function RGPDPage() {
                   ou concernant votre enfant.
                 </p>
                 <div className="bg-emerald-50 rounded-lg p-3 text-sm text-emerald-800">
-                  <strong>Comment exercer ce droit :</strong> Vous pouvez modifier certaines informations directement
-                  depuis votre espace parent, ou nous contacter pour les autres modifications.
+                  <strong>Comment exercer ce droit :</strong> Depuis votre espace parent, rendez-vous dans
+                  « Mon compte » pour modifier vos informations personnelles (nom, prénom, email, téléphone, adresse).
+                  Pour toute autre modification, contactez-nous.
                 </div>
               </div>
             </div>
@@ -104,8 +106,10 @@ export default function RGPDPage() {
                   (données plus nécessaires, retrait du consentement, etc.).
                 </p>
                 <div className="bg-rose-50 rounded-lg p-3 text-sm text-rose-800">
-                  <strong>Limites :</strong> Certaines données doivent être conservées pour des obligations légales
-                  (comptabilité, archives scolaires). Nous vous informerons des données qui ne peuvent pas être supprimées.
+                  <strong>Comment exercer ce droit :</strong> Depuis « Mon compte », vous pouvez supprimer
+                  votre compte et toutes vos données de manière autonome. Une confirmation par mot de passe est requise.
+                  <br /><strong>Limites :</strong> Certaines données comptables doivent être conservées
+                  pendant 10 ans conformément aux obligations légales.
                 </div>
               </div>
             </div>
@@ -124,8 +128,9 @@ export default function RGPDPage() {
                   par machine (ex: CSV, JSON), et les transmettre à un autre organisme.
                 </p>
                 <div className="bg-amber-50 rounded-lg p-3 text-sm text-amber-800">
-                  <strong>Format disponible :</strong> Nous pouvons vous fournir vos données au format CSV ou PDF
-                  sur simple demande.
+                  <strong>Format disponible :</strong> Depuis « Mon compte », vous pouvez télécharger vos données
+                  au format JSON (format structuré et lisible par machine). Ce fichier contient vos informations
+                  personnelles, celles de vos enfants, vos inscriptions et vos factures.
                 </div>
               </div>
             </div>

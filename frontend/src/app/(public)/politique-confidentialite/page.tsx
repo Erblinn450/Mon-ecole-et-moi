@@ -33,7 +33,7 @@ export default function PolitiqueConfidentialitePage() {
           <Shield size={48} className="mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Politique de Confidentialité</h1>
           <p className="text-emerald-100">Protection de vos données personnelles</p>
-          <p className="text-sm text-emerald-200 mt-4">Dernière mise à jour : Janvier 2026</p>
+          <p className="text-sm text-emerald-200 mt-4">Dernière mise à jour : Mars 2026</p>
         </div>
 
         <div className="space-y-8">

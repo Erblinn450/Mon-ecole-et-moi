@@ -135,16 +135,21 @@ export default function MentionsLegalesPage() {
             </p>
           </section>
 
-          {/* Cookies */}
+          {/* Cookies et stockage local */}
           <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Cookies</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Cookies et stockage local</h2>
             <p className="text-gray-600 mb-4">
-              Ce site utilise des cookies strictement nécessaires au fonctionnement du service
-              (authentification, session utilisateur). Ces cookies ne nécessitent pas de consentement
-              préalable conformément à la législation en vigueur.
+              Ce site n&apos;utilise pas de cookies tiers, publicitaires ou de tracking.
+            </p>
+            <p className="text-gray-600 mb-4">
+              Pour le fonctionnement de l&apos;authentification, un jeton de session (JWT) est stocké
+              dans le <strong>stockage local (localStorage)</strong> de votre navigateur. Ce jeton est
+              strictement nécessaire pour maintenir votre connexion et ne contient aucune donnée
+              personnelle sensible. Il est automatiquement supprimé lors de la déconnexion.
             </p>
             <p className="text-gray-600">
-              Aucun cookie publicitaire ou de tracking n&apos;est utilisé sur ce site.
+              Ce stockage technique ne nécessite pas de consentement préalable conformément
+              à la législation en vigueur (article 82 de la loi Informatique et Libertés).
             </p>
           </section>
 

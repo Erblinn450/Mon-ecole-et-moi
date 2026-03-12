@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Role } from '@prisma/client';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -45,6 +46,7 @@ export class UsersService {
         nom: true,
         prenom: true,
         telephone: true,
+        adresse: true,
         role: true,
         actif: true,
         premiereConnexion: true,
@@ -97,6 +99,32 @@ export class UsersService {
   async remove(id: number) {
     const { password: _, ...user } = await this.prisma.user.delete({
       where: { id },
+    });
+    return user;
+  }
+
+  async updateMyProfile(id: number, dto: UpdateMyProfileDto) {
+    // Si changement d'email, vérifier qu'il n'est pas déjà pris
+    if (dto.email) {
+      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existing && existing.id !== id) {
+        throw new ConflictException('Cet email est déjà utilisé par un autre compte');
+      }
+    }
+
+    const { password: _, ...user } = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(dto.nom !== undefined && { nom: dto.nom }),
+        ...(dto.prenom !== undefined && { prenom: dto.prenom }),
+        ...(dto.telephone !== undefined && { telephone: dto.telephone }),
+        ...(dto.adresse !== undefined && { adresse: dto.adresse }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        // Mettre à jour name aussi pour cohérence
+        ...(dto.nom !== undefined || dto.prenom !== undefined
+          ? { name: `${dto.prenom ?? ''} ${dto.nom ?? ''}`.trim() }
+          : {}),
+      },
     });
     return user;
   }

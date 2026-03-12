@@ -437,6 +437,47 @@ export const usersApi = {
     });
     return handleResponse<User>(response);
   },
+
+  // Parent - Modifier mon propre profil
+  async updateMyProfile(data: {
+    nom?: string;
+    prenom?: string;
+    telephone?: string;
+    adresse?: string;
+    email?: string;
+  }): Promise<User> {
+    const response = await fetch(`${API_URL}/users/me`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<User>(response);
+  },
+
+  // Parent - Exporter mes données RGPD (Article 15)
+  async exportMesDonnees(): Promise<void> {
+    const response = await fetch(`${API_URL}/export/mes-donnees`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Erreur lors de l'export");
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mes-donnees-rgpd_${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // Parent - Supprimer mon compte (RGPD Article 17)
+  async deleteMyAccount(password: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_URL}/auth/supprimer-compte`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ password }),
+    });
+    return handleResponse<{ message: string }>(response);
+  },
 };
 
 // ============================================

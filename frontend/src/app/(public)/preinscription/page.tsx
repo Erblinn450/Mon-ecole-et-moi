@@ -101,6 +101,7 @@ export default function PreinscriptionPage() {
 
   // Acceptation CGU/RGPD (obligatoire légalement)
   const [acceptCGU, setAcceptCGU] = useState(false);
+  const [acceptSante, setAcceptSante] = useState(false);
 
   // Validation téléphone
   const [phoneErrors, setPhoneErrors] = useState<Record<number, string>>({});
@@ -755,6 +756,20 @@ export default function PreinscriptionPage() {
                 <p className="text-xs text-gray-500 ml-8">
                   Vos données sont utilisées uniquement pour le traitement de cette demande de préinscription et la gestion de la scolarité de votre enfant. Elles ne seront jamais transmises à des tiers sans votre consentement.
                 </p>
+
+                <label className="flex items-start gap-3 cursor-pointer group pt-2">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={acceptSante}
+                    onChange={(e) => setAcceptSante(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    <strong className="text-gray-900">Je consens au traitement des données de santé</strong> de mon enfant (allergies, problèmes de santé) au sens de l&apos;article 9 du RGPD. Ces informations sont nécessaires pour assurer la sécurité et le bien-être de mon enfant au sein de l&apos;école.
+                    <span className="text-rose-500">*</span>
+                  </span>
+                </label>
               </div>
             </div>
           </section>
@@ -763,7 +778,7 @@ export default function PreinscriptionPage() {
           <div className="flex flex-col items-center gap-4">
             <button
               type="submit"
-              disabled={isLoading || !recaptchaLoaded || !acceptCGU || Object.values(phoneErrors).some(err => err !== "")}
+              disabled={isLoading || !recaptchaLoaded || !acceptCGU || !acceptSante || Object.values(phoneErrors).some(err => err !== "")}
               className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (

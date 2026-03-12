@@ -7,6 +7,7 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -15,6 +16,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
+import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('users')
 @Controller('users')
@@ -22,6 +25,15 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Modifier mon profil (parent authentifié)' })
+  async updateMyProfile(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: UpdateMyProfileDto,
+  ) {
+    return this.usersService.updateMyProfile(req.user.id, dto);
+  }
 
   @Get()
   @Roles(Role.ADMIN)

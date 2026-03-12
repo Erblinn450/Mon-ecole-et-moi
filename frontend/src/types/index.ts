@@ -106,9 +106,13 @@ export interface User {
   nom?: string;
   prenom?: string;
   telephone?: string;
+  adresse?: string;
   role: Role;
   actif: boolean;
   premiereConnexion: boolean;
+  modePaiementPref?: string;
+  ibanParent?: string;
+  mandatSepaRef?: string;
   // Alias snake_case (peut venir du backend selon la config)
   premiere_connexion?: boolean;
 }
