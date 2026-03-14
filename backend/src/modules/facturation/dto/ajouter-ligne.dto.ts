@@ -7,6 +7,7 @@ import {
   IsInt,
   Min,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -64,8 +65,8 @@ export class ModifierLigneDto {
   prixUnit?: number;
 
   @ApiPropertyOptional({ description: 'Commentaire' })
-  @IsOptional()
+  @ValidateIf((o) => o.commentaire !== null && o.commentaire !== undefined)
   @IsString()
   @MaxLength(500)
-  commentaire?: string;
+  commentaire?: string | null;
 }

@@ -110,9 +110,13 @@ export interface User {
   role: Role;
   actif: boolean;
   premiereConnexion: boolean;
-  modePaiementPref?: string;
+  modePaiementPref?: ModePaiement;
   ibanParent?: string;
   mandatSepaRef?: string;
+  frequencePaiement?: FrequencePaiement;
+  reductionRFR?: boolean;
+  tauxReductionRFR?: number | string;
+  destinataireFacture?: DestinataireFacture;
   // Alias snake_case (peut venir du backend selon la config)
   premiere_connexion?: boolean;
 }
@@ -256,6 +260,7 @@ export interface Enfant {
   parent1Id: number;
   parent2Id?: number;
   preinscriptionId?: number;
+  tarifMensuelOverride?: number | string;
   createdAt: string;
   updatedAt: string;
 }
@@ -409,6 +414,22 @@ export interface MandatSepa {
     email: string;
     telephone?: string;
   };
+}
+
+// ============================================
+// CONFIG TARIFS
+// ============================================
+
+export interface ConfigTarif {
+  id: number;
+  cle: string;
+  valeur: number | string;
+  description?: string;
+  anneeScolaire: string;
+  categorie: string;
+  actif: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============================================

@@ -16,7 +16,9 @@ import {
   ArrowRight,
   Download,
   Send,
+  Settings,
 } from "lucide-react";
+import Link from "next/link";
 import { facturationApi } from "@/lib/api";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { Facture, FactureStats, StatutFacture } from "@/types";
@@ -172,6 +174,13 @@ export default function FacturationPage() {
           <p className="text-gray-500 mt-1">Gestion des factures et paiements</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/admin/facturation/tarifs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            <Settings size={18} />
+            Tarifs
+          </Link>
           {filterMois && (
             <button
               onClick={async () => {

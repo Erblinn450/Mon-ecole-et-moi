@@ -32,6 +32,14 @@ export class UsersService {
         role: true,
         actif: true,
         createdAt: true,
+        frequencePaiement: true,
+        modePaiementPref: true,
+        reductionRFR: true,
+        tauxReductionRFR: true,
+        destinataireFacture: true,
+        enfantsParent1: {
+          select: { id: true, nom: true, prenom: true, classe: true },
+        },
       },
     });
   }
@@ -51,6 +59,10 @@ export class UsersService {
         actif: true,
         premiereConnexion: true,
         modePaiementPref: true,
+        frequencePaiement: true,
+        reductionRFR: true,
+        tauxReductionRFR: true,
+        destinataireFacture: true,
         ibanParent: true,
         mandatSepaRef: true,
         createdAt: true,

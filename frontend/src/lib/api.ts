@@ -23,6 +23,7 @@ import {
   ModePaiement,
   TypeLigne,
   MandatSepa,
+  ConfigTarif,
 } from "@/types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -778,7 +779,7 @@ export const facturationApi = {
     description?: string;
     quantite?: number;
     prixUnit?: number;
-    commentaire?: string;
+    commentaire?: string | null;
   }): Promise<Facture> {
     const response = await fetch(`${API_URL}/facturation/${factureId}/lignes/${ligneId}`, {
       method: "PATCH",
@@ -878,13 +879,41 @@ export const facturationApi = {
   },
 
   // Admin - Modifier IBAN parent
-  async updateParentSepa(parentId: number, data: { ibanParent?: string; mandatSepaRef?: string }): Promise<unknown> {
+  async updateParentSepa(parentId: number, data: { ibanParent?: string | null; mandatSepaRef?: string | null }): Promise<unknown> {
     const response = await fetch(`${API_URL}/users/${parentId}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     return handleResponse<unknown>(response);
+  },
+
+  // Admin - Config Tarifs
+  async getConfigTarifs(anneeScolaire?: string): Promise<ConfigTarif[]> {
+    const url = new URL(`${API_URL}/facturation/config-tarifs`);
+    if (anneeScolaire) url.searchParams.append("anneeScolaire", anneeScolaire);
+    const response = await fetch(url.toString(), {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<ConfigTarif[]>(response);
+  },
+
+  async updateConfigTarif(id: number, data: { valeur?: number; description?: string; actif?: boolean }): Promise<ConfigTarif> {
+    const response = await fetch(`${API_URL}/facturation/config-tarifs/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ConfigTarif>(response);
+  },
+
+  async seedDefaultTarifs(anneeScolaire: string): Promise<{ created: number }> {
+    const response = await fetch(`${API_URL}/facturation/config-tarifs/seed`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ anneeScolaire }),
+    });
+    return handleResponse<{ created: number }>(response);
   },
 };
 

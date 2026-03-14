@@ -36,6 +36,7 @@ export default function AdminElevesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [editClasse, setEditClasse] = useState<Classe | "">("");
+  const [editTarifOverride, setEditTarifOverride] = useState<string>("");
 
   // Detail view state
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -82,6 +83,7 @@ export default function AdminElevesPage() {
   const openEditModal = (enfant: Enfant) => {
     setSelectedEnfant(enfant);
     setEditClasse(enfant.classe || "");
+    setEditTarifOverride(enfant.tarifMensuelOverride != null ? String(enfant.tarifMensuelOverride) : "");
     setIsModalOpen(true);
   };
 
@@ -114,7 +116,10 @@ export default function AdminElevesPage() {
 
     setIsUpdating(true);
     try {
-      await updateEnfant(selectedEnfant.id, { classe: editClasse || undefined });
+      await updateEnfant(selectedEnfant.id, {
+        classe: editClasse || null,
+        tarifMensuelOverride: editTarifOverride.trim() !== "" ? parseFloat(editTarifOverride) : null,
+      } as Partial<Enfant>);
       setIsModalOpen(false);
       setSelectedEnfant(null);
     } catch (err) {
@@ -421,7 +426,7 @@ export default function AdminElevesPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
             <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Modifier la classe</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Modifier l&apos;élève</h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X size={20} />
               </button>
@@ -449,6 +454,24 @@ export default function AdminElevesPage() {
                   <option value={Classe.ELEMENTAIRE}>Élémentaire</option>
                   <option value={Classe.COLLEGE}>Collège</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tarif mensuel personnalisé (€)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Laisser vide = tarif automatique"
+                  value={editTarifOverride}
+                  onChange={(e) => setEditTarifOverride(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Si renseigné, ce tarif remplace le calcul automatique (scolarité, fratrie, RFR)
+                </p>
               </div>
 
               <div className="flex gap-3">

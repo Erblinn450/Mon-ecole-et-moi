@@ -8,12 +8,14 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Key,
   Mail,
+  Settings,
+  X,
+  Check,
 } from "lucide-react";
 import { usersApi } from "@/lib/api";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import { Role } from "@/types";
+import { Role, FrequencePaiement, ModePaiement, DestinataireFacture } from "@/types";
 
 interface ParentCompte {
   id: number;
@@ -26,6 +28,11 @@ interface ParentCompte {
   actif: boolean;
   createdAt: string;
   enfantsParent1?: { id: number; nom: string; prenom: string; classe?: string }[];
+  frequencePaiement?: FrequencePaiement;
+  modePaiementPref?: ModePaiement;
+  reductionRFR?: boolean;
+  tauxReductionRFR?: number | string;
+  destinataireFacture?: DestinataireFacture;
 }
 
 export default function AdminComptesPage() {
@@ -39,6 +46,16 @@ export default function AdminComptesPage() {
   const [confirmModal, setConfirmModal] = useState<{
     title: string; message: string; variant: "danger" | "warning" | "default"; onConfirm: () => void;
   } | null>(null);
+
+  // Modal édition facturation
+  const [editModal, setEditModal] = useState(false);
+  const [editParent, setEditParent] = useState<ParentCompte | null>(null);
+  const [editFrequence, setEditFrequence] = useState<FrequencePaiement | "">("");
+  const [editModePaiement, setEditModePaiement] = useState<ModePaiement | "">("");
+  const [editRFR, setEditRFR] = useState(false);
+  const [editTauxRFR, setEditTauxRFR] = useState("");
+  const [editDestinataire, setEditDestinataire] = useState<DestinataireFacture | "">("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadParents = useCallback(async () => {
     setIsLoading(true);
@@ -72,6 +89,37 @@ export default function AdminComptesPage() {
       alert(err instanceof Error ? err.message : "Erreur");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const openEditModal = (parent: ParentCompte) => {
+    setEditParent(parent);
+    setEditFrequence(parent.frequencePaiement || "");
+    setEditModePaiement(parent.modePaiementPref || "");
+    setEditRFR(parent.reductionRFR || false);
+    setEditTauxRFR(parent.tauxReductionRFR != null ? String(parent.tauxReductionRFR) : "");
+    setEditDestinataire(parent.destinataireFacture || "");
+    setEditModal(true);
+  };
+
+  const handleSaveFacturation = async () => {
+    if (!editParent) return;
+    setIsSaving(true);
+    try {
+      await usersApi.update(editParent.id, {
+        frequencePaiement: editFrequence || null,
+        modePaiementPref: editModePaiement || null,
+        reductionRFR: editRFR,
+        tauxReductionRFR: editRFR && editTauxRFR.trim() !== "" ? parseFloat(editTauxRFR) : null,
+        destinataireFacture: editDestinataire || null,
+      } as Partial<ParentCompte>);
+      await loadParents();
+      setEditModal(false);
+      showSuccess("Paramètres de facturation mis à jour");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -246,6 +294,13 @@ export default function AdminComptesPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => openEditModal(parent)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                          title="Paramètres facturation"
+                        >
+                          <Settings size={16} />
+                        </button>
+                        <button
                           onClick={() => setConfirmModal({
                             title: parent.actif ? "Désactiver ce compte ?" : "Réactiver ce compte ?",
                             message: parent.actif
@@ -283,6 +338,134 @@ export default function AdminComptesPage() {
         onConfirm={() => confirmModal?.onConfirm()}
         onCancel={() => setConfirmModal(null)}
       />
+
+      {/* Modal édition facturation */}
+      {editModal && editParent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Paramètres facturation</h2>
+                <p className="text-sm text-gray-500">{editParent.prenom ?? ""} {editParent.nom ?? editParent.name}</p>
+              </div>
+              <button onClick={() => setEditModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fréquence de paiement
+                </label>
+                <select
+                  value={editFrequence}
+                  onChange={(e) => setEditFrequence(e.target.value as FrequencePaiement | "")}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">Non défini</option>
+                  <option value={FrequencePaiement.MENSUEL}>Mensuel</option>
+                  <option value={FrequencePaiement.TRIMESTRIEL}>Trimestriel</option>
+                  <option value={FrequencePaiement.SEMESTRIEL}>Semestriel</option>
+                  <option value={FrequencePaiement.ANNUEL}>Annuel</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mode de paiement préféré
+                </label>
+                <select
+                  value={editModePaiement}
+                  onChange={(e) => setEditModePaiement(e.target.value as ModePaiement | "")}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">Non défini</option>
+                  <option value={ModePaiement.PRELEVEMENT}>Prélèvement</option>
+                  <option value={ModePaiement.VIREMENT}>Virement</option>
+                  <option value={ModePaiement.CHEQUE}>Chèque</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Destinataire des factures
+                </label>
+                <select
+                  value={editDestinataire}
+                  onChange={(e) => setEditDestinataire(e.target.value as DestinataireFacture | "")}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">Non défini</option>
+                  <option value={DestinataireFacture.LES_DEUX}>Les deux parents</option>
+                  <option value={DestinataireFacture.PARENT1}>Parent 1 uniquement</option>
+                  <option value={DestinataireFacture.PARENT2}>Parent 2 uniquement</option>
+                </select>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-medium text-gray-700">
+                    Réduction RFR (Revenu Fiscal)
+                  </label>
+                  <button
+                    onClick={() => setEditRFR(!editRFR)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      editRFR ? "bg-indigo-600" : "bg-gray-200"
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      editRFR ? "translate-x-6" : "translate-x-1"
+                    }`} />
+                  </button>
+                </div>
+
+                {editRFR && (
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Taux de réduction (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="Ex: 10"
+                      value={editTauxRFR}
+                      onChange={(e) => setEditTauxRFR(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Ce pourcentage sera déduit de la scolarité sur chaque facture
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setEditModal(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveFacturation}
+                  disabled={isSaving}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Check size={18} />
+                  )}
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

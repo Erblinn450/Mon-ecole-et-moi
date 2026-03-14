@@ -200,7 +200,7 @@ export default function FactureDetailPage() {
         description: editLigne.description,
         quantite: editLigne.quantite,
         prixUnit: editLigne.prixUnit,
-        commentaire: editLigne.commentaire || undefined,
+        commentaire: editLigne.commentaire || null,
       });
       setEditingLigneId(null);
       await loadFacture();
@@ -272,8 +272,8 @@ export default function FactureDetailPage() {
     setActionLoading(true);
     try {
       await facturationApi.updateParentSepa(facture.parent.id, {
-        ibanParent: ibanForm.ibanParent || undefined,
-        mandatSepaRef: ibanForm.mandatSepaRef || undefined,
+        ibanParent: ibanForm.ibanParent || null,
+        mandatSepaRef: ibanForm.mandatSepaRef || null,
       });
       setEditingIban(false);
       await loadFacture();

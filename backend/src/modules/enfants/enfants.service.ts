@@ -78,7 +78,7 @@ export class EnfantsService {
     prenom: string;
     dateNaissance?: Date;
     lieuNaissance?: string;
-    classe?: Classe;
+    classe?: Classe | null;
     parent1Id: number;
     parent2Id?: number;
   }) {
@@ -95,7 +95,7 @@ export class EnfantsService {
     prenom: string;
     dateNaissance: Date;
     lieuNaissance: string;
-    classe: Classe;
+    classe: Classe | null;
     tarifMensuelOverride: number | null;
   }>) {
     await this.findOne(id);

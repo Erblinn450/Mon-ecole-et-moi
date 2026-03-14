@@ -9,6 +9,7 @@ import {
   Min,
   MinLength,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -42,9 +43,9 @@ export class CreateEnfantDto {
   lieuNaissance?: string;
 
   @ApiPropertyOptional({ description: 'Classe de l\'enfant', enum: Classe })
-  @IsOptional()
+  @ValidateIf((o) => o.classe !== null && o.classe !== undefined)
   @IsEnum(Classe, { message: 'La classe doit être MATERNELLE, ELEMENTAIRE ou COLLEGE' })
-  classe?: Classe;
+  classe?: Classe | null;
 
   @ApiProperty({ description: 'ID du parent principal', example: 1 })
   @IsInt({ message: 'L\'ID du parent doit être un nombre entier' })
@@ -62,8 +63,8 @@ export class CreateEnfantDto {
   preinscriptionId?: number;
 
   @ApiPropertyOptional({ description: 'Tarif mensuel personnalisé (override admin). Si défini, remplace le calcul automatique.', example: 500 })
-  @IsOptional()
+  @ValidateIf((o) => o.tarifMensuelOverride !== null && o.tarifMensuelOverride !== undefined)
   @IsNumber({}, { message: 'Le tarif doit être un nombre' })
   @Min(0, { message: 'Le tarif ne peut pas être négatif' })
-  tarifMensuelOverride?: number;
+  tarifMensuelOverride?: number | null;
 }

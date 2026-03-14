@@ -134,8 +134,9 @@ export class FacturationController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Initialiser les tarifs par défaut pour une année scolaire (Admin)' })
-  seedDefaultTarifs(@Body() body: { anneeScolaire: string }) {
-    return this.facturationService.seedDefaultTarifs(body.anneeScolaire);
+  async seedDefaultTarifs(@Body() body: { anneeScolaire: string }) {
+    const results = await this.facturationService.seedDefaultTarifs(body.anneeScolaire);
+    return { created: results.length };
   }
 
   // --- Articles Personnalisés : Admin ---
