@@ -434,37 +434,44 @@ async function main() {
   // ============================================================
   // SEED TARIFS pour 2025-2026
   // ============================================================
+  // Les clés DOIVENT correspondre exactement à celles utilisées dans
+  // FacturationService.seedDefaultTarifs() et calculerScolarite()
   console.log('Configuration tarifs 2025-2026...');
   const tarifs = [
-    // Scolarité
-    { cle: 'scolarite_mensuel_normal', valeur: 575, description: 'Scolarité mensuelle (1 enfant)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_mensuel_fratrie', valeur: 540, description: 'Scolarité mensuelle (fratrie)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_trimestriel_normal', valeur: 1725, description: 'Scolarité trimestrielle (1 enfant)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_trimestriel_fratrie', valeur: 1620, description: 'Scolarité trimestrielle (fratrie)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_annuel_normal', valeur: 6900, description: 'Scolarité annuelle (1 enfant)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_annuel_fratrie', valeur: 6480, description: 'Scolarité annuelle (fratrie)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    // Collège
-    { cle: 'scolarite_college_mensuel_normal', valeur: 710, description: 'Collège mensuel (1 enfant)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_college_mensuel_fratrie', valeur: 640, description: 'Collège mensuel (fratrie)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_college_trimestriel_normal', valeur: 2130, description: 'Collège trimestriel (1 enfant)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_college_trimestriel_fratrie', valeur: 1920, description: 'Collège trimestriel (fratrie)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_college_annuel_normal', valeur: 8520, description: 'Collège annuel (1 enfant)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
-    { cle: 'scolarite_college_annuel_fratrie', valeur: 7680, description: 'Collège annuel (fratrie)', categorie: 'scolarite', anneeScolaire: '2025-2026' },
+    // Scolarité - Maison des enfants / Élémentaire
+    { cle: 'SCOLARITE_MENSUEL', valeur: 575, description: 'Scolarité mensuelle - 1 enfant (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_TRIMESTRIEL', valeur: 1725, description: 'Scolarité trimestrielle - 1 enfant (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_SEMESTRIEL', valeur: 3450, description: 'Scolarité semestrielle - 1 enfant (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_ANNUEL', valeur: 6900, description: 'Scolarité annuelle - 1 enfant (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_FRATRIE_MENSUEL', valeur: 540, description: 'Scolarité mensuelle - fratrie (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_FRATRIE_TRIMESTRIEL', valeur: 1620, description: 'Scolarité trimestrielle - fratrie (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_FRATRIE_SEMESTRIEL', valeur: 3240, description: 'Scolarité semestrielle - fratrie (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_FRATRIE_ANNUEL', valeur: 6480, description: 'Scolarité annuelle - fratrie (maison/élémentaire)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    // Scolarité - Collège
+    { cle: 'SCOLARITE_COLLEGE_MENSUEL', valeur: 710, description: 'Scolarité mensuelle - 1 enfant (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_COLLEGE_TRIMESTRIEL', valeur: 2130, description: 'Scolarité trimestrielle - 1 enfant (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_COLLEGE_SEMESTRIEL', valeur: 4260, description: 'Scolarité semestrielle - 1 enfant (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_COLLEGE_ANNUEL', valeur: 8520, description: 'Scolarité annuelle - 1 enfant (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_COLLEGE_FRATRIE_MENSUEL', valeur: 640, description: 'Scolarité mensuelle - fratrie (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_COLLEGE_FRATRIE_TRIMESTRIEL', valeur: 1920, description: 'Scolarité trimestrielle - fratrie (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_COLLEGE_FRATRIE_SEMESTRIEL', valeur: 3840, description: 'Scolarité semestrielle - fratrie (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
+    { cle: 'SCOLARITE_COLLEGE_FRATRIE_ANNUEL', valeur: 7680, description: 'Scolarité annuelle - fratrie (collège)', categorie: 'SCOLARITE', anneeScolaire: '2025-2026' },
     // Inscription
-    { cle: 'inscription_premiere_annee', valeur: 350, description: 'Frais inscription 1ère année', categorie: 'inscription', anneeScolaire: '2025-2026' },
-    { cle: 'inscription_premiere_annee_fratrie', valeur: 150, description: 'Frais inscription 1ère année (fratrie)', categorie: 'inscription', anneeScolaire: '2025-2026' },
-    { cle: 'inscription_annees_suivantes', valeur: 195, description: 'Frais inscription années suivantes', categorie: 'inscription', anneeScolaire: '2025-2026' },
-    { cle: 'inscription_annees_suivantes_fratrie', valeur: 160, description: 'Frais inscription années suivantes (fratrie)', categorie: 'inscription', anneeScolaire: '2025-2026' },
-    // Fonctionnement
-    { cle: 'fonctionnement_maternelle', valeur: 65, description: 'Matériel pédagogique maternelle', categorie: 'fonctionnement', anneeScolaire: '2025-2026' },
-    { cle: 'fonctionnement_elementaire', valeur: 85, description: 'Matériel pédagogique élémentaire', categorie: 'fonctionnement', anneeScolaire: '2025-2026' },
-    { cle: 'fonctionnement_college', valeur: 95, description: 'Matériel pédagogique collège', categorie: 'fonctionnement', anneeScolaire: '2025-2026' },
-    // Repas & Périscolaire
-    { cle: 'repas_midi', valeur: 5.45, description: 'Repas midi', categorie: 'repas', anneeScolaire: '2025-2026' },
-    { cle: 'periscolaire_seance', valeur: 6.20, description: 'Périscolaire (séance)', categorie: 'periscolaire', anneeScolaire: '2025-2026' },
-    // RFR
-    { cle: 'reduction_rfr_maternelle_elementaire', valeur: 6, description: 'Réduction RFR maternelle/élémentaire (%)', categorie: 'reduction', anneeScolaire: '2025-2026' },
-    { cle: 'reduction_rfr_college', valeur: 19, description: 'Réduction RFR collège (%)', categorie: 'reduction', anneeScolaire: '2025-2026' },
+    { cle: 'INSCRIPTION_PREMIERE_ANNEE', valeur: 350, description: "Frais d'inscription 1ère année - 1 enfant", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
+    { cle: 'INSCRIPTION_FRATRIE_PREMIERE', valeur: 150, description: "Frais d'inscription 1ère année - fratrie", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
+    { cle: 'INSCRIPTION_ANNEES_SUIVANTES', valeur: 195, description: "Frais d'inscription années suivantes - 1 enfant", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
+    { cle: 'INSCRIPTION_FRATRIE_SUIVANTES', valeur: 160, description: "Frais d'inscription années suivantes - fratrie", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
+    // Fonctionnement (matériel pédagogique)
+    { cle: 'FONCTIONNEMENT_MATERNELLE', valeur: 65, description: 'Frais matériel pédagogique - 3 à 6 ans', categorie: 'FONCTIONNEMENT', anneeScolaire: '2025-2026' },
+    { cle: 'FONCTIONNEMENT_ELEMENTAIRE', valeur: 85, description: 'Frais matériel pédagogique - 6 à 12 ans', categorie: 'FONCTIONNEMENT', anneeScolaire: '2025-2026' },
+    { cle: 'FONCTIONNEMENT_COLLEGE', valeur: 95, description: 'Frais matériel pédagogique - collège', categorie: 'FONCTIONNEMENT', anneeScolaire: '2025-2026' },
+    // Réductions
+    { cle: 'REDUCTION_FRATRIE_POURCENTAGE', valeur: 6, description: 'Réduction fratrie en % (maison/élémentaire)', categorie: 'FRATRIE', anneeScolaire: '2025-2026' },
+    { cle: 'REDUCTION_FRATRIE_COLLEGE_POURCENTAGE', valeur: 19, description: 'Réduction fratrie en % (collège) - RFR', categorie: 'FRATRIE', anneeScolaire: '2025-2026' },
+    // Repas
+    { cle: 'REPAS_MIDI', valeur: 5.45, description: 'Tarif repas du midi (traiteur)', categorie: 'REPAS', anneeScolaire: '2025-2026' },
+    // Périscolaire
+    { cle: 'PERISCOLAIRE_SEANCE', valeur: 6.20, description: 'Tarif périscolaire par séance (16h-17h30, goûter inclus)', categorie: 'PERISCOLAIRE', anneeScolaire: '2025-2026' },
   ];
 
   for (const tarif of tarifs) {
