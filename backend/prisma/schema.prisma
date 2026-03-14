@@ -45,6 +45,7 @@ model User {
   sessions            Session[]
   signatureReglements SignatureReglement[]
   reinscriptions      Reinscription[]
+  mandatsSepa         MandatSepa[]
 
   @@index([role])
   @@index([actif])
@@ -141,6 +142,7 @@ model Enfant {
   parent1Id           Int                 @map("id_parent1")
   parent2Id           Int?                @map("id_parent2")
   preinscriptionId    Int?                @map("preinscription_id")
+  tarifMensuelOverride Decimal?           @map("tarif_mensuel_override") @db.Decimal(10, 2)
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
   deletedAt           DateTime?           @map("deleted_at")
@@ -396,6 +398,27 @@ model Reinscription {
   @@index([anneeScolaire])
   @@index([statut])
   @@map("reinscriptions")
+}
+
+model MandatSepa {
+  id             Int       @id @default(autoincrement())
+  parentId       Int       @map("parent_id")
+  rum            String    @unique
+  iban           String
+  bic            String
+  titulaire      String
+  signatureData  String?   @map("signature_data")
+  dateSignature  DateTime? @map("date_signature")
+  ipAdresse      String?   @map("ip_adresse")
+  actif          Boolean   @default(true)
+  dateRevocation DateTime? @map("date_revocation")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  parent         User      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([parentId])
+  @@index([actif])
+  @@map("mandats_sepa")
 }
 
 enum Role {

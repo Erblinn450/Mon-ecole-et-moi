@@ -15,6 +15,7 @@ import {
   ChevronRight,
   RefreshCw,
   Receipt,
+  CreditCard,
 } from "lucide-react";
 
 // Menu admin
@@ -62,6 +63,12 @@ const menuItems = [
     label: "Périscolaire",
     icon: Palette,
     description: "Activités & garderie",
+  },
+  {
+    href: "/admin/mandats-sepa",
+    label: "Mandats SEPA",
+    icon: CreditCard,
+    description: "Prélèvements bancaires",
   },
   {
     href: "/admin/comptes",

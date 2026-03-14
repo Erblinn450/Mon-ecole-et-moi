@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { FacturationService } from './facturation.service';
 import { FacturationPdfService } from './facturation-pdf.service';
+import { SepaXmlService } from './sepa-xml.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -50,6 +51,7 @@ export class FacturationController {
   constructor(
     private readonly facturationService: FacturationService,
     private readonly facturationPdfService: FacturationPdfService,
+    private readonly sepaXmlService: SepaXmlService,
   ) {}
 
   // --- Factures : Parent ---
@@ -341,5 +343,60 @@ export class FacturationController {
     @Param('ligneId', ParseIntPipe) ligneId: number,
   ) {
     return this.facturationService.supprimerLigne(id, ligneId);
+  }
+
+  // --- SEPA XML ---
+
+  @Post('sepa/generer')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Générer le fichier SEPA XML pain.008.001.02 (Admin)' })
+  async genererSepaXml(
+    @Body() body: { mois: string; inclureImpayes?: boolean; datePrelevement?: string },
+    @Res() res: Response,
+  ) {
+    const datePrelev = body.datePrelevement ? new Date(body.datePrelevement) : undefined;
+    const result = await this.sepaXmlService.genererSepaXml(
+      body.mois,
+      body.inclureImpayes ?? false,
+      datePrelev,
+    );
+
+    // Marquer automatiquement les factures comme prélevées
+    const factureIds = result.transactions.map((t) => t.factureId);
+    const dateEffective = datePrelev || new Date();
+    await this.sepaXmlService.marquerFacturesPrelevees(factureIds, dateEffective);
+
+    // Retourner le fichier XML
+    res.set({
+      'Content-Type': 'application/xml',
+      'Content-Disposition': `attachment; filename="sepa-${body.mois}.xml"`,
+    });
+    res.send(result.xml);
+  }
+
+  @Post('sepa/previsualiser')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Prévisualiser le prélèvement SEPA sans générer (Admin)' })
+  async previsualiserSepa(
+    @Body() body: { mois: string; inclureImpayes?: boolean },
+  ) {
+    const result = await this.sepaXmlService.genererSepaXml(
+      body.mois,
+      body.inclureImpayes ?? false,
+    );
+
+    return {
+      nbTransactions: result.nbTransactions,
+      totalMontant: result.totalMontant,
+      transactions: result.transactions.map((t) => ({
+        factureId: t.factureId,
+        numero: t.numero,
+        montant: t.montant,
+        parent: `${t.parentPrenom} ${t.parentNom}`,
+        rum: t.rum,
+      })),
+    };
   }
 }

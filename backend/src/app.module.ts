@@ -21,6 +21,7 @@ import { ExportModule } from './modules/export/export.module';
 import { PersonnesAutoriseesModule } from './modules/personnes-autorisees/personnes-autorisees.module';
 import { ReinscriptionsModule } from './modules/reinscriptions/reinscriptions.module';
 import { LoggerModule } from './common/logger/logger.module';
+import { MandatSepaModule } from './modules/mandat-sepa/mandat-sepa.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { LoggerModule } from './common/logger/logger.module';
     PersonnesAutoriseesModule,
     ReinscriptionsModule,
     LoggerModule,
+    MandatSepaModule,
 
     // TODO: Réactiver en AVRIL (selon planning)
     // RepasModule,

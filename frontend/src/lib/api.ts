@@ -22,6 +22,7 @@ import {
   StatutFacture,
   ModePaiement,
   TypeLigne,
+  MandatSepa,
 } from "@/types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -848,6 +849,34 @@ export const facturationApi = {
     return handleResponse<Facture>(response);
   },
 
+  // Admin - Prévisualiser SEPA
+  async previsualiserSepa(mois: string, inclureImpayes: boolean = false): Promise<{
+    nbTransactions: number;
+    totalMontant: number;
+    transactions: { factureId: number; numero: string; montant: number; parent: string; rum: string }[];
+  }> {
+    const response = await fetch(`${API_URL}/facturation/sepa/previsualiser`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ mois, inclureImpayes }),
+    });
+    return handleResponse(response);
+  },
+
+  // Admin - Générer et télécharger SEPA XML
+  async genererSepaXml(mois: string, inclureImpayes: boolean = false, datePrelevement?: string): Promise<Blob> {
+    const response = await fetch(`${API_URL}/facturation/sepa/generer`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ mois, inclureImpayes, datePrelevement }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Erreur SEPA" }));
+      throw new Error(error.message || "Erreur lors de la génération SEPA");
+    }
+    return response.blob();
+  },
+
   // Admin - Modifier IBAN parent
   async updateParentSepa(parentId: number, data: { ibanParent?: string; mandatSepaRef?: string }): Promise<unknown> {
     const response = await fetch(`${API_URL}/users/${parentId}`, {
@@ -856,6 +885,81 @@ export const facturationApi = {
       body: JSON.stringify(data),
     });
     return handleResponse<unknown>(response);
+  },
+};
+
+// ============================================
+// MANDAT SEPA API
+// ============================================
+
+export const mandatSepaApi = {
+  // Parent - Mon mandat actif
+  async getMonMandat(): Promise<{ mandat: MandatSepa | null }> {
+    const response = await fetch(`${API_URL}/mandats-sepa/mon-mandat`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{ mandat: MandatSepa | null }>(response);
+  },
+
+  // Parent - Signer un mandat
+  async signer(data: {
+    iban: string;
+    bic: string;
+    titulaire: string;
+    signatureData: string;
+  }): Promise<{ message: string; mandat: MandatSepa }> {
+    const response = await fetch(`${API_URL}/mandats-sepa/signer`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ message: string; mandat: MandatSepa }>(response);
+  },
+
+  // Parent - Révoquer
+  async revoquer(mandatId: number): Promise<{ message: string }> {
+    const response = await fetch(`${API_URL}/mandats-sepa/${mandatId}/revoquer`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{ message: string }>(response);
+  },
+
+  // Parent/Admin - Télécharger PDF
+  async downloadPdf(mandatId: number): Promise<Blob> {
+    const response = await fetch(`${API_URL}/mandats-sepa/${mandatId}/pdf`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors du téléchargement du PDF");
+    }
+    return response.blob();
+  },
+
+  // Admin - Tous les mandats
+  async getAll(): Promise<MandatSepa[]> {
+    const response = await fetch(`${API_URL}/mandats-sepa`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<MandatSepa[]>(response);
+  },
+
+  // Admin - Détail mandat
+  async getById(id: number): Promise<MandatSepa> {
+    const response = await fetch(`${API_URL}/mandats-sepa/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<MandatSepa>(response);
+  },
+
+  // Admin - Modifier mandat
+  async update(id: number, data: { iban?: string; bic?: string; titulaire?: string }): Promise<MandatSepa> {
+    const response = await fetch(`${API_URL}/mandats-sepa/${id}`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<MandatSepa>(response);
   },
 };
 

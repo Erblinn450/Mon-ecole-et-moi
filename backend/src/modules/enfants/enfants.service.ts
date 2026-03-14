@@ -96,6 +96,7 @@ export class EnfantsService {
     dateNaissance: Date;
     lieuNaissance: string;
     classe: Classe;
+    tarifMensuelOverride: number | null;
   }>) {
     await this.findOne(id);
     return this.prisma.enfant.update({

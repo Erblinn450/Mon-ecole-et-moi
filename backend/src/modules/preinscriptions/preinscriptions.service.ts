@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { FacturationService } from '../facturation/facturation.service';
 import { CreatePreinscriptionDto } from './dto/create-preinscription.dto';
 import { UpdatePreinscriptionDto } from './dto/update-preinscription.dto';
 import { StatutPreinscription, Role, type Preinscription } from '@prisma/client';
@@ -16,6 +17,8 @@ export class PreinscriptionsService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private configService: ConfigService,
+    @Inject(forwardRef(() => FacturationService))
+    private facturationService: FacturationService,
   ) { }
 
   async create(createDto: CreatePreinscriptionDto) {
@@ -310,6 +313,19 @@ export class PreinscriptionsService {
       this.logger.log(`Compte parent créé: ${parent.email}, enfant: ${enfant.prenom} ${enfant.nom}`);
       if (parent2) {
         this.logger.log(`Compte parent 2 créé: ${parent2.email}`);
+      }
+
+      // Générer automatiquement la facture de frais d'inscription
+      try {
+        const facture = await this.facturationService.genererFactureInscription(
+          parent.id,
+          enfant.id,
+          true, // première année (nouvelle inscription)
+        );
+        this.logger.log(`Facture d'inscription ${facture.numero} générée automatiquement`);
+      } catch (error) {
+        this.logger.error(`Erreur génération facture inscription: ${error.message}`);
+        // Ne pas bloquer la validation si la facture échoue
       }
     }
 

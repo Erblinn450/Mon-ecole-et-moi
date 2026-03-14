@@ -5,6 +5,8 @@ import {
   IsInt,
   IsEnum,
   IsDateString,
+  IsNumber,
+  Min,
   MinLength,
   MaxLength,
 } from 'class-validator';
@@ -58,4 +60,10 @@ export class CreateEnfantDto {
   @IsOptional()
   @IsInt()
   preinscriptionId?: number;
+
+  @ApiPropertyOptional({ description: 'Tarif mensuel personnalisé (override admin). Si défini, remplace le calcul automatique.', example: 500 })
+  @IsOptional()
+  @IsNumber({}, { message: 'Le tarif doit être un nombre' })
+  @Min(0, { message: 'Le tarif ne peut pas être négatif' })
+  tarifMensuelOverride?: number;
 }

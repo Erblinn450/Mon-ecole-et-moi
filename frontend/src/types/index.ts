@@ -389,6 +389,29 @@ export interface BatchResult {
 }
 
 // ============================================
+// MANDAT SEPA
+// ============================================
+
+export interface MandatSepa {
+  id: number;
+  rum: string;
+  iban: string;
+  bic: string;
+  titulaire: string;
+  dateSignature: string;
+  actif: boolean;
+  dateRevocation?: string;
+  createdAt?: string;
+  parent?: {
+    id: number;
+    nom?: string;
+    prenom?: string;
+    email: string;
+    telephone?: string;
+  };
+}
+
+// ============================================
 // API RESPONSE
 // ============================================
 

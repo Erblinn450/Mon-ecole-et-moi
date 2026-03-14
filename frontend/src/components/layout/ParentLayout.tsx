@@ -15,6 +15,7 @@ import {
   Receipt,
   UserCog,
   Scale,
+  CreditCard,
 } from "lucide-react";
 
 // Menu parent
@@ -56,6 +57,12 @@ const menuItems = [
     label: "Mes factures",
     icon: Receipt,
     description: "Factures & paiements",
+  },
+  {
+    href: "/mandat-sepa",
+    label: "Mandat SEPA",
+    icon: CreditCard,
+    description: "Prélèvement bancaire",
   },
   {
     href: "/mes-dossiers",

@@ -1192,6 +1192,30 @@ export class FacturationService {
       );
     }
 
+    // Override admin : si un tarif personnalisé est défini sur l'enfant, l'utiliser
+    if (enfant.tarifMensuelOverride !== null && enfant.tarifMensuelOverride !== undefined) {
+      const overrideMensuel = Number(enfant.tarifMensuelOverride);
+      let montantBase: number;
+      if (frequence === 'TRIMESTRIEL') {
+        montantBase = dec(overrideMensuel).times(3).toDecimalPlaces(2).toNumber();
+      } else if (frequence === 'ANNUEL') {
+        montantBase = dec(overrideMensuel).times(12).toDecimalPlaces(2).toNumber();
+      } else {
+        montantBase = overrideMensuel; // MENSUEL ou SEMESTRIEL×6
+      }
+      if (frequence === 'SEMESTRIEL') {
+        montantBase = dec(overrideMensuel).times(6).toDecimalPlaces(2).toNumber();
+      }
+
+      return {
+        montantBase,
+        estFratrie: false,
+        reductionFratrie: 0,
+        reductionRFR: 0,
+        montantFinal: montantBase,
+      };
+    }
+
     const isCollege = enfant.classe === 'COLLEGE';
     const estFratrie = rangFratrie > 1;
 
@@ -1510,7 +1534,8 @@ export class FacturationService {
       }
     }
 
-    // 2. INSCRIPTION (septembre uniquement)
+    // 2. INSCRIPTION — Normalement générée à la validation de la préinscription.
+    //    Conservé ici en fallback pour génération manuelle admin si besoin.
     const [, month] = mois.split('-').map(Number);
     if (options.inclureInscription && month === 9) {
       const inscription = await this.calculerInscription(
@@ -1529,8 +1554,8 @@ export class FacturationService {
       });
     }
 
-    // 3. FONCTIONNEMENT (septembre uniquement)
-    if (options.inclureFonctionnement && month === 9) {
+    // 3. FONCTIONNEMENT / MATÉRIEL PÉDAGOGIQUE (février = réinscription)
+    if (options.inclureFonctionnement && month === 2) {
       const fonctionnement = await this.calculerFonctionnement(
         enfantId,
         anneeScolaire,
@@ -1601,5 +1626,129 @@ export class FacturationService {
       totalReductions: dec(totalReductions).toDecimalPlaces(2).toNumber(),
       totalNet: dec(totalNet).toDecimalPlaces(2).toNumber(),
     };
+  }
+
+  // ============================================
+  // FACTURE D'INSCRIPTION (à la validation préinscription)
+  // ============================================
+
+  /**
+   * Génère une facture de frais d'inscription lors de la validation d'une préinscription.
+   * Appelée automatiquement par PreinscriptionsService.updateStatut() → VALIDE.
+   */
+  async genererFactureInscription(
+    parentId: number,
+    enfantId: number,
+    estPremiereAnnee: boolean,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const parent = await tx.user.findUnique({
+        where: { id: parentId },
+        select: { id: true, nom: true, prenom: true, modePaiementPref: true, destinataireFacture: true },
+      });
+
+      if (!parent) {
+        throw new NotFoundException(`Parent #${parentId} non trouvé`);
+      }
+
+      const enfant = await tx.user.findFirst ? null : null;
+      const enfantData = await tx.enfant.findUnique({
+        where: { id: enfantId },
+        select: { id: true, nom: true, prenom: true, classe: true },
+      });
+
+      if (!enfantData) {
+        throw new NotFoundException(`Enfant #${enfantId} non trouvé`);
+      }
+
+      // Déterminer le rang dans la fratrie
+      const enfantsDuParent = await tx.enfant.findMany({
+        where: {
+          OR: [{ parent1Id: parentId }, { parent2Id: parentId }],
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      });
+      const rangFratrie = enfantsDuParent.findIndex((e) => e.id === enfantId) + 1;
+      const estFratrie = rangFratrie > 1;
+
+      // Calculer les frais d'inscription
+      const anneeScolaire = this.getAnneeScolaireActuelle();
+      let cle: string;
+      if (estPremiereAnnee) {
+        cle = estFratrie ? 'INSCRIPTION_FRATRIE_PREMIERE' : 'INSCRIPTION_PREMIERE_ANNEE';
+      } else {
+        cle = estFratrie ? 'INSCRIPTION_FRATRIE_SUIVANTES' : 'INSCRIPTION_ANNEES_SUIVANTES';
+      }
+
+      let montantInscription: number;
+      try {
+        const tarif = await this.getConfigTarifByCle(cle, anneeScolaire);
+        montantInscription = Number(tarif.valeur);
+      } catch {
+        // Fallback si tarifs pas encore seed
+        montantInscription = estPremiereAnnee
+          ? (estFratrie ? 150 : 350)
+          : (estFratrie ? 160 : 195);
+        this.logger.warn(`Tarif ${cle} non trouvé pour ${anneeScolaire}, fallback: ${montantInscription}€`);
+      }
+
+      // Créer la facture
+      const now = new Date();
+      const periode = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      const numero = await this.generateNumeroFacture(periode, tx as any);
+
+      const facture = await tx.facture.create({
+        data: {
+          numero,
+          parentId,
+          enfantId,
+          montantTotal: montantInscription,
+          dateEmission: now,
+          dateEcheance: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // +30 jours
+          type: 'PONCTUELLE' as TypeFacture,
+          periode,
+          anneeScolaire,
+          destinataire: parent.destinataireFacture ?? undefined,
+          modePaiement: parent.modePaiementPref ?? undefined,
+          description: `Frais d'inscription - ${enfantData.prenom} ${enfantData.nom}`,
+        },
+      });
+
+      await tx.ligneFacture.create({
+        data: {
+          factureId: facture.id,
+          description: estPremiereAnnee
+            ? `Frais d'inscription 1ère année${estFratrie ? ' (fratrie)' : ''}`
+            : `Frais d'inscription réinscription${estFratrie ? ' (fratrie)' : ''}`,
+          quantite: 1,
+          prixUnit: montantInscription,
+          montant: montantInscription,
+          type: 'INSCRIPTION' as TypeLigne,
+        },
+      });
+
+      this.logger.log(
+        `Facture d'inscription ${numero} créée: ${montantInscription}€ pour ${enfantData.prenom} ${enfantData.nom}`,
+      );
+
+      return facture;
+    });
+  }
+
+  /**
+   * Retourne l'année scolaire actuelle (ex: "2025-2026").
+   */
+  private getAnneeScolaireActuelle(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    // Septembre à décembre = année en cours / année+1
+    // Janvier à août = année-1 / année en cours
+    if (month >= 9) {
+      return `${year}-${year + 1}`;
+    }
+    return `${year - 1}-${year}`;
   }
 }
