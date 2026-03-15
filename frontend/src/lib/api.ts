@@ -878,6 +878,21 @@ export const facturationApi = {
     return response.blob();
   },
 
+  // Admin - Marquer factures SEPA comme payées
+  async marquerFacturesPayeesSepa(factureIds: number[], datePrelevement?: string): Promise<{
+    payees: number;
+    totalMontant: number;
+    resultats: { factureId: number; numero: string; montant: number; statut: string }[];
+    erreurs: string[];
+  }> {
+    const response = await fetch(`${API_URL}/facturation/sepa/marquer-payees`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ factureIds, datePrelevement }),
+    });
+    return handleResponse(response);
+  },
+
   // Admin - Modifier IBAN parent
   async updateParentSepa(parentId: number, data: { ibanParent?: string | null; mandatSepaRef?: string | null }): Promise<unknown> {
     const response = await fetch(`${API_URL}/users/${parentId}`, {

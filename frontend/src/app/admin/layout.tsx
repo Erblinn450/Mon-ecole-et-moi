@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { authApi } from "@/lib/api";
+import { Role } from "@/types";
 
 export default function AdminRootLayout({
   children,
@@ -14,27 +16,40 @@ export default function AdminRootLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // La page de login n'a pas besoin d'authentification
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
-    // Si c'est la page de login, pas besoin de vérifier l'auth
     if (isLoginPage) {
       setIsLoading(false);
-      setIsAuthenticated(true); // Pour afficher la page
+      setIsAuthenticated(true);
       return;
     }
 
-    // Vérifier l'authentification admin
-    const adminLogged = sessionStorage.getItem("admin_logged");
-    const adminToken = localStorage.getItem("admin_token");
+    const verifyAdmin = async () => {
+      const token = localStorage.getItem("admin_token") || localStorage.getItem("auth_token");
+      if (!token) {
+        router.push("/admin/login");
+        setIsLoading(false);
+        return;
+      }
 
-    if (!adminLogged && !adminToken) {
-      router.push("/admin/login");
-    } else {
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
+      try {
+        const profile = await authApi.getProfile();
+        if (profile.role === Role.ADMIN) {
+          setIsAuthenticated(true);
+        } else {
+          router.push("/admin/login");
+        }
+      } catch {
+        localStorage.removeItem("admin_token");
+        sessionStorage.removeItem("admin_logged");
+        router.push("/admin/login");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    verifyAdmin();
   }, [router, isLoginPage]);
 
   if (isLoading) {
@@ -54,11 +69,9 @@ export default function AdminRootLayout({
     return null;
   }
 
-  // Pour la page de login, ne pas utiliser le AdminLayout
   if (isLoginPage) {
     return <>{children}</>;
   }
 
   return <AdminLayout>{children}</AdminLayout>;
 }
-

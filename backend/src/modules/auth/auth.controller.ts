@@ -12,7 +12,13 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import { AuthenticatedRequest } from '../../common/interfaces';
 
 @ApiTags('auth')
@@ -31,10 +37,13 @@ export class AuthController {
   }
 
   @Post('register')
-  @Throttle({ default: { limit: 3, ttl: 60000 } }) // Max 3 inscriptions par minute
-  @ApiOperation({ summary: 'Inscription utilisateur' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Créer un compte utilisateur (Admin uniquement)' })
   @ApiResponse({ status: 201, description: 'Compte créé avec succès' })
   @ApiResponse({ status: 400, description: 'Email déjà utilisé' })
+  @ApiResponse({ status: 403, description: 'Accès réservé aux administrateurs' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
@@ -67,12 +76,12 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Mot de passe actuel incorrect' })
   async changePassword(
     @Request() req: AuthenticatedRequest,
-    @Body() body: { currentPassword: string; newPassword: string },
+    @Body() dto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(
       req.user.id,
-      body.currentPassword,
-      body.newPassword,
+      dto.currentPassword,
+      dto.newPassword,
     );
   }
 
@@ -80,8 +89,8 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // Max 3 demandes par minute
   @ApiOperation({ summary: 'Demander une réinitialisation de mot de passe' })
   @ApiResponse({ status: 200, description: 'Email envoyé si le compte existe' })
-  async forgotPassword(@Body() body: { email: string }) {
-    return this.authService.forgotPassword(body.email);
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
   }
 
   @Post('reset-password')
@@ -89,8 +98,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Réinitialiser le mot de passe avec un token' })
   @ApiResponse({ status: 200, description: 'Mot de passe réinitialisé' })
   @ApiResponse({ status: 400, description: 'Token invalide ou expiré' })
-  async resetPassword(@Body() body: { token: string; newPassword: string }) {
-    return this.authService.resetPassword(body.token, body.newPassword);
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
   @Delete('supprimer-compte')

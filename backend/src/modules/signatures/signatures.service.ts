@@ -9,7 +9,7 @@ export class SignaturesService {
    * Obtenir le statut de signature pour un enfant OU une préinscription.
    * Accepte enfantId ou preinscriptionId.
    */
-  async getSignatureStatus(idOrPreinscriptionId: number, parentEmail: string) {
+  async getSignatureStatus(idOrPreinscriptionId: number, parentEmail: string, parentId: number) {
     let enfantId: number | null = null;
 
     // Essayer de trouver l'enfant par ID direct
@@ -18,6 +18,10 @@ export class SignaturesService {
     });
 
     if (enfant) {
+      // Vérifier que le parent a accès à cet enfant
+      if (enfant.parent1Id !== parentId && enfant.parent2Id !== parentId) {
+        throw new ForbiddenException('Accès refusé');
+      }
       enfantId = enfant.id;
     } else {
       // Sinon, chercher via la préinscription

@@ -12,6 +12,10 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ERREUR : ce seed de démonstration ne doit JAMAIS être exécuté en production. Utilisez NODE_ENV=demo ou development.');
+  }
+
   console.log('=== Seed production : création des données de démo ===\n');
 
   const passwordHash = await bcrypt.hash('Parent2026!', 10);

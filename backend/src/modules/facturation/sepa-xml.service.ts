@@ -102,7 +102,7 @@ export class SepaXmlService {
         iban: mandat.iban,
         bic: mandat.bic,
         rum: mandat.rum,
-        dateSignatureMandat: mandat.dateSignature!,
+        dateSignatureMandat: mandat.dateSignature || new Date(),
         description: `${facture.numero} - ${facture.description || facture.periode}`,
       });
     }
@@ -115,7 +115,7 @@ export class SepaXmlService {
       );
     }
 
-    const totalMontant = transactions.reduce((sum, t) => new Decimal(sum).plus(t.montant).toNumber(), 0);
+    const totalMontant = transactions.reduce((sum, t) => sum.plus(t.montant), new Decimal(0)).toDecimalPlaces(2).toNumber();
     const datePrelev = datePrelevement || this.getProchaineDatePrelevement();
     const msgId = `MEMM-${mois.replace('-', '')}-${Date.now()}`;
     const creationDate = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -140,7 +140,10 @@ export class SepaXmlService {
    */
   async marquerFacturesPrelevees(factureIds: number[], datePrelevement: Date) {
     const updated = await this.prisma.facture.updateMany({
-      where: { id: { in: factureIds } },
+      where: {
+        id: { in: factureIds },
+        statut: { notIn: ['PAYEE', 'ANNULEE'] as StatutFacture[] },
+      },
       data: {
         datePrelevement,
         statut: 'ENVOYEE' as StatutFacture,

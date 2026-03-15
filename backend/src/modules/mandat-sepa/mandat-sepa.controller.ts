@@ -21,6 +21,7 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 import { MandatSepaService } from './mandat-sepa.service';
 import { MandatSepaPdfService } from './mandat-sepa-pdf.service';
 import { SignerMandatDto } from './dto/signer-mandat.dto';
+import { UpdateMandatAdminDto } from './dto/update-mandat-admin.dto';
 
 @ApiTags('mandats-sepa')
 @Controller('mandats-sepa')
@@ -109,7 +110,7 @@ export class MandatSepaController {
   @ApiOperation({ summary: 'Modifier un mandat SEPA (Admin)' })
   updateMandat(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: { iban?: string; bic?: string; titulaire?: string },
+    @Body() data: UpdateMandatAdminDto,
   ) {
     return this.mandatSepaService.updateMandatAdmin(id, data);
   }

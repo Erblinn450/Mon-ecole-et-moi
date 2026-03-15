@@ -150,7 +150,7 @@ export class FacturationService {
       );
     }
 
-    const montantTotal = toutesLignes.reduce((sum, l) => sum + l.montant, 0);
+    const montantTotal = toutesLignes.reduce((sum, l) => dec(sum).plus(l.montant).toNumber(), 0);
 
     const dateEcheance = new Date();
     dateEcheance.setDate(5);
@@ -159,6 +159,16 @@ export class FacturationService {
     dateEcheance.setMonth(month - 1);
 
     const facture = await this.prisma.$transaction(async (tx) => {
+      // Vérification doublon DANS la transaction pour éviter les race conditions
+      const existanteCheck = await tx.facture.findFirst({
+        where: { parentId, periode, anneeScolaire },
+      });
+      if (existanteCheck) {
+        throw new ConflictException(
+          `Une facture existe déjà pour le parent #${parentId} sur la période ${periode}`,
+        );
+      }
+
       // Génération du numéro DANS la transaction pour éviter les doublons
       const numero = await this.generateNumeroFacture(periode, tx);
 
@@ -429,46 +439,48 @@ export class FacturationService {
   };
 
   async updateStatutFacture(id: number, dto: UpdateStatutDto) {
-    const facture = await this.prisma.facture.findUnique({ where: { id } });
-    if (!facture) {
-      throw new NotFoundException(`Facture #${id} non trouvée`);
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const facture = await tx.facture.findUnique({ where: { id } });
+      if (!facture) {
+        throw new NotFoundException(`Facture #${id} non trouvée`);
+      }
 
-    const transitionsPermises = FacturationService.TRANSITIONS_VALIDES[facture.statut];
-    if (!transitionsPermises.includes(dto.statut)) {
-      throw new BadRequestException(
-        `Transition impossible : ${facture.statut} → ${dto.statut}. Transitions autorisées : ${transitionsPermises.join(', ') || 'aucune'}`,
-      );
-    }
-
-    // On ne peut pas marquer PAYEE tant que le montant payé < montant total
-    if (dto.statut === StatutFacture.PAYEE) {
-      const resteAPayer = Number(facture.montantTotal) - Number(facture.montantPaye);
-      if (resteAPayer > 0.01) {
+      const transitionsPermises = FacturationService.TRANSITIONS_VALIDES[facture.statut];
+      if (!transitionsPermises.includes(dto.statut)) {
         throw new BadRequestException(
-          `Impossible de marquer comme payée : il reste ${resteAPayer.toFixed(2)} € à percevoir. Enregistrez d'abord le paiement.`,
+          `Transition impossible : ${facture.statut} → ${dto.statut}. Transitions autorisées : ${transitionsPermises.join(', ') || 'aucune'}`,
         );
       }
-    }
 
-    // On ne peut pas marquer PARTIELLE sans aucun paiement enregistré
-    if (dto.statut === StatutFacture.PARTIELLE) {
-      if (Number(facture.montantPaye) === 0) {
-        throw new BadRequestException(
-          'Impossible de marquer comme paiement partiel : aucun paiement n\'a été enregistré.',
-        );
+      // On ne peut pas marquer PAYEE tant que le montant payé < montant total
+      if (dto.statut === StatutFacture.PAYEE) {
+        const resteAPayer = dec(facture.montantTotal).minus(facture.montantPaye);
+        if (resteAPayer.greaterThan(0.01)) {
+          throw new BadRequestException(
+            `Impossible de marquer comme payée : il reste ${resteAPayer.toFixed(2)} € à percevoir. Enregistrez d'abord le paiement.`,
+          );
+        }
       }
-    }
 
-    const data: Record<string, unknown> = { statut: dto.statut };
-    if (dto.commentaire) {
-      data.commentaire = dto.commentaire;
-    }
+      // On ne peut pas marquer PARTIELLE sans aucun paiement enregistré
+      if (dto.statut === StatutFacture.PARTIELLE) {
+        if (dec(facture.montantPaye).eq(0)) {
+          throw new BadRequestException(
+            'Impossible de marquer comme paiement partiel : aucun paiement n\'a été enregistré.',
+          );
+        }
+      }
 
-    return this.prisma.facture.update({
-      where: { id },
-      data,
-      include: { lignes: true, paiements: true },
+      const data: Record<string, unknown> = { statut: dto.statut };
+      if (dto.commentaire) {
+        data.commentaire = dto.commentaire;
+      }
+
+      return tx.facture.update({
+        where: { id },
+        data,
+        include: { lignes: true, paiements: true },
+      });
     });
   }
 
@@ -486,8 +498,8 @@ export class FacturationService {
         throw new BadRequestException('Impossible d\'enregistrer un paiement sur une facture annulée');
       }
 
-      const resteAPayer = Number(facture.montantTotal) - Number(facture.montantPaye);
-      if (dto.montant > resteAPayer) {
+      const resteAPayer = dec(facture.montantTotal).minus(facture.montantPaye);
+      if (dec(dto.montant).greaterThan(resteAPayer)) {
         throw new BadRequestException(
           `Le montant (${dto.montant}€) dépasse le reste à payer (${resteAPayer.toFixed(2)}€)`,
         );
@@ -504,12 +516,12 @@ export class FacturationService {
         },
       });
 
-      const totalPaye = Number(facture.montantPaye) + dto.montant;
-      const montantTotal = Number(facture.montantTotal);
+      const totalPaye = dec(facture.montantPaye).plus(dto.montant);
+      const montantTotal = dec(facture.montantTotal);
       let nouveauStatut: StatutFacture;
-      if (totalPaye >= montantTotal) {
+      if (totalPaye.gte(montantTotal)) {
         nouveauStatut = StatutFacture.PAYEE;
-      } else if (totalPaye > 0) {
+      } else if (totalPaye.greaterThan(0)) {
         nouveauStatut = StatutFacture.PARTIELLE;
       } else {
         nouveauStatut = facture.statut;
@@ -518,7 +530,7 @@ export class FacturationService {
       return tx.facture.update({
         where: { id: factureId },
         data: {
-          montantPaye: dec(totalPaye).toDecimalPlaces(2).toNumber(),
+          montantPaye: totalPaye.toDecimalPlaces(2).toNumber(),
           statut: nouveauStatut,
         },
         include: {
@@ -527,6 +539,86 @@ export class FacturationService {
           parent: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
         },
       });
+    });
+  }
+
+  /**
+   * Marque les factures prélevées par SEPA comme payées.
+   * Crée un enregistrement de paiement pour chaque facture et met à jour le statut.
+   */
+  async marquerFacturesPayeesSepa(factureIds: number[], datePrelevement: Date) {
+    return this.prisma.$transaction(async (tx) => {
+      const resultats: { factureId: number; numero: string; montant: number; statut: string }[] = [];
+      const erreurs: string[] = [];
+
+      for (const factureId of factureIds) {
+        const facture = await tx.facture.findUnique({
+          where: { id: factureId },
+        });
+
+        if (!facture) {
+          erreurs.push(`Facture #${factureId} non trouvée`);
+          continue;
+        }
+
+        if (facture.statut === StatutFacture.ANNULEE) {
+          erreurs.push(`Facture ${facture.numero} annulée, ignorée`);
+          continue;
+        }
+
+        if (facture.statut === StatutFacture.PAYEE) {
+          erreurs.push(`Facture ${facture.numero} déjà payée, ignorée`);
+          continue;
+        }
+
+        const resteAPayer = dec(facture.montantTotal).minus(facture.montantPaye);
+        if (resteAPayer.lte(0)) {
+          erreurs.push(`Facture ${facture.numero} déjà soldée, ignorée`);
+          continue;
+        }
+
+        const montantPaiement = resteAPayer.toDecimalPlaces(2).toNumber();
+
+        // Créer l'enregistrement de paiement
+        await tx.paiement.create({
+          data: {
+            factureId,
+            montant: montantPaiement,
+            datePaiement: datePrelevement,
+            modePaiement: 'PRELEVEMENT',
+            reference: `SEPA-${facture.numero}`,
+            commentaire: 'Paiement automatique par prélèvement SEPA',
+          },
+        });
+
+        // Mettre à jour la facture
+        const totalPaye = dec(facture.montantPaye).plus(montantPaiement).toDecimalPlaces(2).toNumber();
+        await tx.facture.update({
+          where: { id: factureId },
+          data: {
+            montantPaye: totalPaye,
+            statut: StatutFacture.PAYEE,
+          },
+        });
+
+        resultats.push({
+          factureId,
+          numero: facture.numero,
+          montant: montantPaiement,
+          statut: 'PAYEE',
+        });
+      }
+
+      this.logger.log(
+        `SEPA paiements: ${resultats.length} factures marquées payées, ${erreurs.length} ignorées`,
+      );
+
+      return {
+        payees: resultats.length,
+        totalMontant: resultats.reduce((sum, r) => dec(sum).plus(r.montant).toDecimalPlaces(2).toNumber(), 0),
+        resultats,
+        erreurs,
+      };
     });
   }
 

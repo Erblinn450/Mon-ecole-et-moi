@@ -12,35 +12,6 @@ export class MandatSepaService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Génère une Référence Unique de Mandat (RUM).
-   * Format : MEMM-YYYY-NNNNN (ex: MEMM-2026-00001)
-   */
-  private async generateRUM(): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = `MEMM-${year}-`;
-
-    return this.prisma.$transaction(async (tx) => {
-      // Verrouillage séquentiel pour éviter les doublons
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(200)`;
-
-      const lastMandat = await tx.mandatSepa.findFirst({
-        where: { rum: { startsWith: prefix } },
-        orderBy: { rum: 'desc' },
-        select: { rum: true },
-      });
-
-      let nextNumber = 1;
-      if (lastMandat) {
-        const lastNum = parseInt(lastMandat.rum.replace(prefix, ''), 10);
-        if (!isNaN(lastNum)) {
-          nextNumber = lastNum + 1;
-        }
-      }
-
-      return `${prefix}${String(nextNumber).padStart(5, '0')}`;
-    });
-  }
-
   /**
    * Signer un mandat SEPA (parent authentifié).
    * 1 mandat actif par parent maximum.
@@ -50,47 +21,63 @@ export class MandatSepaService {
     parentId: number,
     ipAdresse: string,
   ) {
-    // Vérifier si un mandat actif existe déjà
-    const mandatActif = await this.prisma.mandatSepa.findFirst({
-      where: { parentId, actif: true },
-    });
-
-    if (mandatActif) {
-      throw new BadRequestException(
-        'Un mandat SEPA actif existe déjà. Révoquez-le avant d\'en signer un nouveau.',
-      );
-    }
-
     // Nettoyer l'IBAN (supprimer les espaces)
     const ibanClean = dto.iban.replace(/\s/g, '');
 
-    const rum = await this.generateRUM();
+    return this.prisma.$transaction(async (tx) => {
+      // Vérifier si un mandat actif existe déjà — DANS la transaction
+      const mandatActif = await tx.mandatSepa.findFirst({
+        where: { parentId, actif: true },
+      });
 
-    const mandat = await this.prisma.mandatSepa.create({
-      data: {
-        parentId,
-        rum,
-        iban: ibanClean,
-        bic: dto.bic,
-        titulaire: dto.titulaire,
-        signatureData: dto.signatureData,
-        dateSignature: new Date(),
-        ipAdresse,
-      },
+      if (mandatActif) {
+        throw new BadRequestException(
+          'Un mandat SEPA actif existe déjà. Révoquez-le avant d\'en signer un nouveau.',
+        );
+      }
+
+      // Génération RUM avec lock — DANS la même transaction
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(200)`;
+      const year = new Date().getFullYear();
+      const prefix = `MEMM-${year}-`;
+      const lastMandat = await tx.mandatSepa.findFirst({
+        where: { rum: { startsWith: prefix } },
+        orderBy: { rum: 'desc' },
+        select: { rum: true },
+      });
+      let nextNumber = 1;
+      if (lastMandat) {
+        const lastNum = parseInt(lastMandat.rum.replace(prefix, ''), 10);
+        if (!isNaN(lastNum)) nextNumber = lastNum + 1;
+      }
+      const rum = `${prefix}${String(nextNumber).padStart(5, '0')}`;
+
+      const mandat = await tx.mandatSepa.create({
+        data: {
+          parentId,
+          rum,
+          iban: ibanClean,
+          bic: dto.bic,
+          titulaire: dto.titulaire,
+          signatureData: dto.signatureData,
+          dateSignature: new Date(),
+          ipAdresse,
+        },
+      });
+
+      return {
+        message: 'Mandat SEPA signé avec succès',
+        mandat: {
+          id: mandat.id,
+          rum: mandat.rum,
+          iban: this.masquerIBAN(mandat.iban),
+          bic: mandat.bic,
+          titulaire: mandat.titulaire,
+          dateSignature: mandat.dateSignature,
+          actif: mandat.actif,
+        },
+      };
     });
-
-    return {
-      message: 'Mandat SEPA signé avec succès',
-      mandat: {
-        id: mandat.id,
-        rum: mandat.rum,
-        iban: this.masquerIBAN(mandat.iban),
-        bic: mandat.bic,
-        titulaire: mandat.titulaire,
-        dateSignature: mandat.dateSignature,
-        actif: mandat.actif,
-      },
-    };
   }
 
   /**

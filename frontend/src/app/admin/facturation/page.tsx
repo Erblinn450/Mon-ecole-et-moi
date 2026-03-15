@@ -61,6 +61,17 @@ export default function FacturationPage() {
     title: string; message: string; variant: "danger" | "warning" | "default"; onConfirm: () => void;
   } | null>(null);
 
+  // SEPA state
+  const [sepaPreview, setSepaPreview] = useState<{
+    nbTransactions: number;
+    totalMontant: number;
+    transactions: { factureId: number; numero: string; montant: number; parent: string; rum: string }[];
+  } | null>(null);
+  const [sepaLoading, setSepaLoading] = useState(false);
+  const [sepaFactureIds, setSepaFactureIds] = useState<number[]>([]);
+  const [sepaMessage, setSepaMessage] = useState<string | null>(null);
+  const [sepaStep, setSepaStep] = useState<"idle" | "preview" | "downloaded">("idle");
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -128,6 +139,65 @@ export default function FacturationPage() {
       setBatchMessage(err instanceof Error ? err.message : "Erreur lors de l'envoi");
     } finally {
       setIsEnvoiLoading(false);
+    }
+  };
+
+  // SEPA handlers
+  const handleSepaPreview = async () => {
+    const mois = filterMois || getCurrentPeriode();
+    setSepaLoading(true);
+    setSepaMessage(null);
+    try {
+      const preview = await facturationApi.previsualiserSepa(mois, true);
+      setSepaPreview(preview);
+      setSepaFactureIds(preview.transactions.map((t) => t.factureId));
+      setSepaStep("preview");
+    } catch (err) {
+      setSepaMessage(err instanceof Error ? err.message : "Erreur lors de la prévisualisation SEPA");
+    } finally {
+      setSepaLoading(false);
+    }
+  };
+
+  const handleSepaGenerate = async () => {
+    const mois = filterMois || getCurrentPeriode();
+    setSepaLoading(true);
+    try {
+      const blob = await facturationApi.genererSepaXml(mois, true);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sepa-${mois}.xml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      setSepaStep("downloaded");
+      setSepaMessage("Fichier SEPA téléchargé. Vous pouvez maintenant marquer les factures comme payées.");
+    } catch (err) {
+      setSepaMessage(err instanceof Error ? err.message : "Erreur lors de la génération SEPA");
+    } finally {
+      setSepaLoading(false);
+    }
+  };
+
+  const handleSepaMarquerPayees = async () => {
+    if (sepaFactureIds.length === 0) return;
+    setSepaLoading(true);
+    try {
+      const result = await facturationApi.marquerFacturesPayeesSepa(sepaFactureIds);
+      setSepaMessage(
+        `${result.payees} facture(s) marquée(s) comme payées (${result.totalMontant.toFixed(2)} €)` +
+        (result.erreurs.length > 0 ? ` — ${result.erreurs.join(", ")}` : "")
+      );
+      setSepaStep("idle");
+      setSepaPreview(null);
+      setSepaFactureIds([]);
+      await loadData();
+    } catch (err) {
+      setSepaMessage(err instanceof Error ? err.message : "Erreur lors du marquage");
+    } finally {
+      setSepaLoading(false);
     }
   };
 
@@ -244,6 +314,116 @@ export default function FacturationPage() {
           {batchMessage}
         </div>
       )}
+
+      {/* SEPA Prélèvement */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Prélèvement SEPA</h2>
+
+        {sepaMessage && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-200 text-blue-700 text-sm">
+            {sepaMessage}
+          </div>
+        )}
+
+        {sepaStep === "idle" && (
+          <button
+            onClick={handleSepaPreview}
+            disabled={sepaLoading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors disabled:opacity-50"
+          >
+            {sepaLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+            Prévisualiser le prélèvement SEPA
+          </button>
+        )}
+
+        {sepaStep === "preview" && sepaPreview && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-violet-50 rounded-xl p-4">
+                <p className="text-sm text-violet-600 font-medium">Transactions</p>
+                <p className="text-2xl font-bold text-violet-900">{sepaPreview.nbTransactions}</p>
+              </div>
+              <div className="bg-violet-50 rounded-xl p-4">
+                <p className="text-sm text-violet-600 font-medium">Montant total</p>
+                <p className="text-2xl font-bold text-violet-900">{sepaPreview.totalMontant.toFixed(2)} €</p>
+              </div>
+            </div>
+
+            <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-xl">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">Facture</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">Parent</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500">Montant</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {sepaPreview.transactions.map((t) => (
+                    <tr key={t.factureId}>
+                      <td className="px-4 py-2 font-mono">{t.numero}</td>
+                      <td className="px-4 py-2 text-gray-700">{t.parent}</td>
+                      <td className="px-4 py-2 text-right font-semibold">{t.montant.toFixed(2)} €</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setSepaStep("idle"); setSepaPreview(null); setSepaMessage(null); }}
+                className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => setConfirmModal({
+                  title: "Générer le fichier SEPA ?",
+                  message: `${sepaPreview.nbTransactions} prélèvement(s) pour un total de ${sepaPreview.totalMontant.toFixed(2)} €. Le fichier XML sera téléchargé et les factures seront marquées comme envoyées.`,
+                  variant: "warning",
+                  onConfirm: () => { setConfirmModal(null); handleSepaGenerate(); },
+                })}
+                disabled={sepaLoading}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors disabled:opacity-50"
+              >
+                {sepaLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                Générer et télécharger le fichier SEPA
+              </button>
+            </div>
+          </div>
+        )}
+
+        {sepaStep === "downloaded" && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Le fichier SEPA a été téléchargé. Après avoir transmis le fichier à votre banque,
+              cliquez ci-dessous pour enregistrer automatiquement les paiements.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setSepaStep("idle"); setSepaPreview(null); setSepaFactureIds([]); setSepaMessage(null); }}
+                className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => setConfirmModal({
+                  title: "Confirmer les paiements SEPA ?",
+                  message: `${sepaFactureIds.length} facture(s) seront marquées comme payées par prélèvement SEPA. Cette action enregistre automatiquement les paiements.`,
+                  variant: "warning",
+                  onConfirm: () => { setConfirmModal(null); handleSepaMarquerPayees(); },
+                })}
+                disabled={sepaLoading}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50"
+              >
+                {sepaLoading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                Confirmer les paiements ({sepaFactureIds.length} factures)
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Stats */}
       {stats && (

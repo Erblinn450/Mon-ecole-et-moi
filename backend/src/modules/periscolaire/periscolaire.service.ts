@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { isBefore, startOfDay } from 'date-fns';
 
@@ -6,7 +6,16 @@ import { isBefore, startOfDay } from 'date-fns';
 export class PeriscolaireService {
   constructor(private prisma: PrismaService) {}
 
-  async inscrire(enfantId: number, date: string) {
+  private async verifierParente(enfantId: number, userId: number, isAdmin: boolean) {
+    if (isAdmin) return;
+    const enfant = await this.prisma.enfant.findUnique({ where: { id: enfantId } });
+    if (!enfant || (enfant.parent1Id !== userId && enfant.parent2Id !== userId)) {
+      throw new ForbiddenException('Vous n\'êtes pas autorisé à agir sur cet enfant');
+    }
+  }
+
+  async inscrire(enfantId: number, date: string, userId: number, isAdmin: boolean) {
+    await this.verifierParente(enfantId, userId, isAdmin);
     const datePeriscolaire = new Date(date);
 
     if (isBefore(startOfDay(datePeriscolaire), startOfDay(new Date()))) {
@@ -26,11 +35,12 @@ export class PeriscolaireService {
     });
   }
 
-  async inscrireMultiple(enfantId: number, dates: string[]) {
+  async inscrireMultiple(enfantId: number, dates: string[], userId: number, isAdmin: boolean) {
+    await this.verifierParente(enfantId, userId, isAdmin);
     const results = [];
     for (const date of dates) {
       try {
-        const periscolaire = await this.inscrire(enfantId, date);
+        const periscolaire = await this.inscrire(enfantId, date, userId, isAdmin);
         results.push({ date, success: true, periscolaire });
       } catch (error) {
         results.push({ date, success: false, error: (error as Error).message });
@@ -39,7 +49,7 @@ export class PeriscolaireService {
     return results;
   }
 
-  async annuler(id: number) {
+  async annuler(id: number, userId: number, isAdmin: boolean) {
     const periscolaire = await this.prisma.periscolaire.findUnique({
       where: { id },
     });
@@ -48,10 +58,13 @@ export class PeriscolaireService {
       throw new NotFoundException('Inscription périscolaire non trouvée');
     }
 
+    await this.verifierParente(periscolaire.enfantId, userId, isAdmin);
+
     return this.prisma.periscolaire.delete({ where: { id } });
   }
 
-  async getPeriscolaireEnfant(enfantId: number, mois?: string) {
+  async getPeriscolaireEnfant(enfantId: number, userId: number, isAdmin: boolean, mois?: string) {
+    await this.verifierParente(enfantId, userId, isAdmin);
     const where: any = { enfantId };
 
     if (mois) {

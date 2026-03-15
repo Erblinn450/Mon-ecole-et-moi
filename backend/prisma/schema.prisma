@@ -161,6 +161,7 @@ model Enfant {
 
   @@index([classe])
   @@index([parent1Id])
+  @@index([parent2Id])
   @@index([preinscriptionId])
   @@index([deletedAt])
   @@map("enfants")
@@ -390,8 +391,8 @@ model Reinscription {
   dateTraitement  DateTime?            @map("date_traitement")
   createdAt       DateTime             @default(now()) @map("created_at")
   updatedAt       DateTime             @updatedAt @map("updated_at")
-  enfant          Enfant               @relation(fields: [enfantId], references: [id])
-  parent          User                 @relation(fields: [parentId], references: [id])
+  enfant          Enfant               @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  parent          User                 @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
   @@unique([enfantId, anneeScolaire])
   @@index([parentId])

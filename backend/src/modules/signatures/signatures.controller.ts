@@ -35,7 +35,7 @@ export class SignaturesController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.signaturesService.getSignatureStatus(id, req.user.email);
+    return this.signaturesService.getSignatureStatus(id, req.user.email, req.user.id);
   }
 
   /**
@@ -47,7 +47,7 @@ export class SignaturesController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.signaturesService.getSignatureStatus(id, req.user.email);
+    return this.signaturesService.getSignatureStatus(id, req.user.email, req.user.id);
   }
 
   /**

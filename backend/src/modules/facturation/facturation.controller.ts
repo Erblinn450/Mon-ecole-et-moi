@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import {
@@ -374,6 +375,20 @@ export class FacturationController {
       'Content-Disposition': `attachment; filename="sepa-${body.mois}.xml"`,
     });
     res.send(result.xml);
+  }
+
+  @Post('sepa/marquer-payees')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Marquer les factures SEPA comme payées après prélèvement (Admin)' })
+  async marquerFacturesPayeesSepa(
+    @Body() body: { factureIds: number[]; datePrelevement?: string },
+  ) {
+    if (!body.factureIds || body.factureIds.length === 0) {
+      throw new BadRequestException('Aucune facture à marquer');
+    }
+    const date = body.datePrelevement ? new Date(body.datePrelevement) : new Date();
+    return this.facturationService.marquerFacturesPayeesSepa(body.factureIds, date);
   }
 
   @Post('sepa/previsualiser')

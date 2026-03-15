@@ -829,6 +829,7 @@ export default function FactureDetailPage() {
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={nouveauPaiement.montant || ""}
                 onChange={(e) => setNouveauPaiement({ ...nouveauPaiement, montant: parseFloat(e.target.value) || 0 })}
                 placeholder={resteAPayer.toFixed(2)}
@@ -927,6 +928,7 @@ export default function FactureDetailPage() {
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={nouvelleLigne.prixUnit || ""}
                 onChange={(e) => setNouvelleLigne({ ...nouvelleLigne, prixUnit: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
