@@ -1308,6 +1308,7 @@ export class FacturationService {
         estFratrie: false,
         reductionFratrie: 0,
         reductionRFR: 0,
+        tauxRFR: 0,
         montantFinal: montantBase,
       };
     }
@@ -1348,7 +1349,7 @@ export class FacturationService {
     }
 
     // Calculer la réduction RFR (vérifie parent1 ET parent2)
-    const reductionRFR = await this.calculerReductionRFR(
+    const rfr = await this.calculerReductionRFR(
       montantBase,
       enfantId,
     );
@@ -1357,8 +1358,9 @@ export class FacturationService {
       montantBase,
       estFratrie,
       reductionFratrie,
-      reductionRFR,
-      montantFinal: dec(montantBase).minus(reductionRFR).toDecimalPlaces(2).toNumber(),
+      reductionRFR: rfr.montant,
+      tauxRFR: rfr.taux,
+      montantFinal: dec(montantBase).minus(rfr.montant).toDecimalPlaces(2).toNumber(),
     };
   }
 
@@ -1370,13 +1372,13 @@ export class FacturationService {
   async calculerReductionRFR(
     montant: number,
     enfantId: number,
-  ): Promise<number> {
+  ): Promise<{ montant: number; taux: number }> {
     const enfant = await this.prisma.enfant.findUnique({
       where: { id: enfantId },
       select: { parent1Id: true, parent2Id: true },
     });
 
-    if (!enfant) return 0;
+    if (!enfant) return { montant: 0, taux: 0 };
 
     const parentIds = [enfant.parent1Id];
     if (enfant.parent2Id) parentIds.push(enfant.parent2Id);
@@ -1397,9 +1399,12 @@ export class FacturationService {
       }
     }
 
-    if (meilleurTaux === 0) return 0;
+    if (meilleurTaux === 0) return { montant: 0, taux: 0 };
 
-    return dec(montant).times(meilleurTaux).dividedBy(100).toDecimalPlaces(2).toNumber();
+    return {
+      montant: dec(montant).times(meilleurTaux).dividedBy(100).toDecimalPlaces(2).toNumber(),
+      taux: meilleurTaux,
+    };
   }
 
   /**
@@ -1624,7 +1629,7 @@ export class FacturationService {
           quantite: 1,
           prixUnit: -scolarite.reductionRFR,
           montant: -scolarite.reductionRFR,
-          commentaire: `Taux: ${enfant.parent1.tauxReductionRFR}%`,
+          commentaire: `Taux: ${scolarite.tauxRFR}%`,
         });
         totalReductions += scolarite.reductionRFR;
       }
@@ -1675,7 +1680,7 @@ export class FacturationService {
         );
         lignes.push({
           type: 'REPAS' as TypeLigne,
-          description: `Repas du mois (${repas.count} repas)`,
+          description: `Repas du mois`,
           quantite: repas.count,
           prixUnit: Number(tarifRepas.valeur),
           montant: repas.montant,
@@ -1697,7 +1702,7 @@ export class FacturationService {
         );
         lignes.push({
           type: 'PERISCOLAIRE' as TypeLigne,
-          description: `Périscolaire du mois (${peri.count} séances)`,
+          description: `Périscolaire du mois`,
           quantite: peri.count,
           prixUnit: Number(tarifPeri.valeur),
           montant: peri.montant,
@@ -1826,7 +1831,7 @@ export class FacturationService {
       });
 
       this.logger.log(
-        `Facture d'inscription ${numero} créée: ${montantInscription}€ pour ${enfantData.prenom} ${enfantData.nom}`,
+        `Facture d'inscription ${numero} créée: ${montantInscription}€ pour enfant #${enfantId}`,
       );
 
       return facture;

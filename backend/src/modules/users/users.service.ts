@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 @Injectable()
@@ -218,6 +219,41 @@ export class UsersService {
         tokenVersion: { increment: 1 },
       },
     });
+  }
+
+  async adminResetPassword(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+
+    // Générer un mot de passe temporaire de 12 caractères
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let temporaryPassword = '';
+    for (let i = 0; i < 12; i++) {
+      temporaryPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
+        premiereConnexion: true,
+        tokenVersion: { increment: 1 },
+      },
+    });
+
+    return { temporaryPassword };
+  }
+
+  async toggleActive(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+
+    const { password: _, ...updated } = await this.prisma.user.update({
+      where: { id },
+      data: { actif: !user.actif },
+    });
+    return updated;
   }
 }
 

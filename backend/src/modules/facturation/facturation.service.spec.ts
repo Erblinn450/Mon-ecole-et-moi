@@ -427,7 +427,7 @@ describe('FacturationService - Moteur de Calcul', () => {
 
       const result = await service.calculerReductionRFR(575, 1);
 
-      expect(result).toBe(0);
+      expect(result).toEqual({ montant: 0, taux: 0 });
     });
 
     it('devrait calculer 6% de réduction RFR via parent1', async () => {
@@ -440,7 +440,7 @@ describe('FacturationService - Moteur de Calcul', () => {
       const result = await service.calculerReductionRFR(710, 3);
 
       // 710 * 6 / 100 = 42.60
-      expect(result).toBe(42.6);
+      expect(result).toEqual({ montant: 42.6, taux: 6 });
     });
 
     it('devrait appliquer la réduction RFR de parent2 si parent1 non éligible', async () => {
@@ -455,7 +455,7 @@ describe('FacturationService - Moteur de Calcul', () => {
 
       const result = await service.calculerReductionRFR(710, 1);
 
-      expect(result).toBe(42.6);
+      expect(result).toEqual({ montant: 42.6, taux: 6 });
     });
 
     it('devrait prendre le meilleur taux si les deux parents ont RFR', async () => {
@@ -477,7 +477,7 @@ describe('FacturationService - Moteur de Calcul', () => {
       const result = await service.calculerReductionRFR(710, 1);
 
       // 710 * 19 / 100 = 134.90
-      expect(result).toBe(134.9);
+      expect(result).toEqual({ montant: 134.9, taux: 19 });
     });
 
     it('devrait retourner 0 si enfant non trouvé', async () => {
@@ -485,7 +485,7 @@ describe('FacturationService - Moteur de Calcul', () => {
 
       const result = await service.calculerReductionRFR(575, 999);
 
-      expect(result).toBe(0);
+      expect(result).toEqual({ montant: 0, taux: 0 });
     });
 
     it('devrait retourner 0 si le taux RFR est 0', async () => {
@@ -500,7 +500,7 @@ describe('FacturationService - Moteur de Calcul', () => {
       const result = await service.calculerReductionRFR(575, 1);
 
       // tauxReductionRFR = 0 est falsy → le code fait `if (parent.tauxReductionRFR)` → skip
-      expect(result).toBe(0);
+      expect(result).toEqual({ montant: 0, taux: 0 });
     });
 
     it('devrait arrondir correctement à 2 décimales', async () => {
@@ -515,7 +515,7 @@ describe('FacturationService - Moteur de Calcul', () => {
       // 575 * 7 / 100 = 40.25
       const result = await service.calculerReductionRFR(575, 1);
 
-      expect(result).toBe(40.25);
+      expect(result).toEqual({ montant: 40.25, taux: 7 });
     });
   });
 
@@ -1749,8 +1749,9 @@ describe('FacturationService - Génération', () => {
       // Inside the transaction, findFirst is called again for numbering
       // Since we use the same mock, we need mockResolvedValueOnce
       mockPrisma.facture.findFirst
-        .mockResolvedValueOnce({ id: 99, montantTotal: 0, lignes: [] }) // first call: existante check
-        .mockResolvedValueOnce(null); // second call: inside transaction for numero
+        .mockResolvedValueOnce({ id: 99, montantTotal: 0, lignes: [] }) // 1er appel : vérification existante (hors tx)
+        .mockResolvedValueOnce(null) // 2ème appel : vérification doublon dans la transaction
+        .mockResolvedValueOnce(null); // 3ème appel : generateNumeroFacture dans la transaction
 
       mockPrisma.facture.create.mockResolvedValue({ id: 2, numero: 'FA-202601-0001' });
       mockPrisma.ligneFacture.createMany.mockResolvedValue({ count: 1 });
@@ -1911,5 +1912,649 @@ describe('FacturationService - Envoi emails', () => {
         }),
       );
     });
+  });
+});
+
+// ============================================
+// BLOC 7 : Paiements SEPA
+// ============================================
+
+describe('FacturationService - Paiements SEPA', () => {
+  let service: FacturationService;
+  let mockPrisma: ReturnType<typeof createMockPrisma>;
+
+  beforeEach(async () => {
+    mockPrisma = createMockPrisma();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        FacturationService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmailService, useValue: { sendFactureEmail: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<FacturationService>(FacturationService);
+  });
+
+  describe('marquerFacturesPayeesSepa', () => {
+    const datePrelevement = new Date('2026-03-05');
+
+    it('devrait marquer une facture ENVOYEE comme PAYEE', async () => {
+      mockPrisma.facture.findUnique.mockResolvedValue({
+        id: 1,
+        numero: 'FA-202601-0001',
+        montantTotal: 575,
+        montantPaye: 0,
+        statut: 'ENVOYEE',
+      });
+      mockPrisma.paiement.create.mockResolvedValue({});
+      mockPrisma.facture.update.mockResolvedValue({});
+
+      const result = await service.marquerFacturesPayeesSepa([1], datePrelevement);
+
+      expect(result.payees).toBe(1);
+      expect(result.totalMontant).toBe(575);
+      expect(result.erreurs).toHaveLength(0);
+      expect(mockPrisma.paiement.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          factureId: 1,
+          montant: 575,
+          modePaiement: 'PRELEVEMENT',
+          reference: 'SEPA-FA-202601-0001',
+        }),
+      });
+    });
+
+    it('devrait ignorer une facture déjà PAYEE', async () => {
+      mockPrisma.facture.findUnique.mockResolvedValue({
+        id: 1,
+        numero: 'FA-202601-0001',
+        montantTotal: 575,
+        montantPaye: 575,
+        statut: 'PAYEE',
+      });
+
+      const result = await service.marquerFacturesPayeesSepa([1], datePrelevement);
+
+      expect(result.payees).toBe(0);
+      expect(result.erreurs).toHaveLength(1);
+      expect(result.erreurs[0]).toContain('déjà payée');
+    });
+
+    it('devrait ignorer une facture ANNULEE', async () => {
+      mockPrisma.facture.findUnique.mockResolvedValue({
+        id: 1,
+        numero: 'FA-202601-0001',
+        montantTotal: 575,
+        montantPaye: 0,
+        statut: 'ANNULEE',
+      });
+
+      const result = await service.marquerFacturesPayeesSepa([1], datePrelevement);
+
+      expect(result.payees).toBe(0);
+      expect(result.erreurs).toHaveLength(1);
+      expect(result.erreurs[0]).toContain('annulée');
+    });
+
+    it('devrait signaler une facture inexistante sans bloquer les autres', async () => {
+      mockPrisma.facture.findUnique
+        .mockResolvedValueOnce(null) // facture #999 inexistante
+        .mockResolvedValueOnce({
+          id: 2,
+          numero: 'FA-202601-0002',
+          montantTotal: 540,
+          montantPaye: 0,
+          statut: 'ENVOYEE',
+        });
+      mockPrisma.paiement.create.mockResolvedValue({});
+      mockPrisma.facture.update.mockResolvedValue({});
+
+      const result = await service.marquerFacturesPayeesSepa([999, 2], datePrelevement);
+
+      expect(result.payees).toBe(1);
+      expect(result.erreurs).toHaveLength(1);
+      expect(result.erreurs[0]).toContain('#999');
+    });
+
+    it('devrait payer le reste à payer sur une facture PARTIELLE', async () => {
+      mockPrisma.facture.findUnique.mockResolvedValue({
+        id: 1,
+        numero: 'FA-202601-0001',
+        montantTotal: 575,
+        montantPaye: 200, // déjà payé partiellement
+        statut: 'PARTIELLE',
+      });
+      mockPrisma.paiement.create.mockResolvedValue({});
+      mockPrisma.facture.update.mockResolvedValue({});
+
+      const result = await service.marquerFacturesPayeesSepa([1], datePrelevement);
+
+      expect(result.payees).toBe(1);
+      expect(result.totalMontant).toBe(375); // 575 - 200 = 375
+      expect(mockPrisma.paiement.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          montant: 375,
+        }),
+      });
+    });
+
+    it('devrait traiter plusieurs factures en une seule transaction', async () => {
+      mockPrisma.facture.findUnique
+        .mockResolvedValueOnce({
+          id: 1, numero: 'FA-202601-0001', montantTotal: 575, montantPaye: 0, statut: 'ENVOYEE',
+        })
+        .mockResolvedValueOnce({
+          id: 2, numero: 'FA-202601-0002', montantTotal: 540, montantPaye: 0, statut: 'ENVOYEE',
+        })
+        .mockResolvedValueOnce({
+          id: 3, numero: 'FA-202601-0003', montantTotal: 710, montantPaye: 0, statut: 'EN_RETARD',
+        });
+      mockPrisma.paiement.create.mockResolvedValue({});
+      mockPrisma.facture.update.mockResolvedValue({});
+
+      const result = await service.marquerFacturesPayeesSepa([1, 2, 3], datePrelevement);
+
+      expect(result.payees).toBe(3);
+      expect(result.totalMontant).toBe(1825); // 575 + 540 + 710
+      expect(result.erreurs).toHaveLength(0);
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('devrait ignorer une facture dont le reste à payer est 0', async () => {
+      mockPrisma.facture.findUnique.mockResolvedValue({
+        id: 1,
+        numero: 'FA-202601-0001',
+        montantTotal: 575,
+        montantPaye: 575, // entièrement payée mais statut pas mis à jour
+        statut: 'ENVOYEE',
+      });
+
+      const result = await service.marquerFacturesPayeesSepa([1], datePrelevement);
+
+      expect(result.payees).toBe(0);
+      expect(result.erreurs).toHaveLength(1);
+      expect(result.erreurs[0]).toContain('soldée');
+    });
+  });
+});
+
+// ============================================
+// BLOC 8 : Accès parent aux factures
+// ============================================
+
+describe('FacturationService - Accès parent', () => {
+  let service: FacturationService;
+  let mockPrisma: ReturnType<typeof createMockPrisma>;
+
+  beforeEach(async () => {
+    mockPrisma = createMockPrisma();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        FacturationService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmailService, useValue: { sendFactureEmail: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<FacturationService>(FacturationService);
+  });
+
+  describe('getFactureParentById', () => {
+    it('devrait retourner la facture si le parentId correspond', async () => {
+      const mockFacture = {
+        id: 1,
+        parentId: 1,
+        numero: 'FA-202601-0001',
+        lignes: [],
+        paiements: [],
+        enfant: { id: 1, nom: 'Dupont', prenom: 'Marie', classe: 'MATERNELLE' },
+      };
+      mockPrisma.facture.findFirst.mockResolvedValue(mockFacture);
+
+      const result = await service.getFactureParentById(1, 1);
+
+      expect(result).toEqual(mockFacture);
+      expect(mockPrisma.facture.findFirst).toHaveBeenCalledWith({
+        where: { id: 1, parentId: 1 },
+        include: expect.objectContaining({
+          lignes: expect.any(Object),
+          paiements: expect.any(Object),
+        }),
+      });
+    });
+
+    it('devrait lever NotFoundException si la facture appartient à un autre parent', async () => {
+      mockPrisma.facture.findFirst.mockResolvedValue(null); // parentId ne match pas
+
+      await expect(
+        service.getFactureParentById(1, 999), // parent 999 essaie d'accéder à la facture 1
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('devrait lever NotFoundException si la facture n\'existe pas', async () => {
+      mockPrisma.facture.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getFactureParentById(999, 1),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getFacturesParent', () => {
+    it('devrait retourner les factures du parent triées par date', async () => {
+      const mockFactures = [
+        { id: 2, numero: 'FA-202602-0001', periode: '2026-02' },
+        { id: 1, numero: 'FA-202601-0001', periode: '2026-01' },
+      ];
+      mockPrisma.facture.findMany.mockResolvedValue(mockFactures);
+
+      const result = await service.getFacturesParent(1);
+
+      expect(result).toEqual(mockFactures);
+      expect(mockPrisma.facture.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { parentId: 1 },
+        }),
+      );
+    });
+
+    it('devrait retourner un tableau vide si le parent n\'a pas de factures', async () => {
+      mockPrisma.facture.findMany.mockResolvedValue([]);
+
+      const result = await service.getFacturesParent(1);
+
+      expect(result).toEqual([]);
+    });
+  });
+});
+
+// ============================================
+// BLOC 9 : Facture d'inscription
+// ============================================
+
+describe('FacturationService - Facture inscription', () => {
+  let service: FacturationService;
+  let mockPrisma: ReturnType<typeof createMockPrisma>;
+
+  beforeEach(async () => {
+    mockPrisma = createMockPrisma();
+    setupTarifMock(mockPrisma);
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        FacturationService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmailService, useValue: { sendFactureEmail: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<FacturationService>(FacturationService);
+  });
+
+  describe('genererFactureInscription', () => {
+    it('devrait lever NotFoundException si parent inexistant', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.genererFactureInscription(999, 1, true),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('devrait lever NotFoundException si enfant inexistant', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 1, nom: 'Dupont', prenom: 'Jean', modePaiementPref: null, destinataireFacture: null,
+      });
+      mockPrisma.enfant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.genererFactureInscription(1, 999, true),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('devrait créer une facture d\'inscription 1ère année enfant unique', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 1, nom: 'Dupont', prenom: 'Jean', modePaiementPref: null, destinataireFacture: null,
+      });
+      mockPrisma.enfant.findUnique.mockResolvedValue({
+        id: 1, nom: 'Dupont', prenom: 'Marie', classe: 'MATERNELLE',
+      });
+      mockPrisma.enfant.findMany.mockResolvedValue([{ id: 1 }]); // seul enfant
+      mockPrisma.$executeRawUnsafe.mockResolvedValue(null);
+      mockPrisma.facture.findFirst.mockResolvedValue(null); // pas de numéro existant
+      mockPrisma.facture.create.mockResolvedValue({
+        id: 10, numero: 'FA-202603-0001', montantTotal: 350,
+      });
+      mockPrisma.ligneFacture.create.mockResolvedValue({});
+
+      const result = await service.genererFactureInscription(1, 1, true);
+
+      expect(result.montantTotal).toBe(350);
+      expect(mockPrisma.ligneFacture.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'INSCRIPTION',
+          montant: 350,
+          prixUnit: 350,
+          quantite: 1,
+        }),
+      });
+    });
+
+    it('devrait appliquer le tarif fratrie pour le 2ème enfant', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 1, nom: 'Dupont', prenom: 'Jean', modePaiementPref: null, destinataireFacture: null,
+      });
+      mockPrisma.enfant.findUnique.mockResolvedValue({
+        id: 2, nom: 'Dupont', prenom: 'Lucas', classe: 'MATERNELLE',
+      });
+      mockPrisma.enfant.findMany.mockResolvedValue([{ id: 1 }, { id: 2 }]); // fratrie
+      mockPrisma.$executeRawUnsafe.mockResolvedValue(null);
+      mockPrisma.facture.findFirst.mockResolvedValue(null);
+      mockPrisma.facture.create.mockResolvedValue({
+        id: 11, numero: 'FA-202603-0002', montantTotal: 150,
+      });
+      mockPrisma.ligneFacture.create.mockResolvedValue({});
+
+      const result = await service.genererFactureInscription(1, 2, true);
+
+      expect(result.montantTotal).toBe(150); // tarif fratrie 1ère année
+    });
+
+    it('devrait utiliser le tarif réinscription (pas 1ère année)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 1, nom: 'Dupont', prenom: 'Jean', modePaiementPref: null, destinataireFacture: null,
+      });
+      mockPrisma.enfant.findUnique.mockResolvedValue({
+        id: 1, nom: 'Dupont', prenom: 'Marie', classe: 'MATERNELLE',
+      });
+      mockPrisma.enfant.findMany.mockResolvedValue([{ id: 1 }]); // seul enfant
+      mockPrisma.$executeRawUnsafe.mockResolvedValue(null);
+      mockPrisma.facture.findFirst.mockResolvedValue(null);
+      mockPrisma.facture.create.mockResolvedValue({
+        id: 12, numero: 'FA-202603-0003', montantTotal: 195,
+      });
+      mockPrisma.ligneFacture.create.mockResolvedValue({});
+
+      const result = await service.genererFactureInscription(1, 1, false);
+
+      expect(result.montantTotal).toBe(195); // réinscription 1er enfant
+    });
+  });
+});
+
+// ============================================
+// BLOC 10 : Cas limites paiements multiples
+// ============================================
+
+describe('FacturationService - Paiements multiples', () => {
+  let service: FacturationService;
+  let mockPrisma: ReturnType<typeof createMockPrisma>;
+
+  beforeEach(async () => {
+    mockPrisma = createMockPrisma();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        FacturationService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmailService, useValue: { sendFactureEmail: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<FacturationService>(FacturationService);
+  });
+
+  it('devrait passer de PARTIELLE à PAYEE après le 2ème paiement', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1,
+      numero: 'FA-202601-0001',
+      montantTotal: 575,
+      montantPaye: 300, // 1er paiement de 300€ déjà enregistré
+      statut: 'PARTIELLE',
+    });
+    mockPrisma.paiement.create.mockResolvedValue({});
+    mockPrisma.facture.update.mockResolvedValue({
+      id: 1,
+      montantPaye: 575,
+      statut: 'PAYEE',
+    });
+
+    await service.enregistrerPaiement(1, {
+      montant: 275,
+      datePaiement: '2026-03-05',
+      modePaiement: 'VIREMENT',
+    });
+
+    expect(mockPrisma.facture.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: expect.objectContaining({
+          montantPaye: 575, // 300 + 275
+          statut: 'PAYEE',
+        }),
+      }),
+    );
+  });
+
+  it('devrait rester PARTIELLE si le 2ème paiement ne solde pas la facture', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1,
+      numero: 'FA-202601-0001',
+      montantTotal: 575,
+      montantPaye: 100,
+      statut: 'PARTIELLE',
+    });
+    mockPrisma.paiement.create.mockResolvedValue({});
+    mockPrisma.facture.update.mockResolvedValue({
+      id: 1,
+      montantPaye: 250,
+      statut: 'PARTIELLE',
+    });
+
+    await service.enregistrerPaiement(1, {
+      montant: 150,
+      datePaiement: '2026-03-05',
+      modePaiement: 'VIREMENT',
+    });
+
+    expect(mockPrisma.facture.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: expect.objectContaining({
+          montantPaye: 250, // 100 + 150
+          statut: 'PARTIELLE',
+        }),
+      }),
+    );
+  });
+
+  it('devrait refuser un 3ème paiement qui dépasse le reste à payer', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1,
+      numero: 'FA-202601-0001',
+      montantTotal: 575,
+      montantPaye: 500,
+      statut: 'PARTIELLE',
+    });
+
+    await expect(
+      service.enregistrerPaiement(1, {
+        montant: 100, // reste = 75€, paiement = 100€ → dépassement
+        datePaiement: '2026-03-05',
+        modePaiement: 'VIREMENT',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('devrait marquer PAYEE avec tolérance d\'arrondi (0.01€)', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1,
+      numero: 'FA-202601-0001',
+      montantTotal: 575.01,
+      montantPaye: 575,
+      statut: 'PARTIELLE',
+    });
+
+    // Le reste est 0.01€ — devrait être considéré comme soldé
+    // Le code empêche de payer plus que le reste, mais vérifie la tolérance au moment de marquer PAYEE
+    mockPrisma.paiement.create.mockResolvedValue({});
+    mockPrisma.facture.update.mockResolvedValue({
+      id: 1,
+      montantPaye: 575.01,
+      statut: 'PAYEE',
+    });
+
+    await service.enregistrerPaiement(1, {
+      montant: 0.01,
+      datePaiement: '2026-03-05',
+      modePaiement: 'VIREMENT',
+    });
+
+    expect(mockPrisma.facture.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: expect.objectContaining({
+          statut: 'PAYEE',
+        }),
+      }),
+    );
+  });
+});
+
+// ============================================
+// BLOC 11 : Génération batch
+// ============================================
+
+describe('FacturationService - Génération batch', () => {
+  let service: FacturationService;
+  let mockPrisma: ReturnType<typeof createMockPrisma>;
+
+  beforeEach(async () => {
+    mockPrisma = createMockPrisma();
+    setupTarifMock(mockPrisma);
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        FacturationService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmailService, useValue: { sendFactureEmail: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<FacturationService>(FacturationService);
+  });
+
+  describe('genererBatch', () => {
+    it('devrait continuer sur les autres parents si un échoue', async () => {
+      // 2 parents trouvés
+      mockPrisma.user.findMany.mockResolvedValue([
+        { id: 1, nom: 'Dupont', prenom: 'Jean' },
+        { id: 2, nom: 'Martin', prenom: 'Sophie' },
+      ]);
+
+      // Parent 1 : pas d'enfants actifs → erreur
+      // Parent 2 : pas d'enfants actifs → erreur
+      mockPrisma.enfant.findMany.mockResolvedValue([]);
+
+      const result = await service.genererBatch({
+        periode: '2026-01',
+        anneeScolaire: '2025-2026',
+      });
+
+      // Les 2 parents doivent avoir des erreurs, mais le batch ne plante pas
+      expect(result.details).toHaveLength(2);
+      expect(result.details.every((r: { erreur?: string }) => r.erreur)).toBe(true);
+      expect(result.totalFacture).toBe(0);
+    });
+
+    it('devrait retourner un résumé vide si aucun parent actif', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      const result = await service.genererBatch({
+        periode: '2026-01',
+        anneeScolaire: '2025-2026',
+      });
+
+      expect(result.details).toHaveLength(0);
+      expect(result.totalFacture).toBe(0);
+    });
+  });
+});
+
+// ============================================
+// BLOC 12 : Machine à états - cas limites
+// ============================================
+
+describe('FacturationService - Machine à états (cas limites)', () => {
+  let service: FacturationService;
+  let mockPrisma: ReturnType<typeof createMockPrisma>;
+
+  beforeEach(async () => {
+    mockPrisma = createMockPrisma();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        FacturationService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmailService, useValue: { sendFactureEmail: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<FacturationService>(FacturationService);
+  });
+
+  it('devrait refuser PAYEE → EN_ATTENTE (état terminal juridique)', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1, statut: 'PAYEE', montantTotal: 575, montantPaye: 575,
+    });
+
+    await expect(
+      service.updateStatutFacture(1, { statut: 'EN_ATTENTE' as any }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('devrait refuser ANNULEE → ENVOYEE (état terminal)', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1, statut: 'ANNULEE', montantTotal: 575, montantPaye: 0,
+    });
+
+    await expect(
+      service.updateStatutFacture(1, { statut: 'ENVOYEE' as any }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('devrait refuser ENVOYEE → EN_ATTENTE (facture envoyée = non modifiable)', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1, statut: 'ENVOYEE', montantTotal: 575, montantPaye: 0,
+    });
+
+    await expect(
+      service.updateStatutFacture(1, { statut: 'EN_ATTENTE' as any }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('devrait autoriser EN_RETARD → PARTIELLE', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1, statut: 'EN_RETARD', montantTotal: 575, montantPaye: 200,
+    });
+    mockPrisma.facture.update.mockResolvedValue({
+      id: 1, statut: 'PARTIELLE',
+    });
+
+    const result = await service.updateStatutFacture(1, { statut: 'PARTIELLE' as any });
+
+    expect(mockPrisma.facture.update).toHaveBeenCalled();
+  });
+
+  it('devrait refuser PARTIELLE → EN_ATTENTE', async () => {
+    mockPrisma.facture.findUnique.mockResolvedValue({
+      id: 1, statut: 'PARTIELLE', montantTotal: 575, montantPaye: 200,
+    });
+
+    await expect(
+      service.updateStatutFacture(1, { statut: 'EN_ATTENTE' as any }),
+    ).rejects.toThrow(BadRequestException);
   });
 });

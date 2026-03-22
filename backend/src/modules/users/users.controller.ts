@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Body,
   Patch,
   Param,
@@ -61,6 +62,20 @@ export class UsersController {
   @ApiOperation({ summary: 'Modifie un utilisateur (Admin)' })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateData: UpdateUserDto) {
     return this.usersService.update(id, updateData);
+  }
+
+  @Post(':id/reset-password')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Réinitialise le mot de passe d\'un utilisateur (Admin)' })
+  resetPassword(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.adminResetPassword(id);
+  }
+
+  @Patch(':id/toggle-active')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Active/désactive un utilisateur (Admin)' })
+  toggleActive(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.toggleActive(id);
   }
 
   @Delete(':id')

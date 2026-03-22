@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { useEnfants } from "@/hooks/useEnfants";
 import { useRepas } from "@/hooks/useRepas";
-import { TypeRepas } from "@/types";
+import { TypeRepas, Classe } from "@/types";
+import { classeLabels } from "@/lib/labels";
 import { TARIFS, ORGANISATION, formatPrix } from "@/config/tarifs";
 
 const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -234,7 +235,7 @@ export default function CommanderRepasPage() {
                     <p className="font-semibold text-gray-900">
                       {enfant.prenom} {enfant.nom}
                     </p>
-                    <p className="text-sm text-gray-500">{enfant.classe || "Non assigné"}</p>
+                    <p className="text-sm text-gray-500">{enfant.classe ? classeLabels[enfant.classe as Classe] || enfant.classe : "Non assigné"}</p>
                   </button>
                 ))}
               </div>

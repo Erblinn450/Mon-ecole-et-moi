@@ -99,7 +99,7 @@ export class RappelsService {
             compteurEnvoyes++;
           }
 
-          this.logger.log(`Rappel envoyé pour ${enfant.prenom} ${enfant.nom}`);
+          this.logger.log(`Rappel envoyé pour enfant #${enfant.id}`);
         }
       }
 
@@ -234,10 +234,10 @@ export class RappelsService {
         },
       });
 
-      this.logger.log(`Email réinscription envoyé à ${parent.email}`);
+      this.logger.log(`Email réinscription envoyé au parent #${parent.id}`);
       return true;
     } catch (error) {
-      this.logger.error(`Erreur envoi email réinscription à ${parent.email}: ${error.message}`);
+      this.logger.error(`Erreur envoi email réinscription au parent #${parent.id}: ${error.message}`);
       return false;
     }
   }

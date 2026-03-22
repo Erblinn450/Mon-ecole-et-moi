@@ -20,6 +20,8 @@ import {
 import { useEnfants } from "@/hooks/useEnfants";
 import { JustificatifUploadItem } from "@/components/justificatifs/JustificatifUploadItem";
 import { API_URL } from "@/lib/api";
+import { classeLabels } from "@/lib/labels";
+import { Classe } from "@/types";
 
 interface SignatureStatus {
   signed: boolean;
@@ -259,7 +261,7 @@ export default function FinaliserInscriptionPage() {
                 <p className="font-semibold text-gray-900">
                   {enfant.prenom} {enfant.nom}
                 </p>
-                <p className="text-sm text-gray-500">{enfant.classe || "Non assigné"}</p>
+                <p className="text-sm text-gray-500">{enfant.classe ? classeLabels[enfant.classe as Classe] || enfant.classe : "Non assigné"}</p>
               </button>
             ))}
           </div>

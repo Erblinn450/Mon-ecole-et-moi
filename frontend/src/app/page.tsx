@@ -139,10 +139,11 @@ export default function Home() {
 
               {/* Main Title */}
               <motion.h1 variants={itemVariants} className="text-6xl md:text-8xl font-bold mb-8 leading-[1.05] tracking-tight">
-                <span className="text-emerald-900">L&apos;épanouissement</span>
+                <span className="text-emerald-900">Une éducation</span>
                 <br />
-                <span className="text-amber-600 font-serif italic pr-4">naturel</span>
-                <span className="text-emerald-900">de l&apos;enfant</span>
+                <span className="text-emerald-900">comme </span>
+                <span className="text-amber-600 font-serif italic pr-4">aide</span>
+                <span className="text-emerald-900">à la vie</span>
               </motion.h1>
 
               {/* Subtitle */}
@@ -186,7 +187,7 @@ export default function Home() {
               <div className="grid md:grid-cols-2 gap-10">
                 {[
                   {
-                    title: "Maternelle (3-6 ans)",
+                    title: "Maison des enfants (3-6 ans)",
                     desc: "Un espace dédié à la conquête de l'autonomie, à l'éveil sensoriel et à la confiance en soi.",
                     icon: Heart,
                     color: "bg-emerald-50"

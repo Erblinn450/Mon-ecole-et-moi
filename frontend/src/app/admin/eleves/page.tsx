@@ -169,7 +169,7 @@ export default function AdminElevesPage() {
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
         <div className="bg-pink-50 rounded-xl border border-pink-200 p-4">
-          <p className="text-sm text-pink-700">Maternelle</p>
+          <p className="text-sm text-pink-700">Maison des enfants</p>
           <p className="text-2xl font-bold text-pink-800">{stats.maternelle}</p>
         </div>
         <div className="bg-sky-50 rounded-xl border border-sky-200 p-4">
@@ -206,7 +206,7 @@ export default function AdminElevesPage() {
             className="pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors appearance-none bg-white"
           >
             <option value="">Toutes les classes</option>
-            <option value={Classe.MATERNELLE}>Maternelle</option>
+            <option value={Classe.MATERNELLE}>Maison des enfants</option>
             <option value={Classe.ELEMENTAIRE}>Élémentaire</option>
             <option value={Classe.COLLEGE}>Collège</option>
           </select>
@@ -450,7 +450,7 @@ export default function AdminElevesPage() {
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
                 >
                   <option value="">Non assigné</option>
-                  <option value={Classe.MATERNELLE}>Maternelle</option>
+                  <option value={Classe.MATERNELLE}>Maison des enfants</option>
                   <option value={Classe.ELEMENTAIRE}>Élémentaire</option>
                   <option value={Classe.COLLEGE}>Collège</option>
                 </select>

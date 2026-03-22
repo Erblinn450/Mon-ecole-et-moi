@@ -2061,6 +2061,52 @@ Audit des 5 pages facturation (admin liste, admin détail, parent liste, parent 
 
 ---
 
+### 🗓️ Vendredi 14 mars 2026
+
+**Durée :** ~6h
+
+**✅ Réalisé :**
+
+**1. Module Mandat SEPA complet :**
+- Backend : service complet (RUM auto-généré, signature électronique, révocation), controller avec 7 endpoints (parent + admin), génération PDF imprimable (PDFKit)
+- Frontend parent : page `/mandat-sepa` avec saisie IBAN + canvas de signature
+- Frontend admin : page `/admin/mandats-sepa` avec liste + stats
+- Navigation ajoutée dans ParentLayout et AdminLayout
+- SEPA XML pain.008.001.02 : génération + prévisualisation + auto-marquage des factures
+
+**2. Corrections facturation (retours Audrey 9 mars) :**
+- Tarifs frontend corrigés : 575€/540€ (fratrie) pour 2025-2026
+- Matériel pédagogique facturé en février (réinscription) au lieu de septembre
+- Facture inscription auto-générée à la validation de préinscription
+- Override tarif mensuel par enfant (champ `tarifMensuelOverride`)
+
+**3. Seed de production réaliste pour démo Audrey :**
+- 5 familles (9 parents, 10 enfants), 3 préinscriptions en attente, 3 réinscriptions
+- Commandes repas/périscolaire mars 2026, tarifs 2025-2026 complets
+- MDP commun parents : `Parent2026!`
+
+**4. Fix tarifs seed-production :**
+- Clés alignées sur `seedDefaultTarifs` (MAJUSCULES) — sans ça le moteur de calcul ne trouvait pas les tarifs
+- Ajout tarifs semestriels manquants (×6 mensuel) pour les 4 cas : normal, fratrie, collège, collège fratrie
+
+**📁 Fichiers créés/modifiés :**
+- `backend/src/modules/mandat-sepa/` (NOUVEAU module complet : service, controller, DTO, PDF)
+- `backend/src/modules/facturation/sepa-xml.service.ts` (NOUVEAU)
+- `backend/src/modules/facturation/facturation.service.ts` (facture inscription auto)
+- `backend/prisma/schema.prisma` (table `mandats_sepa`)
+- `backend/prisma/seed-production.ts` (NOUVEAU)
+- `frontend/src/app/(parent)/mandat-sepa/page.tsx` (NOUVEAU)
+- `frontend/src/app/admin/mandats-sepa/page.tsx` (NOUVEAU)
+- `frontend/src/config/tarifs.ts` (correction tarifs)
+- `frontend/src/lib/api.ts` (API mandat SEPA + facturation)
+
+**⏭️ Prochaines étapes :**
+- [ ] Interfaces admin facturation (tarifs, paramètres parents)
+- [ ] Tests unitaires facturation
+- [ ] Audit sécurité complet
+
+---
+
 ### 🗓️ Samedi 15 mars 2026
 
 **Durée :** ~4h
@@ -2128,6 +2174,221 @@ Audit des 5 pages facturation (admin liste, admin détail, parent liste, parent 
 
 ---
 
+### 🗓️ Dimanche 16 mars 2026
+
+**Durée :** ~5h
+
+**✅ Réalisé :**
+
+**1. Audit sécurité complet (3 agents parallèles : backend, frontend, logique métier) :**
+- CRITIQUE (2) : endpoint `/auth/register` était public (n'importe qui pouvait créer un compte), admin layout vérifiait le rôle via `sessionStorage` (falsifiable)
+- HAUTE (7) : IDOR périscolaire + signatures (pas de `verifierParente()`), lectures hors `$transaction` dans facturation et mandat SEPA, calculs monétaires avec `Number()` au lieu de `Decimal.js`, auth DTOs manquants
+- MOYENNE (6) : index `parent2Id` manquant, `onDelete` non défini sur Reinscription, validation IBAN/BIC absente sur PATCH mandat admin, `min="0"` manquant sur inputs financiers frontend
+
+**2. Corrections CRITIQUE + HAUTE :**
+- `/auth/register` restreint aux admins (`@UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.ADMIN)`)
+- Admin layout : vérification rôle via `authApi.getProfile()` + `role === Role.ADMIN`
+- `verifierParente()` ajouté sur périscolaire (inscrire, annuler, consulter) et signatures
+- `$transaction` : `updateStatutFacture`, `genererFacture` (existence check), `signerMandat` (RUM + création)
+- Decimal.js : `enregistrerPaiement`, `updateStatutFacture`, réduction `montantTotal`, SEPA `totalMontant`
+- DTOs créés : `ChangePasswordDto`, `ForgotPasswordDto`, `ResetPasswordDto`
+
+**3. Corrections MOYENNE :**
+- `@@index([parent2Id])` ajouté sur modèle Enfant
+- `onDelete: Cascade` sur relations Reinscription
+- `UpdateMandatAdminDto` avec regex validation IBAN/BIC
+- `min="0"` sur inputs prix/montant dans facturation frontend
+
+**4. SEPA workflow auto-paiement :**
+- Endpoint `POST sepa/marquer-payees` : crée les paiements et passe les factures en PAYEE atomiquement
+- UI admin 3 étapes : prévisualiser → générer XML → confirmer paiements
+- Fix `marquerFacturesPrelevees` : ne pas écraser PAYEE/ANNULEE
+- Seed production : guard `NODE_ENV` pour empêcher exécution en prod
+
+**📁 Fichiers modifiés :**
+- `backend/prisma/schema.prisma` (index parent2Id, onDelete Cascade)
+- `backend/prisma/seed-production.ts` (guard NODE_ENV)
+- `backend/src/modules/auth/auth.controller.ts` (register admin-only, DTOs)
+- `backend/src/modules/auth/dto/` (3 DTOs NOUVEAUX)
+- `backend/src/modules/facturation/facturation.controller.ts` (endpoint sepa/marquer-payees)
+- `backend/src/modules/facturation/facturation.service.ts` ($transaction, Decimal.js)
+- `backend/src/modules/facturation/sepa-xml.service.ts` (Decimal.js, fix statut)
+- `backend/src/modules/mandat-sepa/mandat-sepa.service.ts` ($transaction signerMandat)
+- `backend/src/modules/mandat-sepa/mandat-sepa.controller.ts` (validation DTO)
+- `backend/src/modules/mandat-sepa/dto/update-mandat-admin.dto.ts` (NOUVEAU)
+- `backend/src/modules/periscolaire/periscolaire.service.ts` (verifierParente)
+- `backend/src/modules/periscolaire/periscolaire.controller.ts` (userId + isAdmin)
+- `backend/src/modules/signatures/signatures.service.ts` (vérif parenté)
+- `backend/src/modules/signatures/signatures.controller.ts` (pass userId)
+- `frontend/src/app/admin/facturation/page.tsx` (UI SEPA 3 étapes)
+- `frontend/src/app/admin/facturation/[id]/page.tsx` (min=0 inputs)
+- `frontend/src/app/admin/layout.tsx` (vérif rôle via API)
+- `frontend/src/lib/api.ts` (marquerFacturesPayeesSepa)
+
+---
+
+### 🗓️ Mardi 18 mars 2026
+
+**Durée :** ~2h
+
+**✅ Réalisé :**
+
+**1. Vérification complète de la prod :**
+- Test de tous les endpoints admin (profil, préinscriptions, enfants, utilisateurs, réinscriptions, tarifs, mandats, export, facturation)
+- Test login de tous les parents (9/9 OK)
+- Test parcours parent complet (profil, enfants, mandat SEPA, factures, personnes autorisées)
+- Configuration email Brevo : `contact@montessorietmoi.com` comme expéditeur vérifié
+
+**2. Retours Audrey (1er vrai test de la version en ligne) :**
+
+Réponses à nos questions :
+- Export factures comptable = **1 seul gros PDF** avec toutes les factures du mois
+- Liste absents = qui n'a **pas commandé repas ET péri** quand elle consulte la liste
+- RFR = **validation manuelle** par Audrey, basé sur revenus du couple (les 2 parents), seuil < 53k€
+
+Retours partie admin :
+- Préinscription : pas de bouton pour passer en "Déjà contacté"
+- Réinscription : bouton "Voir" redirige vers élèves au lieu des documents/justificatifs
+- Factures description : quantité en double (dans la description ET dans la colonne QTÉ)
+- Factures navigation : pas de flèches ←→ pour passer d'une facture à l'autre
+- Factures filtres : cartes stats en haut (Total, En attente, Payées...) pas cliquables
+- Factures archivage : question sur où vont les factures des mois précédents (→ elles restent, filtre par mois)
+
+Impression générale : **très positive** — "super boulot", "j'aime beaucoup", "c'est appréciable de voir que tu comprends bien les besoins de l'école", "c'est chouette l'avancée"
+
+**⏭️ Prochaines étapes (retours Audrey 18-19 mars) :**
+
+**Facturation (priorité — semaine du 19 mars) :**
+- [x] Enlever quantité de la description des lignes facture ✅ 22/03
+- [x] Cartes stats cliquables = filtres par statut ✅ 22/03
+- [x] Navigation ←→ facture précédente/suivante ✅ 22/03
+- [x] Espace parent factures (page liste + détail + télécharger PDF) ✅ 22/03
+- [ ] Export PDF groupé toutes factures du mois (1 seul PDF pour la comptable)
+- [x] Corriger RFR : basé sur revenus couple (parent1 + parent2), seuil 53k€ ✅ déjà fait (parent2 pris en compte)
+- [ ] Envoi factures par email (individuel + groupé)
+- [ ] Relances automatiques factures en retard
+
+**UI / Vocabulaire Montessori :**
+- [x] Remplacer "Maternelle" par "Maison des enfants" partout dans l'app ✅ 22/03
+- [x] Slogan page d'accueil → "une éducation comme aide à la vie" ✅ 22/03
+- [ ] Photos page d'accueil (attendre envoi Audrey)
+
+**Préinscriptions :**
+- [x] Ajouter bouton "Déjà contacté" ✅ 22/03
+
+**Réinscription :**
+- [x] Bouton "Voir" → rediriger vers documents/justificatifs au lieu de fiche élève ✅ 22/03
+- [ ] Persistence des documents d'une année sur l'autre (sauf attestation assurance = renouvellement annuel)
+- [ ] Bouton parent "je ne souhaite pas réinscrire mon enfant" (discret)
+
+**Repas (module à enrichir — avril) :**
+- [ ] Choix végétarien / traditionnel (ajout champ dans schéma)
+- [ ] Réservation "à l'année" (la plupart des enfants restent tout le temps)
+- [ ] Enlever les prix côté parent lors de la commande
+- [ ] Tableau hebdomadaire pour le fournisseur (végé/tradi/total par jour)
+- [ ] Pas de goûter séparé (inclus dans le péri)
+- [ ] Liste des enfants qui n'ont pas commandé repas/péri
+
+**Périscolaire :**
+- [x] Changer couleurs "réservé" vs "déjà réservé" (trop proches) ✅ 22/03
+
+**Éducateurs (nouveau) :**
+- [ ] Interface éducateur (tout sauf facturation)
+- [ ] Création comptes éducateurs (rôle EDUCATEUR existe déjà dans l'enum)
+
+**Exports :**
+- [ ] Ajouter personnes autorisées, signatures, justificatifs dans l'export complet
+
+### 🗓️ Dimanche 22 mars 2026
+
+**Durée :** ~4h (2 sessions)
+
+**✅ Réalisé :**
+
+**1. Retours Audrey — Quick wins facturation + UI (session 1) :**
+- Enlever quantité de la description des lignes facture (doublons)
+- Cartes stats cliquables = filtres par statut sur la page facturation admin
+- Navigation ←→ facture précédente/suivante (admin)
+- Espace parent factures : page liste + détail + téléchargement PDF
+- Bouton "Déjà contacté" sur les préinscriptions admin
+- Bouton "Voir" réinscription → redirige vers le dossier/justificatifs au lieu de la fiche élève
+- Remplacement "Maternelle" → "Maison des enfants" dans toute l'application (frontend + backend + emails)
+- Slogan page d'accueil → "une éducation comme aide à la vie"
+- Correction couleurs périscolaire ("Déjà réservé" en vert au lieu de violet trop proche)
+- Correction `classeLabels` sur 5 pages qui affichaient encore l'enum brut (MATERNELLE, ELEMENTAIRE, COLLEGE)
+- Création endpoints manquants : `POST /users/:id/reset-password` et `PATCH /users/:id/toggle-active`
+- Alignement routes API périscolaire frontend/backend (`commander` → `inscrire`)
+- Correction bug RFR : commentaire facture utilisait le taux du parent1 au lieu du taux réellement appliqué
+
+**2. Audit sécurité + qualité (session 2) :**
+- Correction type retour `calculerReductionRFR` : retourne maintenant `{ montant, taux }` au lieu d'un simple `number` (pour afficher le bon taux dans les commentaires facture)
+- Nettoyage PII des logs : suppression de tous les noms, prénoms et emails dans les `this.logger.log()` de 6 services (preinscriptions, email, rappels, justificatifs, reinscriptions, facturation). Remplacés par des IDs anonymes (#1, #5, dossier PRE-2026-001). Conformité RGPD.
+- Correction 8 tests cassés par le changement de type retour RFR
+- Correction test `genererFacture` (mock `findFirst` incomplet dans la transaction)
+
+**3. Tests exhaustifs (+28 nouveaux tests) :**
+- **SEPA** (7 tests) : `marquerFacturesPayeesSepa` — marquage payé, facture annulée/déjà payée/inexistante/partielle, batch multi-factures, reste à payer = 0
+- **Accès parent** (5 tests) : `getFactureParentById` — parenté vérifiée, facture d'un autre parent, facture inexistante. `getFacturesParent` — liste, liste vide
+- **Facture inscription** (4 tests) : `genererFactureInscription` — parent/enfant inexistant, 1ère année, fratrie, réinscription
+- **Paiements multiples** (4 tests) : transition PARTIELLE → PAYEE après 2e paiement, reste PARTIELLE, dépassement refusé, tolérance d'arrondi 0.01€
+- **Batch** (2 tests) : continue si un parent échoue, aucun parent actif
+- **Machine à états** (5 tests supplémentaires) : PAYEE/ANNULEE terminaux, ENVOYEE non-réversible, EN_RETARD → PARTIELLE, PARTIELLE → EN_ATTENTE refusé
+- **Total : 134 tests, 0 échec** (contre 106 avant cette session)
+
+**📁 Fichiers modifiés :**
+
+Backend :
+- `facturation.service.ts` (type retour RFR, PII logs)
+- `facturation.service.spec.ts` (corrections + 28 nouveaux tests)
+- `preinscriptions.service.ts` (PII logs × 5 occurrences)
+- `email.service.ts` (PII logs × 5 occurrences)
+- `rappels.service.ts` (PII logs × 3 occurrences)
+- `justificatifs.service.ts` (PII logs × 1 occurrence)
+- `reinscriptions.service.ts` (PII logs × 1 occurrence + `preinscriptionId` dans select)
+- `users.controller.ts` (2 nouveaux endpoints)
+- `users.service.ts` (2 nouvelles méthodes)
+- `calcul-facture.dto.ts` (ajout `tauxRFR`)
+
+Frontend :
+- `page.tsx` (accueil — slogan)
+- `labels.ts` (Maternelle → Maison des enfants)
+- `tarifs.ts` (labels Montessori)
+- `api.ts` (routes périscolaire alignées)
+- 12 pages admin/parent (classeLabels, couleurs périscolaire, boutons contacté/voir)
+
+**🐛 Bugs corrigés :**
+- RFR commentaire affichait le taux du parent1 au lieu du meilleur taux appliqué
+- 5 pages affichaient l'enum brut (MATERNELLE) au lieu du label (Maison des enfants)
+- Routes périscolaire frontend utilisaient `commander` au lieu de `inscrire`
+- PII (noms/emails d'enfants et parents) dans les logs serveur = violation RGPD
+
+**⏭️ Prochaines étapes :**
+
+**Facturation (restant) :**
+- [ ] Export PDF groupé toutes factures du mois (1 seul PDF pour la comptable — actuellement ZIP)
+- [ ] Annotation/commentaire facture (champ DB existe, pas d'UI admin)
+- [ ] Relances automatiques factures en retard (cron job)
+- [ ] Envoi factures par email (individuel + groupé — backend prêt, UI à faire)
+
+**Réinscription :**
+- [ ] Persistence des documents d'une année sur l'autre (sauf attestation assurance)
+- [ ] Bouton parent "je ne souhaite pas réinscrire mon enfant"
+
+**Repas (module à enrichir — avril) :**
+- [ ] Choix végétarien / traditionnel
+- [ ] Réservation "à l'année"
+- [ ] Tableau hebdomadaire fournisseur
+- [ ] Enlever prix côté parent
+
+**Éducateurs (nouveau) :**
+- [ ] Interface éducateur (tout sauf facturation)
+- [ ] Création comptes éducateurs
+
+**UI :**
+- [ ] Photos page d'accueil (attendre envoi Audrey)
+
+---
+
 ### 📝 Template pour nouvelles entrées
 
 ```markdown
@@ -2165,6 +2426,6 @@ Audit des 5 pages facturation (admin liste, admin détail, parent liste, parent 
 
 ---
 
-**Dernière mise à jour :** 15 mars 2026 (interfaces admin facturation + fix falsy + 106 tests unitaires)
+**Dernière mise à jour :** 22 mars 2026 (retours Audrey, audit sécurité PII, 134 tests)
 **Planning détaillé :** Voir [PLANNING_REALISTE.md](./PLANNING_REALISTE.md)
 **Journal mémoire :** Voir [MEMOIRE_L3.md](./MEMOIRE_L3.md)

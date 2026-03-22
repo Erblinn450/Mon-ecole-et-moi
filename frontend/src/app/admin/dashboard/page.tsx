@@ -209,14 +209,14 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Maternelle */}
+        {/* Maison des enfants */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center">
               <Users size={22} className="text-pink-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Maternelle</p>
+              <p className="text-sm text-gray-500">Maison des enfants</p>
               <p className="text-2xl font-bold text-gray-900">
                 {enfantStats?.parClasse?.MATERNELLE || 0}
               </p>
@@ -251,7 +251,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-pink-400" />
-                <span className="text-sm text-gray-600">Maternelle</span>
+                <span className="text-sm text-gray-600">Maison des enfants</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">

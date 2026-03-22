@@ -131,7 +131,7 @@ export default function AdminPeriscolairePage() {
           <p className="text-2xl font-bold text-purple-600">
             {commandes.filter(c => c.classe.match(/PS|MS|GS/)).length}
           </p>
-          <p className="text-sm text-purple-500">Maternelle</p>
+          <p className="text-sm text-purple-500">Maison des enfants</p>
         </div>
         <div className="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-200 text-center">
           <p className="text-2xl font-bold text-blue-600">

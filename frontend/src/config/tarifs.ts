@@ -19,7 +19,7 @@ export const TARIFS = {
 
   // Frais de scolarité (2025-2026)
   scolarite: {
-    mensuel: 575,                // € - Maternelle/Élémentaire
+    mensuel: 575,                // € - Maison des enfants/Élémentaire
     mensuelFratrie: 540,         // € - Fratrie maternelle/élémentaire
     mensuelCollege: 710,         // € - Collège
     mensuelCollegeFratrie: 640,  // € - Fratrie collège
@@ -29,7 +29,7 @@ export const TARIFS = {
 
   // Frais de fonctionnement annuels (matériel pédagogique)
   fonctionnement: {
-    maternelle: 65,              // € - 3-6 ans
+    maternelle: 65,              // € - Maison des enfants (3-6 ans)
     elementaire: 85,             // € - 6-12 ans
     college: 95,                 // € - Collège
   },
@@ -85,7 +85,7 @@ export const ORGANISATION = {
 // Classes disponibles
 export const CLASSES_DISPONIBLES = {
   maternelle: {
-    nom: "Maternelle",
+    nom: "Maison des enfants",
     ageMin: 3,
     ageMax: 6,
     description: "Classe multi-âges 3-6 ans",

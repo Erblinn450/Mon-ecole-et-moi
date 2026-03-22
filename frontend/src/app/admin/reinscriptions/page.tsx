@@ -28,6 +28,7 @@ interface Reinscription {
   enfant: {
     nom: string;
     prenom: string;
+    preinscriptionId: number | null;
     parent1: {
       email: string;
       telephone: string | null;
@@ -336,14 +337,25 @@ export default function ReinscriptionsAdminPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <a
-                          href={`/admin/eleves?search=${encodeURIComponent(reinscription.enfant.prenom + ' ' + reinscription.enfant.nom)}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs font-medium"
-                          title="Voir la fiche de l'enfant"
-                        >
-                          <Eye size={13} />
-                          Voir
-                        </a>
+                        {reinscription.enfant.preinscriptionId ? (
+                          <a
+                            href={`/admin/preinscriptions/${reinscription.enfant.preinscriptionId}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs font-medium"
+                            title="Voir le dossier et les documents"
+                          >
+                            <Eye size={13} />
+                            Dossier
+                          </a>
+                        ) : (
+                          <a
+                            href={`/admin/eleves?search=${encodeURIComponent(reinscription.enfant.prenom + ' ' + reinscription.enfant.nom)}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors text-xs font-medium"
+                            title="Voir la fiche élève"
+                          >
+                            <Eye size={13} />
+                            Élève
+                          </a>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5">

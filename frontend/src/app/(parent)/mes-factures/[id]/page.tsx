@@ -13,7 +13,8 @@ import {
   Download,
 } from "lucide-react";
 import { facturationApi } from "@/lib/api";
-import { Facture, StatutFacture, TypeLigne } from "@/types";
+import { Facture, StatutFacture, TypeLigne, Classe } from "@/types";
+import { classeLabels } from "@/lib/labels";
 
 const statutConfig: Record<StatutFacture, { label: string; bg: string; text: string }> = {
   EN_ATTENTE: { label: "En attente", bg: "bg-amber-50", text: "text-amber-700" },
@@ -140,7 +141,7 @@ export default function MaFactureDetailPage() {
         <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-4">
           <p className="text-sm text-emerald-700">
             Facture pour <span className="font-semibold">{facture.enfant.prenom} {facture.enfant.nom}</span>
-            {facture.enfant.classe && ` - ${facture.enfant.classe}`}
+            {facture.enfant.classe && ` - ${classeLabels[facture.enfant.classe as Classe] || facture.enfant.classe}`}
           </p>
         </div>
       )}

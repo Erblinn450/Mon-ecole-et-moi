@@ -310,9 +310,9 @@ export class PreinscriptionsService {
       motDePasseGenere = password;
       motDePasseParent2Genere = passwordParent2;
       parentCree = true;
-      this.logger.log(`Compte parent créé: ${parent.email}, enfant: ${enfant.prenom} ${enfant.nom}`);
+      this.logger.log(`Compte parent #${parent.id} créé, enfant #${enfant.id} rattaché`);
       if (parent2) {
-        this.logger.log(`Compte parent 2 créé: ${parent2.email}`);
+        this.logger.log(`Compte parent 2 #${parent2.id} créé`);
       }
 
       // Générer automatiquement la facture de frais d'inscription
@@ -368,7 +368,7 @@ export class PreinscriptionsService {
             dateIntegration: preinscription.dateIntegration,
             motDePasse: motDePasseParent2Genere,
           });
-          this.logger.log(`Email de validation envoyé au parent 2: ${preinscription.emailParent2}`);
+          this.logger.log(`Email de validation envoyé au parent 2 (dossier ${preinscription.numeroDossier})`);
         }
       } else if (statut === StatutPreinscription.REFUSE) {
         await this.emailService.sendPreinscriptionRefused(emailData);
@@ -399,7 +399,7 @@ export class PreinscriptionsService {
       : 'parent1234'; // Mot de passe par défaut pour le développement
 
     if (useRandomPassword) {
-      this.logger.log(`Mot de passe sécurisé généré pour ${preinscription.emailParent}`);
+      this.logger.log(`Mot de passe sécurisé généré pour dossier ${preinscription.numeroDossier}`);
     }
 
     const hashedPassword = await bcrypt.hash(motDePasse, 10);
@@ -439,7 +439,7 @@ export class PreinscriptionsService {
         });
         motDePasseParent1 = motDePasse;
       } else {
-        this.logger.log(`Parent existant trouvé: ${preinscription.emailParent} - pas de nouveau mot de passe`);
+        this.logger.log(`Parent existant #${parent.id} trouvé pour dossier ${preinscription.numeroDossier} - pas de nouveau mot de passe`);
       }
 
       let parent2 = null;
@@ -465,7 +465,7 @@ export class PreinscriptionsService {
             },
           });
           mdpParent2Final = motDePasseParent2;
-          this.logger.log(`Compte parent 2 créé: ${preinscription.emailParent2}`);
+          this.logger.log(`Compte parent 2 #${parent2.id} créé pour dossier ${preinscription.numeroDossier}`);
         }
       }
 
@@ -666,7 +666,7 @@ export class PreinscriptionsService {
 
     const getClasseLabel = (classe: string) => {
       const labels: Record<string, string> = {
-        MATERNELLE: 'Maternelle (3-6 ans)',
+        MATERNELLE: 'Maison des enfants (3-6 ans)',
         ELEMENTAIRE: 'Élémentaire (6-12 ans)',
         COLLEGE: 'Collège',
       };

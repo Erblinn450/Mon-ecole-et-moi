@@ -12,13 +12,13 @@ interface EnfantSelection {
 // Classes multi-âges Montessori (cohérent avec le reste de l'application)
 const CLASSES = [
   { group: "Classes multi-âges Montessori", options: [
-    { value: "MATERNELLE", label: "Maternelle (3-6 ans)" },
+    { value: "MATERNELLE", label: "Maison des enfants (3-6 ans)" },
     { value: "ELEMENTAIRE", label: "Élémentaire (6-12 ans, CP au CM2)" },
   ]},
 ];
 
 const CLASSE_LABELS: Record<string, string> = {
-  MATERNELLE: "Maternelle (3-6 ans)",
+  MATERNELLE: "Maison des enfants (3-6 ans)",
   ELEMENTAIRE: "Élémentaire (6-12 ans)",
   COLLEGE: "Collège",
 };

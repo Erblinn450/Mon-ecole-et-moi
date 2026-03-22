@@ -706,7 +706,7 @@ export default function PreinscriptionDetailPage() {
                 onChange={(e) => setFormData({ ...formData, classeSouhaitee: e.target.value as Classe })}
                 className="w-full p-2 border rounded-lg"
               >
-                <option value={Classe.MATERNELLE}>Maternelle</option>
+                <option value={Classe.MATERNELLE}>Maison des enfants</option>
                 <option value={Classe.ELEMENTAIRE}>Élémentaire</option>
                 <option value={Classe.COLLEGE}>Collège</option>
               </select>

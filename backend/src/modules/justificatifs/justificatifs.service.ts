@@ -190,7 +190,7 @@ export class JustificatifsService {
       },
     });
 
-    this.logger.log(`✅ Inscription ACTIVE créée pour ${enfant.prenom} ${enfant.nom} (${anneeScolaire})`);
+    this.logger.log(`✅ Inscription ACTIVE créée pour enfant #${enfant.id} (${anneeScolaire})`);
   }
 
   /**

@@ -34,7 +34,7 @@ const CLASSE_MAPPING: Record<string, Classe> = {
 const CLASSES = [
   {
     group: "Classes multi-âges Montessori", options: [
-      { value: "MATERNELLE", label: "Maternelle (3-6 ans)" },
+      { value: "MATERNELLE", label: "Maison des enfants (3-6 ans)" },
       { value: "ELEMENTAIRE", label: "Élémentaire (6-12 ans, CP au CM2)" },
     ]
   },

@@ -45,12 +45,12 @@ const cleLabels: Record<string, string> = {
   INSCRIPTION_FRATRIE_PREMIERE: "Inscription 1ère année fratrie",
   INSCRIPTION_ANNEES_SUIVANTES: "Réinscription",
   INSCRIPTION_FRATRIE_SUIVANTES: "Réinscription fratrie",
-  FONCTIONNEMENT_MATERNELLE: "Matériel maternelle",
+  FONCTIONNEMENT_MATERNELLE: "Matériel Maison des enfants",
   FONCTIONNEMENT_ELEMENTAIRE: "Matériel élémentaire",
   FONCTIONNEMENT_COLLEGE: "Matériel collège",
   REPAS_MIDI: "Repas midi (unitaire)",
   PERISCOLAIRE_SEANCE: "Périscolaire (unitaire)",
-  REDUCTION_FRATRIE_POURCENTAGE: "Réduction fratrie (maternelle/élémentaire)",
+  REDUCTION_FRATRIE_POURCENTAGE: "Réduction fratrie (Maison des enfants/élémentaire)",
   REDUCTION_FRATRIE_COLLEGE_POURCENTAGE: "Réduction fratrie (collège)",
 };
 

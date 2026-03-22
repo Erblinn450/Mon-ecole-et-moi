@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   AlertCircle,
   Receipt,
@@ -23,6 +25,8 @@ import {
   X,
 } from "lucide-react";
 import { facturationApi } from "@/lib/api";
+import { classeLabels } from "@/lib/labels";
+import { Classe } from "@/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
   Facture,
@@ -119,6 +123,9 @@ export default function FactureDetailPage() {
   // Options secondaires
   const [showOptions, setShowOptions] = useState(false);
 
+  // Navigation entre factures
+  const [factureIds, setFactureIds] = useState<number[]>([]);
+
   const loadFacture = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -135,6 +142,17 @@ export default function FactureDetailPage() {
   useEffect(() => {
     loadFacture();
   }, [loadFacture]);
+
+  // Charger la liste des IDs pour navigation ←→
+  useEffect(() => {
+    facturationApi.getAll().then((all) => {
+      setFactureIds(all.map((f: Facture) => f.id));
+    }).catch(() => {});
+  }, []);
+
+  const currentIndex = factureIds.indexOf(factureId);
+  const prevId = currentIndex > 0 ? factureIds[currentIndex - 1] : null;
+  const nextId = currentIndex < factureIds.length - 1 ? factureIds[currentIndex + 1] : null;
 
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
@@ -349,14 +367,32 @@ export default function FactureDetailPage() {
             — {facture.periode ?? "-"}
           </p>
         </div>
-        {/* Télécharger PDF — toujours visible */}
-        <button
-          onClick={handleDownloadPdf}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm"
-        >
-          <Download size={16} />
-          Télécharger PDF
-        </button>
+        {/* Navigation ←→ + Télécharger PDF */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => prevId && router.push(`/admin/facturation/${prevId}`)}
+            disabled={!prevId}
+            className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Facture précédente"
+          >
+            <ChevronLeft size={18} className="text-gray-600" />
+          </button>
+          <button
+            onClick={() => nextId && router.push(`/admin/facturation/${nextId}`)}
+            disabled={!nextId}
+            className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Facture suivante"
+          >
+            <ChevronRight size={18} className="text-gray-600" />
+          </button>
+          <button
+            onClick={handleDownloadPdf}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm"
+          >
+            <Download size={16} />
+            Télécharger PDF
+          </button>
+        </div>
       </div>
 
       {/* Fil d'Ariane visuel — responsive (horizontal desktop, vertical mobile) */}
@@ -592,7 +628,7 @@ export default function FactureDetailPage() {
               <p className="font-medium text-gray-900">
                 {facture.enfant.prenom} {facture.enfant.nom}
               </p>
-              <p>Classe : {facture.enfant.classe ?? "-"}</p>
+              <p>Classe : {facture.enfant.classe ? classeLabels[facture.enfant.classe as Classe] || facture.enfant.classe : "-"}</p>
             </div>
           ) : (
             <p className="text-sm text-gray-400">Famille entière</p>

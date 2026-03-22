@@ -101,6 +101,8 @@ export interface DetailCalculScolarite {
   reductionFratrie: number;
   /** Montant de la réduction RFR */
   reductionRFR: number;
+  /** Taux RFR appliqué (meilleur taux entre parent1 et parent2) */
+  tauxRFR: number;
   /** Montant final après réductions */
   montantFinal: number;
 }

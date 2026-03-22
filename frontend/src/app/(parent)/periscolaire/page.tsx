@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { classeLabels } from "@/lib/labels";
+import { Classe } from "@/types";
 import { 
   Palette, 
   Clock, 
@@ -231,7 +233,7 @@ export default function PeriscolairePage() {
                     <p className="font-semibold text-gray-900">
                       {enfant.prenom} {enfant.nom}
                     </p>
-                    <p className="text-sm text-gray-500">{enfant.classe || "Non assigné"}</p>
+                    <p className="text-sm text-gray-500">{enfant.classe ? classeLabels[enfant.classe as Classe] || enfant.classe : "Non assigné"}</p>
                   </button>
                 ))}
               </div>
@@ -299,7 +301,7 @@ export default function PeriscolairePage() {
                       isSelected
                         ? "bg-gradient-to-br from-violet-500 to-purple-500 text-white shadow-lg scale-105"
                         : isBooked
-                        ? "bg-violet-100 text-violet-700 cursor-not-allowed"
+                        ? "bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-not-allowed"
                         : isSelectable
                         ? "bg-violet-50 text-violet-700 hover:bg-violet-100 cursor-pointer"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -307,7 +309,7 @@ export default function PeriscolairePage() {
                   >
                     {day.getDate()}
                     {isBooked && (
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-violet-500" />
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     )}
                   </button>
                 );
@@ -331,7 +333,7 @@ export default function PeriscolairePage() {
                 <span className="text-gray-600">Sélectionné</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-4 h-4 rounded bg-violet-100 border border-violet-200" />
+                <div className="w-4 h-4 rounded bg-emerald-100 border border-emerald-300" />
                 <span className="text-gray-600">Déjà réservé</span>
               </div>
             </div>

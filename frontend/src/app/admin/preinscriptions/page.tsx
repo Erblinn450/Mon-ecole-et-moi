@@ -198,6 +198,24 @@ export default function PreinscriptionsAdminPage() {
     return { label: "Pièces à valider", color: "text-orange-700", bg: "bg-orange-100", icon: FileText };
   };
 
+  const marquerContacte = async (id: number) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${API_URL}/preinscriptions/${id}/statut`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ statut: "DEJA_CONTACTE" }),
+      });
+      if (!response.ok) throw new Error("Erreur lors de la mise à jour");
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -367,13 +385,24 @@ export default function PreinscriptionsAdminPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link
-                          href={`/admin/preinscriptions/${preinscription.id}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-sm font-medium"
-                        >
-                          <Eye size={14} />
-                          Voir
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          {preinscription.statut === StatutPreinscription.EN_ATTENTE && (
+                            <button
+                              onClick={() => marquerContacte(preinscription.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm font-medium"
+                            >
+                              <PhoneCall size={14} />
+                              Contacté
+                            </button>
+                          )}
+                          <Link
+                            href={`/admin/preinscriptions/${preinscription.id}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-sm font-medium"
+                          >
+                            <Eye size={14} />
+                            Voir
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );

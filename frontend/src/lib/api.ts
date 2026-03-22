@@ -342,7 +342,7 @@ export const repasApi = {
 export const periscolaireApi = {
   // Commander
   async commander(data: { enfantId: number; date: string }): Promise<Periscolaire> {
-    const response = await fetch(`${API_URL}/periscolaire/commander`, {
+    const response = await fetch(`${API_URL}/periscolaire/inscrire`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -352,7 +352,7 @@ export const periscolaireApi = {
 
   // Commander plusieurs dates
   async commanderMultiple(data: { enfantId: number; dates: string[] }): Promise<Periscolaire[]> {
-    const response = await fetch(`${API_URL}/periscolaire/commander-multiple`, {
+    const response = await fetch(`${API_URL}/periscolaire/inscrire-multiple`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),

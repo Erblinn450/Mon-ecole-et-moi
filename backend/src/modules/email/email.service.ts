@@ -296,7 +296,7 @@ export class EmailService {
   }) {
     const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
     const classeLabels: Record<string, string> = {
-      MATERNELLE: 'Maternelle (3-6 ans)',
+      MATERNELLE: 'Maison des enfants (3-6 ans)',
       ELEMENTAIRE: 'Élémentaire (6-12 ans)',
       COLLEGE: 'Collège',
     };
@@ -314,7 +314,7 @@ export class EmailService {
         },
       });
 
-      this.logger.log(`Email de réinscription validée envoyé à ${data.emailParent}`);
+      this.logger.log(`Email de réinscription validée envoyé`);
       return true;
     } catch (error) {
       this.logger.error("Erreur lors de l'envoi de l'email de réinscription validée", {
@@ -347,7 +347,7 @@ export class EmailService {
         },
       });
 
-      this.logger.log(`Email de réinscription refusée envoyé à ${data.emailParent}`);
+      this.logger.log(`Email de réinscription refusée envoyé`);
       return true;
     } catch (error) {
       this.logger.error("Erreur lors de l'envoi de l'email de réinscription refusée", {
@@ -380,12 +380,11 @@ export class EmailService {
         },
       });
 
-      this.logger.log(`Email de vérification envoyé à ${data.emailParent}`);
+      this.logger.log(`Email de vérification envoyé`);
       return true;
     } catch (error) {
       this.logger.error("Erreur lors de l'envoi de l'email de vérification", {
         error: error.message,
-        emailParent: data.emailParent,
       });
       return false;
     }
@@ -452,10 +451,10 @@ export class EmailService {
         },
       });
 
-      this.logger.log(`Email facture envoyé à ${data.emailParent} pour ${data.numeroFacture}`);
+      this.logger.log(`Email facture envoyé pour ${data.numeroFacture}`);
       return true;
     } catch (error) {
-      this.logger.error(`Erreur envoi email facture à ${data.emailParent}`, {
+      this.logger.error(`Erreur envoi email facture ${data.numeroFacture}`, {
         error: error.message,
       });
       return false;

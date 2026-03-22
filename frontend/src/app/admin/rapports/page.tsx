@@ -262,7 +262,7 @@ export default function AdminRapportsPage() {
           </div>
           <div className="bg-pink-50 rounded-lg p-4 text-center">
             <p className="text-2xl font-bold text-pink-600">{MOCK_STATS.eleves.maternelle}</p>
-            <p className="text-sm text-pink-500">🎨 Maternelle</p>
+            <p className="text-sm text-pink-500">🎨 Maison des enfants</p>
           </div>
           <div className="bg-blue-50 rounded-lg p-4 text-center">
             <p className="text-2xl font-bold text-blue-600">{MOCK_STATS.eleves.primaire}</p>

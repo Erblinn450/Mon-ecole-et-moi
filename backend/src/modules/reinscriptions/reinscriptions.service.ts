@@ -135,7 +135,7 @@ export class ReinscriptionsService {
       },
     });
 
-    this.logger.log(`Réinscription créée pour ${enfant.prenom} ${enfant.nom} (${anneeScolaire})`);
+    this.logger.log(`Réinscription créée pour enfant #${enfant.id} (${anneeScolaire})`);
 
     return reinscription;
   }
@@ -168,7 +168,12 @@ export class ReinscriptionsService {
       where,
       include: {
         enfant: {
-          include: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            classe: true,
+            preinscriptionId: true,
             parent1: { select: { id: true, nom: true, prenom: true, name: true, email: true, telephone: true } },
             parent2: { select: { id: true, nom: true, prenom: true, name: true, email: true, telephone: true } },
           },

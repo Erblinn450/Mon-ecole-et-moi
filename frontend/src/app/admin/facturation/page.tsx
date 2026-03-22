@@ -428,39 +428,54 @@ export default function FacturationPage() {
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
+          <button
+            onClick={() => setFilterStatut("TOUS")}
+            className={`bg-indigo-50 rounded-xl border p-4 text-left transition-all hover:shadow-md cursor-pointer ${filterStatut === "TOUS" ? "border-indigo-400 ring-2 ring-indigo-200" : "border-indigo-100"}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <Receipt size={18} className="text-indigo-600" />
               <span className="text-sm font-medium text-indigo-700">Total</span>
             </div>
             <p className="text-2xl font-bold text-indigo-900">{stats.totalFactures}</p>
             <p className="text-sm text-indigo-600">{stats.montantTotal.toFixed(2)} €</p>
-          </div>
-          <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
+          </button>
+          <button
+            onClick={() => setFilterStatut("EN_ATTENTE")}
+            className={`bg-amber-50 rounded-xl border p-4 text-left transition-all hover:shadow-md cursor-pointer ${filterStatut === "EN_ATTENTE" ? "border-amber-400 ring-2 ring-amber-200" : "border-amber-100"}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <Clock size={18} className="text-amber-600" />
               <span className="text-sm font-medium text-amber-700">En attente</span>
             </div>
             <p className="text-2xl font-bold text-amber-900">{stats.enAttente.count}</p>
             <p className="text-sm text-amber-600">{stats.enAttente.montant.toFixed(2)} €</p>
-          </div>
-          <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
+          </button>
+          <button
+            onClick={() => setFilterStatut("PAYEE")}
+            className={`bg-emerald-50 rounded-xl border p-4 text-left transition-all hover:shadow-md cursor-pointer ${filterStatut === "PAYEE" ? "border-emerald-400 ring-2 ring-emerald-200" : "border-emerald-100"}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle size={18} className="text-emerald-600" />
               <span className="text-sm font-medium text-emerald-700">Payées</span>
             </div>
             <p className="text-2xl font-bold text-emerald-900">{stats.payees.count}</p>
             <p className="text-sm text-emerald-600">{stats.payees.montant.toFixed(2)} €</p>
-          </div>
-          <div className="bg-rose-50 rounded-xl border border-rose-100 p-4">
+          </button>
+          <button
+            onClick={() => setFilterStatut("EN_RETARD")}
+            className={`bg-rose-50 rounded-xl border p-4 text-left transition-all hover:shadow-md cursor-pointer ${filterStatut === "EN_RETARD" ? "border-rose-400 ring-2 ring-rose-200" : "border-rose-100"}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle size={18} className="text-rose-600" />
               <span className="text-sm font-medium text-rose-700">Impayé</span>
             </div>
             <p className="text-2xl font-bold text-rose-900">{stats.enRetard.count}</p>
             <p className="text-sm text-rose-600">{stats.enRetard.montant.toFixed(2)} €</p>
-          </div>
-          <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
+          </button>
+          <button
+            onClick={() => setFilterStatut("PAYEE")}
+            className={`bg-blue-50 rounded-xl border p-4 text-left transition-all hover:shadow-md cursor-pointer ${filterStatut === "PAYEE" ? "border-blue-400 ring-2 ring-blue-200" : "border-blue-100"}`}
+          >
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp size={18} className="text-blue-600" />
               <span className="text-sm font-medium text-blue-700">Encaissé</span>
@@ -471,7 +486,7 @@ export default function FacturationPage() {
                 ? `${((stats.montantPaye / stats.montantTotal) * 100).toFixed(0)}%`
                 : "0%"}
             </p>
-          </div>
+          </button>
         </div>
       )}
 
