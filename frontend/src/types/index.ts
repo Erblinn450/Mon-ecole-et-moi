@@ -363,6 +363,7 @@ export interface Facture {
   commentaire?: string;
   anneeScolaire?: string;
   factureSourceId?: number;
+  dateDernierEnvoi?: string;
   factureSource?: { id: number; numero: string };
   avoirs?: { id: number; numero: string }[];
   createdAt: string;

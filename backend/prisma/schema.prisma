@@ -326,8 +326,9 @@ model Facture {
   datePrelevement DateTime?           @map("date_prelevement")
   commentaire     String?
   anneeScolaire   String?             @map("annee_scolaire")
-  factureSourceId Int?                @map("facture_source_id")
-  parent          User                @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  factureSourceId   Int?                @map("facture_source_id")
+  dateDernierEnvoi  DateTime?           @map("date_dernier_envoi")
+  parent            User                @relation(fields: [parentId], references: [id], onDelete: Cascade)
   enfant          Enfant?             @relation(fields: [enfantId], references: [id])
   factureSource   Facture?            @relation("AvoirSource", fields: [factureSourceId], references: [id])
   avoirs          Facture[]           @relation("AvoirSource")

@@ -196,6 +196,41 @@ export class FacturationController {
     return this.facturationService.getStats();
   }
 
+  @Get('export-pdf')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Télécharger toutes les factures du mois en 1 seul PDF (Admin)' })
+  @ApiQuery({ name: 'mois', required: true, example: '2026-03' })
+  async exportPdf(
+    @Query('mois') mois: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.facturationPdfService.generatePdfGroupe(mois);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="factures-${mois}.pdf"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
+  @Post('export-pdf-selection')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Télécharger une sélection de factures en 1 PDF (Admin)' })
+  async exportPdfSelection(
+    @Body() body: { factureIds: number[] },
+    @Res() res: Response,
+  ) {
+    const buffer = await this.facturationPdfService.generatePdfSelection(body.factureIds);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="factures-selection.pdf"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
   @Get('export-pdf-zip')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
@@ -256,6 +291,22 @@ export class FacturationController {
   }
 
   // --- Routes paramétrées :id (TOUJOURS en dernier) ---
+
+  @Post(':id/envoyer')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Envoyer une facture par email (Admin)' })
+  envoyerFacture(@Param('id', ParseIntPipe) id: number) {
+    return this.facturationService.envoyerFactureIndividuelle(id);
+  }
+
+  @Post(':id/relancer')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Relancer un parent pour une facture (Admin)' })
+  relancerFacture(@Param('id', ParseIntPipe) id: number) {
+    return this.facturationService.relancerFacture(id);
+  }
 
   @Get(':id/pdf')
   @UseGuards(RolesGuard)

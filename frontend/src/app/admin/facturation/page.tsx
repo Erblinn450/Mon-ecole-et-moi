@@ -61,6 +61,9 @@ export default function FacturationPage() {
     title: string; message: string; variant: "danger" | "warning" | "default"; onConfirm: () => void;
   } | null>(null);
 
+  // Sélection factures
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
   // SEPA state
   const [sepaPreview, setSepaPreview] = useState<{
     nbTransactions: number;
@@ -255,11 +258,11 @@ export default function FacturationPage() {
             <button
               onClick={async () => {
                 try {
-                  const blob = await facturationApi.downloadZip(filterMois);
+                  const blob = await facturationApi.downloadPdfGroupe(filterMois);
                   const url = window.URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `factures-${filterMois}.zip`;
+                  a.download = `factures-${filterMois}.pdf`;
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);
@@ -272,6 +275,29 @@ export default function FacturationPage() {
             >
               <Download size={18} />
               Télécharger tout
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={async () => {
+                try {
+                  const blob = await facturationApi.downloadPdfSelection(Array.from(selectedIds));
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `factures-selection.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(url);
+                } catch {
+                  alert("Erreur lors du téléchargement");
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-colors"
+            >
+              <Download size={18} />
+              Télécharger la sélection ({selectedIds.size})
             </button>
           )}
           {nbEnAttente > 0 && (
@@ -537,6 +563,20 @@ export default function FacturationPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
+                  <th className="px-3 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={filteredFactures.length > 0 && selectedIds.size === filteredFactures.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(new Set(filteredFactures.map((f) => f.id)));
+                        } else {
+                          setSelectedIds(new Set());
+                        }
+                      }}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Numéro</th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Parent</th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Enfant</th>
@@ -551,6 +591,22 @@ export default function FacturationPage() {
                   const config = statutConfig[facture.statut];
                   return (
                     <tr key={facture.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-3 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(facture.id)}
+                          onChange={(e) => {
+                            const next = new Set(selectedIds);
+                            if (e.target.checked) {
+                              next.add(facture.id);
+                            } else {
+                              next.delete(facture.id);
+                            }
+                            setSelectedIds(next);
+                          }}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <span className="font-mono text-sm font-medium text-gray-900">
                           {facture.numero}
@@ -583,6 +639,11 @@ export default function FacturationPage() {
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
                           {config.label}
                         </span>
+                        {facture.dateDernierEnvoi && (
+                          <span className="block text-xs text-gray-400 mt-1">
+                            Envoyé le {new Date(facture.dateDernierEnvoi).toLocaleDateString("fr-FR")}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button

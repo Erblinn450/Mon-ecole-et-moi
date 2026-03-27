@@ -315,7 +315,7 @@ export class FacturationService {
       try {
         await this.prisma.facture.update({
           where: { id: facture.id },
-          data: { statut: StatutFacture.ENVOYEE },
+          data: { statut: StatutFacture.ENVOYEE, dateDernierEnvoi: new Date() },
         });
 
         if (facture.parent?.email) {
@@ -340,6 +340,88 @@ export class FacturationService {
 
     this.logger.log(`Envoi batch: ${envoyees} factures envoyées, ${erreurs.length} erreurs`);
     return { envoyees, erreurs };
+  }
+
+  async envoyerFactureIndividuelle(factureId: number) {
+    const facture = await this.prisma.facture.findUnique({
+      where: { id: factureId },
+      include: {
+        parent: { select: { id: true, nom: true, prenom: true, email: true } },
+        enfant: { select: { id: true, nom: true, prenom: true } },
+      },
+    });
+
+    if (!facture) {
+      throw new NotFoundException('Facture non trouvée');
+    }
+
+    if (!facture.parent?.email) {
+      throw new BadRequestException('Le parent n\'a pas d\'adresse email');
+    }
+
+    // Si EN_ATTENTE, passer en ENVOYEE
+    const updateData: Record<string, unknown> = { dateDernierEnvoi: new Date() };
+    if (facture.statut === StatutFacture.EN_ATTENTE) {
+      updateData.statut = StatutFacture.ENVOYEE;
+    }
+
+    await this.prisma.facture.update({
+      where: { id: factureId },
+      data: updateData,
+    });
+
+    await this.emailService.sendFactureNotification({
+      emailParent: facture.parent.email,
+      prenomParent: facture.parent.prenom ?? facture.parent.nom ?? '',
+      numeroFacture: facture.numero,
+      montant: Number(facture.montantTotal).toFixed(2),
+      factureId: facture.id,
+      prenomEnfant: facture.enfant?.prenom,
+      dateEcheance: new Date(facture.dateEcheance).toLocaleDateString('fr-FR'),
+    });
+
+    this.logger.log(`Facture ${facture.numero} envoyée à ${facture.parent.email}`);
+    return { success: true, numero: facture.numero };
+  }
+
+  async relancerFacture(factureId: number) {
+    const facture = await this.prisma.facture.findUnique({
+      where: { id: factureId },
+      include: {
+        parent: { select: { id: true, nom: true, prenom: true, email: true } },
+        enfant: { select: { id: true, nom: true, prenom: true } },
+      },
+    });
+
+    if (!facture) {
+      throw new NotFoundException('Facture non trouvée');
+    }
+
+    if (facture.statut === StatutFacture.EN_ATTENTE || facture.statut === StatutFacture.ANNULEE) {
+      throw new BadRequestException('Impossible de relancer une facture en attente ou annulée');
+    }
+
+    if (!facture.parent?.email) {
+      throw new BadRequestException('Le parent n\'a pas d\'adresse email');
+    }
+
+    await this.prisma.facture.update({
+      where: { id: factureId },
+      data: { dateDernierEnvoi: new Date() },
+    });
+
+    await this.emailService.sendFactureNotification({
+      emailParent: facture.parent.email,
+      prenomParent: facture.parent.prenom ?? facture.parent.nom ?? '',
+      numeroFacture: facture.numero,
+      montant: Number(facture.montantTotal).toFixed(2),
+      factureId: facture.id,
+      prenomEnfant: facture.enfant?.prenom,
+      dateEcheance: new Date(facture.dateEcheance).toLocaleDateString('fr-FR'),
+    });
+
+    this.logger.log(`Relance facture ${facture.numero} envoyée à ${facture.parent.email}`);
+    return { success: true, numero: facture.numero };
   }
 
   async previsualiserFacture(dto: GenererFactureDto) {
@@ -428,7 +510,10 @@ export class FacturationService {
     return facture;
   }
 
-  // Transitions de statut autorisées
+  /**
+   * Machine à états : empêche les transitions de statut incohérentes (ex: ANNULEE → PAYEE).
+   * Une facture envoyée ne peut plus être annulée directement — il faut créer un avoir.
+   */
   private static readonly TRANSITIONS_VALIDES: Record<StatutFacture, StatutFacture[]> = {
     [StatutFacture.EN_ATTENTE]: [StatutFacture.ENVOYEE, StatutFacture.ANNULEE],
     [StatutFacture.ENVOYEE]: [StatutFacture.PAYEE, StatutFacture.PARTIELLE, StatutFacture.EN_RETARD], // Annulation = avoir obligatoire
@@ -484,6 +569,7 @@ export class FacturationService {
     });
   }
 
+  /** Lecture + écriture dans une seule $transaction pour éviter les race conditions sur le solde. */
   async enregistrerPaiement(factureId: number, dto: EnregistrerPaiementDto) {
     return this.prisma.$transaction(async (tx) => {
       // Lecture DANS la transaction pour éviter les race conditions
@@ -780,9 +866,14 @@ export class FacturationService {
     };
   }
 
+  /**
+   * Génère un numéro séquentiel (FA-202603-001, FA-202603-002, ...).
+   * pg_advisory_xact_lock empêche deux requêtes concurrentes de générer le même numéro.
+   */
   private async generateNumeroFacture(
     periode: string,
-    tx?: { facture: typeof this.prisma.facture; $executeRawUnsafe: typeof this.prisma.$executeRawUnsafe },
+    // Accepte le client Prisma ou un client de transaction
+    tx?: Pick<PrismaService, 'facture' | '$executeRawUnsafe'>,
   ): Promise<string> {
     const client = tx ?? this.prisma;
     const prefix = `FA-${periode.replace('-', '')}`;
@@ -1027,8 +1118,8 @@ export class FacturationService {
       // Inscription
       { cle: 'INSCRIPTION_PREMIERE_ANNEE', valeur: 350.0, description: "Frais d'inscription 1ère année - 1 enfant", categorie: 'INSCRIPTION' },
       { cle: 'INSCRIPTION_FRATRIE_PREMIERE', valeur: 150.0, description: "Frais d'inscription 1ère année - fratrie", categorie: 'INSCRIPTION' },
-      { cle: 'INSCRIPTION_ANNEES_SUIVANTES', valeur: 195.0, description: "Frais d'inscription années suivantes - 1 enfant", categorie: 'INSCRIPTION' },
-      { cle: 'INSCRIPTION_FRATRIE_SUIVANTES', valeur: 160.0, description: "Frais d'inscription années suivantes - fratrie", categorie: 'INSCRIPTION' },
+      { cle: 'INSCRIPTION_ANNEES_SUIVANTES', valeur: 165.0, description: "Frais d'inscription années suivantes - 1 enfant", categorie: 'INSCRIPTION' },
+      { cle: 'INSCRIPTION_FRATRIE_SUIVANTES', valeur: 150.0, description: "Frais d'inscription années suivantes - fratrie", categorie: 'INSCRIPTION' },
       // Fonctionnement (matériel pédagogique)
       { cle: 'FONCTIONNEMENT_MATERNELLE', valeur: 65.0, description: 'Frais matériel pédagogique - 3 à 6 ans', categorie: 'FONCTIONNEMENT' },
       { cle: 'FONCTIONNEMENT_ELEMENTAIRE', valeur: 85.0, description: 'Frais matériel pédagogique - 6 à 12 ans', categorie: 'FONCTIONNEMENT' },
@@ -1798,7 +1889,7 @@ export class FacturationService {
       const now = new Date();
       const periode = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-      const numero = await this.generateNumeroFacture(periode, tx as any);
+      const numero = await this.generateNumeroFacture(periode, tx);
 
       const facture = await tx.facture.create({
         data: {

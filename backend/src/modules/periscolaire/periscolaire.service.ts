@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { isBefore, startOfDay } from 'date-fns';
 
@@ -65,7 +66,7 @@ export class PeriscolaireService {
 
   async getPeriscolaireEnfant(enfantId: number, userId: number, isAdmin: boolean, mois?: string) {
     await this.verifierParente(enfantId, userId, isAdmin);
-    const where: any = { enfantId };
+    const where: Prisma.PeriscolaireWhereInput = { enfantId };
 
     if (mois) {
       const [year, month] = mois.split('-').map(Number);

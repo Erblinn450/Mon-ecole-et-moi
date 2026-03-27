@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Enfant } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -85,7 +86,7 @@ export class SignaturesService {
     ipAdresse: string,
   ) {
     let enfantId = data.enfantId;
-    let enfant: any = null;
+    let enfant: Enfant | null = null;
 
     // Si enfantId n'est pas fourni, créer/trouver l'enfant depuis la préinscription
     if (!enfantId && data.preinscriptionId) {

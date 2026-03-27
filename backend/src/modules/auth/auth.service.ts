@@ -117,7 +117,8 @@ export class AuthService {
       return { message: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.' };
     }
 
-    // Sélecteur (recherche en BDD) + vérifieur (hashé, comparé avec bcrypt)
+    // Pattern OWASP selector/verifier : le selector permet le lookup en BDD,
+    // le verifier est hashé (bcrypt) pour résister à une fuite de la table.
     const selector = crypto.randomBytes(16).toString('hex');
     const verifier = crypto.randomBytes(32).toString('hex');
     const hashedVerifier = await bcrypt.hash(verifier, 10);

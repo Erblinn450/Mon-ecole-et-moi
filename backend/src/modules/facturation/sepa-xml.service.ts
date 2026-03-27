@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { StatutFacture } from '@prisma/client';
+import { Prisma, StatutFacture } from '@prisma/client';
 import { Decimal } from 'decimal.js';
 
 /** Infos créancier SEPA (Audrey Ballester / Mon Ecole et Moi) */
@@ -42,7 +42,7 @@ export class SepaXmlService {
     datePrelevement?: Date,
   ): Promise<{ xml: string; transactions: SepaTransaction[]; totalMontant: number; nbTransactions: number }> {
     // Récupérer les factures éligibles au prélèvement
-    const whereConditions: any[] = [
+    const whereConditions: Prisma.FactureWhereInput[] = [
       {
         periode: mois,
         statut: { in: ['EN_ATTENTE', 'ENVOYEE', 'PARTIELLE'] as StatutFacture[] },

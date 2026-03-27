@@ -13,8 +13,8 @@ export const TARIFS = {
   inscription: {
     premiereAnnee: 350,          // € - Première année par élève
     premiereAnneeFratrie: 150,   // € - Première année fratrie
-    anneesSuivantes: 195,        // € - Par élève et par an
-    anneesSuivantesFratrie: 160, // € - Fratrie
+    anneesSuivantes: 165,        // € - Par élève et par an
+    anneesSuivantesFratrie: 150, // € - Fratrie
   },
 
   // Frais de scolarité (2025-2026)

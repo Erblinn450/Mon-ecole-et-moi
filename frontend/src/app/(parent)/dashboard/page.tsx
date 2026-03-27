@@ -270,7 +270,7 @@ export default function DashboardParentPage() {
             icon={RefreshCw}
             title="Réinscription"
             description="Réinscrire pour l'année prochaine"
-            color="teal"
+            color="indigo"
           />
         </div>
       </div>

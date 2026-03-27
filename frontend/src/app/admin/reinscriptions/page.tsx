@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Eye,
   MessageSquare,
+  UserX,
 } from "lucide-react";
 import { Classe, StatutReinscription } from "@/types";
 import { classeLabels } from "@/lib/labels";
@@ -38,6 +39,15 @@ interface Reinscription {
       telephone: string | null;
     } | null;
   };
+}
+
+interface EnfantNonReinscrit {
+  id: number;
+  nom: string;
+  prenom: string;
+  classe: string | null;
+  parent1: { nom: string; prenom: string; email: string; telephone: string | null } | null;
+  parent2: { nom: string; prenom: string; email: string; telephone: string | null } | null;
 }
 
 interface Stats {
@@ -71,10 +81,12 @@ const statutConfig: Record<StatutReinscription, { label: string; bg: string; tex
 
 export default function ReinscriptionsAdminPage() {
   const [reinscriptions, setReinscriptions] = useState<Reinscription[]>([]);
+  const [nonReinscrits, setNonReinscrits] = useState<EnfantNonReinscrit[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showNonReinscrits, setShowNonReinscrits] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -87,11 +99,14 @@ export default function ReinscriptionsAdminPage() {
     try {
       const token = localStorage.getItem("auth_token");
 
-      const [reinsResponse, statsResponse] = await Promise.all([
+      const [reinsResponse, statsResponse, nonReinsResponse] = await Promise.all([
         fetch(`${API_URL}/reinscriptions`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${API_URL}/reinscriptions/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/reinscriptions/non-reinscrits`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -104,6 +119,10 @@ export default function ReinscriptionsAdminPage() {
 
       if (statsResponse.ok) {
         setStats(await statsResponse.json());
+      }
+
+      if (nonReinsResponse.ok) {
+        setNonReinscrits(await nonReinsResponse.json());
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
@@ -221,6 +240,64 @@ export default function ReinscriptionsAdminPage() {
             <p className="text-sm text-rose-700">Refusées</p>
             <p className="text-2xl font-bold text-rose-800">{stats.refusees}</p>
           </div>
+        </div>
+      )}
+
+      {/* Enfants non réinscrits */}
+      {nonReinscrits.length > 0 && (
+        <div className="bg-white rounded-2xl border border-orange-200 shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowNonReinscrits(!showNonReinscrits)}
+            className="w-full flex items-center justify-between p-4 hover:bg-orange-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center">
+                <UserX size={18} className="text-orange-600" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">
+                  {nonReinscrits.length} élève{nonReinscrits.length > 1 ? "s" : ""} non réinscrit{nonReinscrits.length > 1 ? "s" : ""}
+                </p>
+                <p className="text-sm text-gray-500">Enfants avec inscription active mais sans demande de réinscription</p>
+              </div>
+            </div>
+            <span className="text-gray-400 text-sm">{showNonReinscrits ? "▲ Masquer" : "▼ Afficher"}</span>
+          </button>
+
+          {showNonReinscrits && (
+            <div className="border-t border-orange-100">
+              <table className="w-full">
+                <thead className="bg-orange-50/50">
+                  <tr>
+                    <th className="text-left px-4 py-2.5 text-sm font-medium text-gray-500">Enfant</th>
+                    <th className="text-left px-4 py-2.5 text-sm font-medium text-gray-500">Classe</th>
+                    <th className="text-left px-4 py-2.5 text-sm font-medium text-gray-500">Contact parent</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {nonReinscrits.map((enfant) => {
+                    const parent = enfant.parent1 || enfant.parent2;
+                    return (
+                      <tr key={enfant.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-900 text-sm">{enfant.prenom} {enfant.nom}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-700 text-sm font-medium">
+                            {getClasseLabel(enfant.classe)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-sm text-gray-900">{parent?.email || "N/A"}</p>
+                          <p className="text-xs text-gray-500">{parent?.telephone || ""}</p>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

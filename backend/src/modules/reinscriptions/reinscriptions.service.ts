@@ -309,6 +309,40 @@ export class ReinscriptionsService {
   }
 
   /**
+   * Récupère les enfants avec inscription active mais sans demande de réinscription (admin)
+   */
+  async getEnfantsNonReinscrits(anneeScolaire?: string) {
+    const annee = anneeScolaire || this.getAnneeScolaireProchaine();
+
+    // Tous les enfants avec inscription active
+    const enfantsActifs = await this.prisma.enfant.findMany({
+      where: {
+        deletedAt: null,
+        inscriptions: {
+          some: { statut: StatutInscription.ACTIVE },
+        },
+      },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        classe: true,
+        parent1: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+        parent2: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+      },
+    });
+
+    // Filtrer ceux qui n'ont PAS de réinscription pour cette année
+    const enfantsAvecReinscription = await this.prisma.reinscription.findMany({
+      where: { anneeScolaire: annee },
+      select: { enfantId: true },
+    });
+    const idsReinscrits = new Set(enfantsAvecReinscription.map(r => r.enfantId));
+
+    return enfantsActifs.filter(e => !idsReinscrits.has(e.id));
+  }
+
+  /**
    * Statistiques des réinscriptions (admin)
    */
   async getStats(anneeScolaire?: string) {

@@ -74,6 +74,15 @@ export class ReinscriptionsController {
     return this.reinscriptionsService.getStats(anneeScolaire);
   }
 
+  @Get('non-reinscrits')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Liste les enfants actifs sans demande de réinscription (admin)' })
+  @ApiQuery({ name: 'anneeScolaire', required: false })
+  async getNonReinscrits(@Query('anneeScolaire') anneeScolaire?: string) {
+    return this.reinscriptionsService.getEnfantsNonReinscrits(anneeScolaire);
+  }
+
   @Patch(':id/statut')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)

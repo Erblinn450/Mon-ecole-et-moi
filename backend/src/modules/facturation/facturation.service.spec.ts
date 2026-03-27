@@ -97,8 +97,8 @@ const mockTarifs: Record<string, number> = {
   SCOLARITE_COLLEGE_ANNUEL: 8520.0,
   INSCRIPTION_PREMIERE_ANNEE: 350.0,
   INSCRIPTION_FRATRIE_PREMIERE: 150.0,
-  INSCRIPTION_ANNEES_SUIVANTES: 195.0,
-  INSCRIPTION_FRATRIE_SUIVANTES: 160.0,
+  INSCRIPTION_ANNEES_SUIVANTES: 165.0,
+  INSCRIPTION_FRATRIE_SUIVANTES: 150.0,
   FONCTIONNEMENT_MATERNELLE: 65.0,
   FONCTIONNEMENT_ELEMENTAIRE: 85.0,
   FONCTIONNEMENT_COLLEGE: 95.0,
@@ -534,14 +534,14 @@ describe('FacturationService - Moteur de Calcul', () => {
       expect(result).toBe(150.0);
     });
 
-    it('devrait retourner 195€ pour réinscription 1er enfant', async () => {
+    it('devrait retourner 165€ pour réinscription 1er enfant', async () => {
       const result = await service.calculerInscription(1, false, '2025-2026');
-      expect(result).toBe(195.0);
+      expect(result).toBe(165.0);
     });
 
-    it('devrait retourner 160€ pour réinscription fratrie', async () => {
+    it('devrait retourner 150€ pour réinscription fratrie', async () => {
       const result = await service.calculerInscription(2, false, '2025-2026');
-      expect(result).toBe(160.0);
+      expect(result).toBe(150.0);
     });
   });
 
@@ -2273,13 +2273,13 @@ describe('FacturationService - Facture inscription', () => {
       mockPrisma.$executeRawUnsafe.mockResolvedValue(null);
       mockPrisma.facture.findFirst.mockResolvedValue(null);
       mockPrisma.facture.create.mockResolvedValue({
-        id: 12, numero: 'FA-202603-0003', montantTotal: 195,
+        id: 12, numero: 'FA-202603-0003', montantTotal: 165,
       });
       mockPrisma.ligneFacture.create.mockResolvedValue({});
 
       const result = await service.genererFactureInscription(1, 1, false);
 
-      expect(result.montantTotal).toBe(195); // réinscription 1er enfant
+      expect(result.montantTotal).toBe(165); // réinscription 1er enfant
     });
   });
 });

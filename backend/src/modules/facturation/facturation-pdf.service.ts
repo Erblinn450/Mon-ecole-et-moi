@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Decimal } from 'decimal.js';
 import * as path from 'path';
@@ -290,6 +290,69 @@ export class FacturationPdfService {
         bottomY - 10,
         { align: 'center', width: 495 },
       );
+  }
+
+  async generatePdfGroupe(mois: string): Promise<Buffer> {
+    const { PDFDocument } = await import('pdf-lib');
+
+    const factures = await this.prisma.facture.findMany({
+      where: {
+        periode: mois,
+        statut: { not: 'ANNULEE' },
+      },
+      select: { id: true, numero: true },
+      orderBy: { numero: 'asc' },
+    });
+
+    if (factures.length === 0) {
+      throw new NotFoundException(`Aucune facture trouvée pour la période ${mois}`);
+    }
+
+    const mergedPdf = await PDFDocument.create();
+
+    for (const facture of factures) {
+      const pdfBuffer = await this.generateFacturePdf(facture.id);
+      const sourcePdf = await PDFDocument.load(pdfBuffer);
+      const pages = await mergedPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
+      for (const page of pages) {
+        mergedPdf.addPage(page);
+      }
+    }
+
+    const mergedBytes = await mergedPdf.save();
+    return Buffer.from(mergedBytes);
+  }
+
+  async generatePdfSelection(factureIds: number[]): Promise<Buffer> {
+    const { PDFDocument } = await import('pdf-lib');
+
+    if (factureIds.length === 0) {
+      throw new BadRequestException('Aucune facture sélectionnée');
+    }
+
+    const factures = await this.prisma.facture.findMany({
+      where: { id: { in: factureIds } },
+      select: { id: true, numero: true },
+      orderBy: { numero: 'asc' },
+    });
+
+    if (factures.length === 0) {
+      throw new NotFoundException('Aucune facture trouvée');
+    }
+
+    const mergedPdf = await PDFDocument.create();
+
+    for (const facture of factures) {
+      const pdfBuffer = await this.generateFacturePdf(facture.id);
+      const sourcePdf = await PDFDocument.load(pdfBuffer);
+      const pages = await mergedPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
+      for (const page of pages) {
+        mergedPdf.addPage(page);
+      }
+    }
+
+    const mergedBytes = await mergedPdf.save();
+    return Buffer.from(mergedBytes);
   }
 
   async generateZipFactures(mois: string): Promise<Buffer> {

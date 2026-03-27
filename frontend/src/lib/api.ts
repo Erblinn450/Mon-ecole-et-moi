@@ -798,13 +798,26 @@ export const facturationApi = {
     return handleResponse<Facture>(response);
   },
 
-  // Admin - Télécharger ZIP de toutes les factures du mois
-  async downloadZip(mois: string): Promise<Blob> {
-    const response = await fetch(`${API_URL}/facturation/export-pdf-zip?mois=${mois}`, {
+  // Admin - Télécharger toutes les factures du mois en 1 PDF
+  async downloadPdfGroupe(mois: string): Promise<Blob> {
+    const response = await fetch(`${API_URL}/facturation/export-pdf?mois=${mois}`, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) {
-      throw new Error("Erreur lors du téléchargement du ZIP");
+      throw new Error("Erreur lors du téléchargement du PDF");
+    }
+    return response.blob();
+  },
+
+  // Admin - Télécharger une sélection de factures en 1 PDF
+  async downloadPdfSelection(factureIds: number[]): Promise<Blob> {
+    const response = await fetch(`${API_URL}/facturation/export-pdf-selection`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ factureIds }),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors du téléchargement du PDF");
     }
     return response.blob();
   },
@@ -839,6 +852,24 @@ export const facturationApi = {
       body: JSON.stringify({ mois }),
     });
     return handleResponse<{ envoyees: number; erreurs: string[] }>(response);
+  },
+
+  // Admin - Envoyer une facture par email
+  async envoyerFacture(factureId: number): Promise<{ success: boolean; numero: string }> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/envoyer`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{ success: boolean; numero: string }>(response);
+  },
+
+  // Admin - Relancer un parent pour une facture
+  async relancerFacture(factureId: number): Promise<{ success: boolean; numero: string }> {
+    const response = await fetch(`${API_URL}/facturation/${factureId}/relancer`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<{ success: boolean; numero: string }>(response);
   },
 
   // Admin - Créer un avoir

@@ -179,6 +179,32 @@ export default function FactureDetailPage() {
     }
   };
 
+  const handleEnvoyerEmail = async () => {
+    setActionLoading(true);
+    try {
+      await facturationApi.envoyerFacture(factureId);
+      await loadFacture();
+      showSuccess("Facture envoyée par email au parent");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRelancer = async () => {
+    setActionLoading(true);
+    try {
+      await facturationApi.relancerFacture(factureId);
+      await loadFacture();
+      showSuccess("Relance envoyée par email au parent");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur lors de la relance");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleAjouterLigne = async () => {
     setActionLoading(true);
     try {
@@ -667,12 +693,12 @@ export default function FactureDetailPage() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => handleChangeStatut(StatutFacture.ENVOYEE)}
+                  onClick={handleEnvoyerEmail}
                   disabled={actionLoading}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
                 >
                   <Send size={18} />
-                  Envoyer la facture
+                  Envoyer par email
                 </button>
                 <button
                   onClick={() => setShowAjoutLigne(!showAjoutLigne)}
@@ -691,7 +717,12 @@ export default function FactureDetailPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-blue-800 text-sm mb-3">
-                    Facture envoyée au parent. Quand vous recevez le paiement :
+                    Facture envoyée au parent.
+                    {facture.dateDernierEnvoi && (
+                      <span className="ml-1 text-blue-600">
+                        Dernier envoi : {new Date(facture.dateDernierEnvoi).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <button
@@ -701,6 +732,14 @@ export default function FactureDetailPage() {
                     >
                       <CreditCard size={18} />
                       Enregistrer un paiement
+                    </button>
+                    <button
+                      onClick={handleRelancer}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-blue-300 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      <Send size={16} />
+                      Relancer le parent
                     </button>
                   </div>
                 </div>
@@ -718,6 +757,11 @@ export default function FactureDetailPage() {
                       ? <>Paiement partiel reçu ({Number(facture.montantPaye).toFixed(2)} €). Il reste <strong>{resteAPayer.toFixed(2)} €</strong> à percevoir.</>
                       : <>Il reste <strong>{resteAPayer.toFixed(2)} €</strong> à percevoir.</>
                     }
+                    {facture.dateDernierEnvoi && (
+                      <span className="ml-1 text-orange-600 text-xs">
+                        (Dernier envoi : {new Date(facture.dateDernierEnvoi).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })})
+                      </span>
+                    )}
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <button
@@ -727,6 +771,14 @@ export default function FactureDetailPage() {
                     >
                       <CreditCard size={18} />
                       Enregistrer le solde
+                    </button>
+                    <button
+                      onClick={handleRelancer}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-orange-300 text-orange-700 rounded-xl hover:bg-orange-100 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      <Send size={16} />
+                      Relancer le parent
                     </button>
                   </div>
                 </div>
@@ -741,6 +793,11 @@ export default function FactureDetailPage() {
                 <div>
                   <p className="text-rose-800 text-sm mb-3">
                     Cette facture est <strong>impayée</strong>. Reste dû : <strong>{resteAPayer.toFixed(2)} €</strong>
+                    {facture.dateDernierEnvoi && (
+                      <span className="ml-1 text-rose-600 text-xs">
+                        (Dernier envoi : {new Date(facture.dateDernierEnvoi).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })})
+                      </span>
+                    )}
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <button
@@ -750,6 +807,14 @@ export default function FactureDetailPage() {
                     >
                       <CreditCard size={18} />
                       Enregistrer un paiement
+                    </button>
+                    <button
+                      onClick={handleRelancer}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-rose-300 text-rose-700 rounded-xl hover:bg-rose-100 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      <Send size={16} />
+                      Relancer le parent
                     </button>
                   </div>
                 </div>

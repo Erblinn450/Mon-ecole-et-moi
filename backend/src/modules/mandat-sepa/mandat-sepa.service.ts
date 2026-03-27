@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SignerMandatDto } from './dto/signer-mandat.dto';
 
@@ -11,7 +12,6 @@ import { SignerMandatDto } from './dto/signer-mandat.dto';
 export class MandatSepaService {
   constructor(private prisma: PrismaService) {}
 
-  /**
   /**
    * Signer un mandat SEPA (parent authentifié).
    * 1 mandat actif par parent maximum.
@@ -195,7 +195,7 @@ export class MandatSepaService {
       throw new NotFoundException('Mandat non trouvé');
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.MandatSepaUpdateInput = {};
     if (data.iban) updateData.iban = data.iban.replace(/\s/g, '');
     if (data.bic) updateData.bic = data.bic;
     if (data.titulaire) updateData.titulaire = data.titulaire;

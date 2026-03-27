@@ -463,8 +463,8 @@ async function main() {
     // Inscription
     { cle: 'INSCRIPTION_PREMIERE_ANNEE', valeur: 350, description: "Frais d'inscription 1ère année - 1 enfant", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
     { cle: 'INSCRIPTION_FRATRIE_PREMIERE', valeur: 150, description: "Frais d'inscription 1ère année - fratrie", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
-    { cle: 'INSCRIPTION_ANNEES_SUIVANTES', valeur: 195, description: "Frais d'inscription années suivantes - 1 enfant", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
-    { cle: 'INSCRIPTION_FRATRIE_SUIVANTES', valeur: 160, description: "Frais d'inscription années suivantes - fratrie", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
+    { cle: 'INSCRIPTION_ANNEES_SUIVANTES', valeur: 165, description: "Frais d'inscription années suivantes - 1 enfant", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
+    { cle: 'INSCRIPTION_FRATRIE_SUIVANTES', valeur: 150, description: "Frais d'inscription années suivantes - fratrie", categorie: 'INSCRIPTION', anneeScolaire: '2025-2026' },
     // Fonctionnement (matériel pédagogique)
     { cle: 'FONCTIONNEMENT_MATERNELLE', valeur: 65, description: 'Frais matériel pédagogique - 3 à 6 ans', categorie: 'FONCTIONNEMENT', anneeScolaire: '2025-2026' },
     { cle: 'FONCTIONNEMENT_ELEMENTAIRE', valeur: 85, description: 'Frais matériel pédagogique - 6 à 12 ans', categorie: 'FONCTIONNEMENT', anneeScolaire: '2025-2026' },
